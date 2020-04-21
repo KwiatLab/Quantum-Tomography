@@ -18,23 +18,23 @@ class Tomography():
     # conf['Efficiency']: 0 or array like, demension = 1
     # conf['Beta']: 0 to 0.5, depending on purity of state and total number of measurements.
     #Default self.conf
-    conf = {'NQubits': 2,
-            'NDetectors': 1,
-            'Crosstalk': np.array([[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]]),
-            'UseDerivative': 0,
-            'DoErrorEstimation': 0,
-            'DoDriftCorrection': 'no',
-            'DoAccidentalCorrection' : 1,
-            'Window': 0,
-            'Efficiency': [1, 1, 1, 1],
-            'RhoStart': [],
-            'IntensityMap': [[1]],
-            'StateDimention': 0,
-            'StateDimention': 0,
-            'Beta': 0,
-            'QuditSizes': [2, 2]
-
-    }
+    # self.conf = {'NQubits': 2,
+    #         'NDetectors': 1,
+    #         'Crosstalk': np.array([[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]]),
+    #         'UseDerivative': 0,
+    #         'DoErrorEstimation': 0,
+    #         'DoDriftCorrection': 'no',
+    #         'DoAccidentalCorrection' : 1,
+    #         'Window': 0,
+    #         'Efficiency': [1, 1, 1, 1],
+    #         'RhoStart': [],
+    #         'IntensityMap': [[1]],
+    #         'StateDimention': 0,
+    #         'StateDimention': 0,
+    #         'Beta': 0,
+    #         'QuditSizes': [2, 2]
+    #
+    # }
     # tomo_input: array like, demension = 2.
     #
     # For n detectors:
@@ -59,16 +59,39 @@ class Tomography():
 
     #Default Constructor
     def __init__(self):
-        pass
+        self.conf = {'NQubits': 2,
+            'NDetectors': 1,
+            'Crosstalk': np.array([[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]]),
+            'UseDerivative': 0,
+            'DoErrorEstimation': 0,
+            'DoDriftCorrection': 0,
+            'DoAccidentalCorrection' : 1,
+            'Window': 0,
+            'Efficiency': [1, 1, 1, 1],
+            'RhoStart': [],
+            'IntensityMap': [[1]],
+            'StateDimention': 0,
+            'Beta': 0,
+            'QuditSizes': [2, 2]}
 
     #Sets a specific self.conf setting
     def setConfSetting(self,setting,val):
-        self.conf[setting] = val
+        try:
+            valC = val.copy()
+        except:
+            valC = val
+        if (isinstance(val, str)):
+            if (valC.lower() == "yes" or val.lower() == "true"):
+                valC = 1
+            elif (valC.lower() == "no" or val.lower() == "false"):
+                valC = 0
+        self.conf[setting] = valC
 
     #inport self.conf.txt file. Input argument is string of filename
     def importConf(self,conftxt):
         conf = self.conf
         exec(compile(open(conftxt, "rb").read(), conftxt, 'exec'))
+        self.standardizeConf()
     #inport data.txt file. Input argument is string of filename
     def importData(self,datatxt):
         exec(compile(open(datatxt, "rb").read(), datatxt, 'exec'))
@@ -77,9 +100,16 @@ class Tomography():
     #Performs Tomography
     def importPythonEval(self,pythonevaltxt):
         conf = self.conf
-
         exec(compile(open(pythonevaltxt, "rb").read(), pythonevaltxt, 'exec'))
+        self.standardizeConf()
         return self.state_tomography(locals().get('tomo_input'), locals().get('intensity'))
+    def standardizeConf(self):
+        for k in self.conf.keys():
+            if (isinstance(self.conf[k], str)):
+                if (self.conf[k].lower() == "yes" or self.conf[k].lower() == "true"):
+                    self.conf[k] = 1
+                elif (self.conf[k].lower() == "no" or self.conf[k].lower() == "false"):
+                    self.conf[k] = 0
 
     ##########################
     '''Tomography Functions'''
@@ -87,26 +117,28 @@ class Tomography():
 
     def state_tomography(self,raw_counts, intensities):
         rho0 = self.conf['RhoStart']
-        ndet = self.conf['NDetectors']
-        nBits = self.conf['NQubits']
-        if nBits == 1:
-            if ndet == 2:
-                [data, m1, m2, acc] = self.filter_data_2det_1bit(raw_counts, intensities)
-                # 2ndet still need to check with data
-            elif ndet == 1:
-                [data, m1, m2, acc] = self.filter_data_1det_1bit(raw_counts)
-        else:
-            if ndet == 2:
-                [data, m1, m2, acc] = self.filter_data_2det_2bit(raw_counts, intensities)
-                # 2ndet still need to check with data
-            elif ndet == 1:
-                [data, m1, m2, acc] = self.filter_data_1det_2bit(raw_counts)
-            else:
-                print("n_det is neither 1 or 2")
-                data = 0
-                m1 = 0
-                m2 = 0
-                acc = 0
+        # ndet = self.conf['NDetectors']
+        # nBits = self.conf['NQubits']
+        # if nBits == 1:
+        #     if ndet == 2:
+        #         [data, m1, m2, acc] = self.filter_data_2det_1bit(raw_counts, intensities)
+        #         # 2ndet still need to check with data
+        #     elif ndet == 1:
+        #         [data, m1, m2, acc] = self.filter_data_1det_1bit(raw_counts)
+        # else:
+        #     if ndet == 2:
+        #         [data, m1, m2, acc] = self.filter_data_2det_2bit(raw_counts, intensities)
+        #         # 2ndet still need to check with data
+        #     elif ndet == 1:
+        #         [data, m1, m2, acc] = self.filter_data_1det_2bit(raw_counts)
+        #     else:
+        #         print("n_det is neither 1 or 2")
+        #         data = 0
+        #         m1 = 0
+        #         m2 = 0
+        #         acc = 0
+        # [data, m1, m2, acc] = self.filter_data_1det_1bit(raw_counts)
+        [data, m1, m2, acc] = self.filter_data(raw_counts, intensities)
 
         if not rho0:
             rho0 = self.linear_tomography(data, m2)[0]
@@ -118,97 +150,77 @@ class Tomography():
     def maximum_likelihood_tomography(self,rho0, data, m, acc):
         rho0 = make_positive(rho0)
         rho0 /= np.trace(rho0)
-        init_intensity = np.mean(data) * (rho0.shape[0])
+        init_intensity = np.mean(np.multiply(data,1/self.conf["IntensityMap"])) * (rho0.shape[0])
         t0 = density2t(rho0)
         n_t = len(t0)
-
+        # np.multiply(data, self.conf["IntensityMap"])
         # t_to_density(t0)
         t0 = t0 + 0.0001
         t0 = t0 * np.sqrt(init_intensity)
 
-        # this [[1]] is not good
-        intmap = self.conf['IntensityMap']
-        n_int = np.array(np.shape(intmap))[1] - 1
-        t0 = np.concatenate((t0, np.ones(n_int)), axis=0)
         # options
-        useder = self.conf['UseDerivative']
+        # useder = self.conf['UseDerivative']
         # ndet = self.conf['NDetectors', 1)
-        if type(useder) is str:
-            useder = useder is 'yes'
+        # if type(useder) is str:
+        #     useder = useder is 'yes'
 
         data = np.real(data)
         data = data.flatten()
 
-        intmap = self.conf['IntensityMap']
-        sz = self.conf['StateDimention']
         bet = self.conf['Beta']
         # n_data = np.shape(data)[0]
 
-        n_int = np.array(np.shape(intmap))[1] - 1
-        if sz > 0:
-            nt = sz ** 2
-        else:
-            nt = len(t0) - n_int
-            # sz = np.sqrt(nt)
 
         prediction = np.zeros(m.shape[2]) + 0j
         fvalp = 0
 
-        if useder:
-            [aa, bb] = self.initialize_fitness_global(m)
-            t = leastsq(self.maxlike_fitness, np.real(t0), args=(data, acc, m, intmap, n_int, nt, prediction, aa, bb),
-                        Dfun=self.maxlike_fitness_der_d)[0]
+        # if useder:
+        #     [aa, bb] = self.initialize_fitness_global(m)
+        #     t = leastsq(self.maxlike_fitness, np.real(t0), args=(data, acc, m, intmap, n_int, nt, prediction, aa, bb),
+        #                 Dfun=self.maxlike_fitness_der_d)[0]
+        # else:
+        if bet == 0:
+            t = leastsq(self.maxlike_fitness, np.real(t0), args=(data, acc, m, prediction))[0]
+            fvalp = np.sum(self.maxlike_fitness(t, data, acc, m, prediction) ** 2)
         else:
-            if bet == 0:
-                t = leastsq(self.maxlike_fitness, np.real(t0), args=(data, acc, m, intmap, n_int, nt, prediction))[0]
-                fvalp = np.sum(self.maxlike_fitness(t, data, acc, m, intmap, n_int, nt, prediction) ** 2)
-            else:
-                t = \
-                leastsq(self.maxlike_fitness_hedged, np.real(t0), args=(data, acc, m, intmap, n_int, nt, prediction, bet))[0]
-                fvalp = np.sum(self.maxlike_fitness_hedged(t, data, acc, m, intmap, n_int, nt, prediction, bet) ** 2)
+            t = \
+            leastsq(self.maxlike_fitness_hedged, np.real(t0), args=(data, acc, m, prediction, bet))[0]
+            fvalp = np.sum(self.maxlike_fitness_hedged(t, data, acc, m, prediction, bet) ** 2)
 
         # base_intensity = np.sum((t[range(n_t)])**2)
         # t_matrix(t[range(n_t)])
-        matrix = t_to_density(t[0:n_t])
+        matrix = t_to_density(t)
         intensities = np.trace(matrix)
         rhog = matrix / intensities
         intensities = np.float64(np.real(intensities))
 
         return [rhog, intensities, fvalp]
 
-    def maxlike_fitness(self, t, data, accidentals, m, intmap, n_int, nt, prediction, aa=0, bb=0):
+    def maxlike_fitness(self, t, data, accidentals, m, prediction):
 
-        tm = t_matrix(t[0:nt])
+        tm = t_matrix(t)
         # do not change
         rhog = np.dot(tm.conj().transpose(), tm)
 
-        if n_int > 0:
-            rel_intensity = np.dot(intmap, [1, t[nt:len(t)]])
-        else:
-            rel_intensity = np.ones(m.shape[2])
 
         for j in range(len(prediction)):
-            prediction[j] = rel_intensity[j] * np.real(np.trace(np.dot(m[:, :, j], rhog))) + accidentals[j]
+            prediction[j] = np.float64(np.real(self.conf["IntensityMap"][j] * np.real(np.trace(np.dot(m[:, :, j], rhog))) + accidentals[j]))
             prediction[j] = np.max([prediction[j], 0.01])
         val = (prediction - data) / np.sqrt(prediction)
 
         val = np.float64(np.real(val))
 
         return val
+    # this is when beta != 0
+    def maxlike_fitness_hedged(self,t, data, accidentals, m, prediction, bet):
 
-    def maxlike_fitness_hedged(self,t, data, accidentals, m, intmap, n_int, nt, prediction, bet):
-
-        tm = t_matrix(t[0:nt])
+        tm = t_matrix(t)
         # do not change
         rhog = np.dot(tm.conj().transpose(), tm)
 
-        if n_int > 0:
-            rel_intensity = np.dot(intmap, [1, t[nt:len(t)]])
-        else:
-            rel_intensity = np.ones(m.shape[2])
 
         for j in range(len(prediction)):
-            prediction[j] = rel_intensity[j] * np.real(np.trace(np.dot(m[:, :, j], rhog))) + accidentals[j]
+            prediction[j] = self.conf["IntensityMap"][j] * np.real(np.trace(np.dot(m[:, :, j], rhog))) + accidentals[j]
             prediction[j] = np.max([prediction[j], 0.01])
 
         hedge = np.repeat(np.real((bet * np.log(np.linalg.det(np.mat(rhog)))) / len(prediction)), len(prediction))
@@ -282,219 +294,218 @@ class Tomography():
 
         return [rhog, intensities]
 
-    def filter_data_1det_1bit(self,raw_counts):
-        n_qubit = self.conf['NQubits']
-        n = map(int, np.ones(n_qubit) * 2)
-        # qudit_sizes = self.conf['QuditSizes', n)
-        qudit_sizes = 2
-        self.conf['StateDimension'] = np.prod(qudit_sizes)
-        window = self.conf['Window']
-        n_singles = 1
-        n_measurements = len(raw_counts)
+    def multiloop_index(j, lengths):
+        ind = np.zeros(len(lengths))
+        for k in range(len(lengths) - 1):
+            sz = np.prod(lengths[np.arange(k + 1, len(lengths))])
+            ind[k] = np.fix(j / sz) + 1
+            j %= sz
+        ind[len(ind) - 1] = j + 1
 
-        t = raw_counts[:, 0]
-        sings = raw_counts[:, np.arange(n_singles) + 1]
-        coinc = raw_counts[:, n_singles + 1]
-        measurements = raw_counts[:, np.arange(n_singles + 2, len(raw_counts[0]))]
+        return ind
 
-        acc = np.prod(sings, axis=1) * (window * 1e-9 / t) ** (n_singles - 1)
-
-        m2 = np.zeros([n_measurements, 2])
-        m1 = np.zeros([np.prod(qudit_sizes), np.prod(qudit_sizes), n_measurements])
-        m2 = m2 + 0j
-        m1 = m1 + 0j
-        for j in range(n_measurements):
-            psi = 1
-            offset = 0
-            for k in range(n_singles):
-                m_length = qudit_sizes
-                psi_k = measurements[j, np.arange(offset, offset + m_length)]
-                psi = tensor_product_2(psi, psi_k)
-                offset = offset + m_length
-            m2[j, :] = psi
-            m1[:, :, j] = np.outer(psi, psi.conj().transpose())
-
-        return [coinc, m1, m2, acc]
-
-    def filter_data_1det_2bit(self,raw_counts):
-        n_qubit = self.conf['NQubits']
-        n = map(int, np.ones(n_qubit)*2)
-        #qudit_sizes = self.conf['QuditSizes', n)
-        qudit_sizes = self.conf['QuditSizes']
-        self.conf['StateDimension'] = np.prod(qudit_sizes)
-        window = self.conf['Window']
-        n_singles = len(qudit_sizes)
-        n_measurements = len(raw_counts)
-
-        t = raw_counts[:, 0]
-        sings = raw_counts[:, np.arange(n_singles)+1]
-        coinc = raw_counts[:, n_singles+1]
-        measurements = raw_counts[:, np.arange(n_singles+2, len(raw_counts[0]))]
-
-        acc = np.prod(sings, axis=1)*(window*1e-9/t)**(n_singles-1)
-
-        m2 = np.zeros([n_measurements, np.prod(qudit_sizes)])
-        m1 = np.zeros([np.prod(qudit_sizes), np.prod(qudit_sizes), n_measurements])
-        m2 = m2+0j
-        m1 = m1+0j
-        for j in range(n_measurements):
-            psi = 1
-            offset = 0
-            for k in range(n_singles):
-                m_length = qudit_sizes[k]
-                psi_k = measurements[j, np.arange(offset, offset+m_length)]
-                psi = tensor_product_2(psi, psi_k)
-                offset = offset+m_length
-            m2[j, :] = psi
-            m1[:, :, j] = np.outer(psi, psi.conj().transpose())
-
-        return [coinc, m1, m2, acc]
-
-    def filter_data_2det_1bit(self,raw_counts, intensities):
-        if not np.isscalar(intensities):
-            self.conf['DoDriftCorrection'] = 0
-        nbits = self.conf['NQubits']
-        do_drift_corr = self.conf['DoDriftCorrection']
-        self.conf['StateDimension'] = 2**nbits
-
-        n_singles = 2*nbits
-        n_coinc = 2**nbits
-
-        t = raw_counts[:, 0]
-        sings = raw_counts[:, np.arange(n_singles)+1]
-        coinc = raw_counts[:, np.arange(n_singles+1, n_singles+n_coinc+1)]
-        settings = raw_counts[:, np.arange(n_singles+n_coinc+1, len(raw_counts[0]))]
-
-        acc = np.zeros(np.shape(coinc))
-
-        window = self.conf['Window']
-        if not np.isscalar(window):
-            if any(window) > 0:
-                for j in range(n_coinc):
-                    idx = multiloop_index(j, 2*np.ones(nbits))
-                    idx = idx + np.arange(0, n_singles-1, 2) - 1
-                    idx = idx.astype(int)
-                    acc[:, j] = np.prod(np.real(sings[:, idx]), axis=1) * (window[j]*1e-9/np.real(t))**(nbits-1)
-
-        if do_drift_corr:
-            intensity_map = np.dot(np.eye(raw_counts.shape[0]), np.ones(n_coinc))
-            z = np.zeros(np.prod(coinc.shape))
-            self.conf['intensityMap'] = np.concatenate(z, intensity_map)
-
-        eff = self.conf['Efficiency']
-
-        ctalk = self.conf['Crosstalk']
-        if np.ndim(ctalk) < 3:
-            crosstalk = ctalk
+    def getNumCoinc(self):
+        if (self.conf['NDetectors'] == 2):
+            return 2 ** self.conf['NQubits']
         else:
-            crosstalk = ctalk
+            return 1
+    def getNumSingles(self):
+        if (self.conf['NDetectors'] == 2):
+            return 2 * self.conf['NQubits']
+        else:
+           return self.conf['NQubits']
+
+    def getCoincidences(self):
+        if (self.conf['NDetectors'] == 2):
+            return self.input[:, np.arange(2*self.conf['NQubits']+1, 2**self.conf['NQubits']+2*self.conf['NQubits']+1)]
+        else:
+            return self.input[:, self.conf['NQubits']+1]
+
+    def getSingles(self):
+        if (self.conf['NDetectors'] == 2):
+            return self.input[:, np.arange(1, 2*self.conf['NQubits']+1)]
+        else:
+            return self.input[:, np.arange(1, self.conf['NQubits']+1)]
+
+    def getTimes(self):
+        return self.tomo_input[:, 0]
+
+    def getMeasurements(self):
+        if (self.conf['NDetectors'] == 2):
+            return self.input[:, np.arange(2**self.conf['NQubits']+2*self.conf['NQubits']+1, 2**self.conf['NQubits']+4*self.conf['NQubits']+1)]
+        else:
+            return self.input[:, np.arange(self.conf['NQubits']+2, 3*self.conf['NQubits']+2)]
+    def getNumBits(self):
+        return self.conf['NQubits']
+
+    def getNumDetPerQubit(self):
+        return self.conf['NDetectors']
+    def getNumOfDetectors(self):
+        return self.getNumDetPerQubit()*self.getNumBits()
+
+    def getBasisMeas(self):
+
+        if(self.getNumDetPerQubit() == 1):
+            basis = np.array([[1, 0], [0, 1], [(2 ** (-1 / 2)), (2 ** (-1 / 2))], [(2 ** (-1 / 2)), -(2 ** (-1 / 2))],
+                              [(2 ** (-1 / 2)), (2 ** (-1 / 2)) * 1j], [(2 ** (-1 / 2)), -(2 ** (-1 / 2)) * 1j]],
+                             dtype=complex)
+            m = np.zeros((6 ** self.getNumBits(), 2 * self.getNumBits()), dtype=complex)
+            for i in range(m.shape[0]):
+                for j in range(0, m.shape[1], 2):
+                    bitNumber = np.floor((m.shape[1] - j - 1) / 2)
+                    index = int(((i) / 6 ** (bitNumber)) % 6)
+
+                    m[i, j] = basis[index][0]
+                    m[i, j + 1] = basis[index][1]
+        else:
+            basis = np.array([[1, 0],[(2 ** (-1 / 2)), (2 ** (-1 / 2))], [(2 ** (-1 / 2)),(2 ** (-1 / 2)) * 1j]], dtype=complex)
+            m = np.zeros((3 ** self.getNumBits(), 2 * self.getNumBits()), dtype=complex)
+            for i in range(m.shape[0]):
+                for j in range(0, m.shape[1], 2):
+                    bitNumber = np.floor((m.shape[1] - j - 1) / 2)
+                    index = int(((i) / 3 ** (bitNumber)) % 3)
+
+                    m[i, j] = basis[index][0]
+                    m[i, j + 1] = basis[index][1]
+        return m
+
+
+    def getTomoInputTemplate(self):
+
+        measurements = self.getBasisMeas()
+
+        if(self.getNumDetPerQubit() == 1):
+            # For n detectors:
+            Tomoinput = np.zeros((6**self.getNumBits(),3*self.getNumBits()+2),dtype=complex)
+
+            # input[:, n_qubit+1]: coincidences
+            # coincidences left zeros
+
+            # input[:, np.arange(n_qubit+2, 3*n_qubit+2)]: measurements
+            Tomoinput[:, np.arange(self.getNumBits() + 2, 3 * self.getNumBits() + 2)] = measurements
+
+        else:
+            # For 2n detectors:
+            Tomoinput = np.zeros((3**self.getNumBits(),2**self.getNumBits()+4*self.getNumBits()+1),dtype=complex)
+
+            # input[:, np.arange(2*n_qubit+1, 2**n_qubit+2*n_qubit+1)]: coincidences
+            # coincidences left zeros
+
+            # input[:, np.arange(2**n_qubit+2*n_qubit+1, 2**n_qubit+4*n_qubit+1)]: measurements
+            Tomoinput[:, np.arange(2**self.getNumBits()+2*self.getNumBits()+1, 2**self.getNumBits()+4*self.getNumBits()+1)] = measurements
+
+        # tomo_input[:, 0]: times
+        Tomoinput[:,0] = np.ones_like(Tomoinput[:,0])
+
+        # tomo_input[:, np.arange(1, 2 * n_qubit + 1)]: singles
+        # singles left zero
+        return Tomoinput
+
+    def filter_data(self, raw_counts, intensities):
+        # getting variables
+        self.input = raw_counts
+        # if not np.isscalar(intensities):
+        #     self.conf['DoDriftCorrection'] = 0
+        nbits = self.conf['NQubits']
+        ndet = self.conf['NDetectors']
+        eff = self.conf['Efficiency'][0:2**nbits]
+
+        #time values
+        t = raw_counts[:, 0]
+
+        #singles values
+        n_singles = self.getNumSingles()
+        # sings = raw_counts[:, np.arange(n_singles) + 1]
+        sings = self.getSingles()
+
+
+        #state dimension @ qudit size
+        # qudit_sizes = self.conf['QuditSizes']
+        # if (ndet == 1 and nbits == 1):
+        #     qudit_sizes = 2
+        # if (ndet == 2):
+        #     self.conf['StateDimension'] = 2 ** nbits
+        # else:
+        #     self.conf['StateDimension'] = np.prod(qudit_sizes)
+
+        #coincidences
+        n_coinc = self.getNumCoinc()
+        # coinc = raw_counts[:, np.arange(n_singles + 1, n_singles + n_coinc + 1)]
+        # if (ndet == 1):
+        #     coinc = raw_counts[:, n_singles + 1]
+        coinc = self.getCoincidences()
+
+
+        #settings
+        settings = raw_counts[:, np.arange(n_singles + n_coinc + 1, len(raw_counts[0]))]
+
+
+        # Accidental Correction
+        acc = np.zeros_like(coinc)
+        if (len(coinc.shape) == 1):
+            acc = acc[:, np.newaxis]
+        window = self.conf['Window']
+        if np.isscalar(window):
+            window = np.array([window])
+        if any(window) > 0:
+            for j in range(n_coinc):
+                idx = (multiloop_index(j, 2 * np.ones(nbits)) - 1) * nbits + range(nbits)
+                idx = idx.astype(int)
+                acc[:, j] = np.prod(np.real(sings[:, idx]), axis=1) * (window[j] * 1e-9 / np.real(t)) ** (nbits - 1)
+        if (acc.shape != coinc.shape):
+            acc = acc[:, 0]
+
+        # Drift Correction
+        self.conf['IntensityMap'] = np.kron(intensities,np.ones(n_coinc))
+
+
+        # crosstalk
+        ctalk = np.array(self.conf['Crosstalk'])[0:2**nbits,0:2**nbits]
+        crosstalk = ctalk
+        if np.ndim(ctalk) >= 3:
             for j in range(ctalk.shape[2]):
                 crosstalk[j] = ctalk[:, :, j]
 
         if (ctalk == []):
-            big_crosstalk = np.eye(2**nbits)
+            big_crosstalk = np.eye(2 ** nbits)
         else:
             big_crosstalk = crosstalk[:]
 
         big_crosstalk = big_crosstalk * np.outer(eff, np.ones(n_coinc))
 
-        m = np.zeros([2**nbits, 2**nbits, np.prod(coinc.shape)])+0j
-        m2 = np.zeros([np.prod(coinc.shape), 2**nbits])+0j
+        m = np.zeros([2 ** nbits, 2 ** nbits, np.prod(coinc.shape)]) + 0j
+        m2 = np.zeros([np.prod(coinc.shape), 2 ** nbits]) + 0j
         for j in range(coinc.shape[0]):
-            m_twiddle = np.zeros([2**nbits, 2**nbits, 2**nbits])+0j
+            m_twiddle = np.zeros([2 ** nbits, 2 ** nbits, 2 ** nbits]) + 0j
             u = 1
             for k in range(nbits):
-                alpha = settings[j][2*k]
-                beta = settings[j][2*k+1]
-
+                alpha = settings[j][2 * k]
+                beta = settings[j][2 * k + 1]
                 psi_k = np.array([alpha, beta])
                 psip_k = np.array([np.conj(beta), np.conj(-alpha)])
                 u_k = np.outer((np.array([1, 0])), psi_k) + np.outer((np.array([0, 1])), psip_k)
                 u = tensor_product_2(u, u_k)
-            for k in range(2**nbits):
-                m_twiddle[k, :, :] = np.outer(u[:, k].conj().transpose(), u[:, k])
-                m2[j*n_coinc+k, :] = u[:, k].conj().transpose()
-            for k in range(2**nbits):
-                for l in range(2**nbits):
-                    m[:, :, j*(2**nbits)+k] = m[:, :, j*(2**nbits)+k] + m_twiddle[l, :, :]*big_crosstalk[k, l]
-        m1 = m
+            if (ndet == 1):
+                for k in range(0, 2 ** nbits):
+                    m_twiddle[k, :, :] = np.outer(u[:, k].conj().transpose(), u[:, k])
 
-        data = coinc.reshape((np.prod(coinc.shape), 1))
-        acc = acc.reshape((np.prod(acc.shape), 1))
-        return [data, m1, m2, acc]
+                m2[j * n_coinc, :] = u[:, 0].conj().transpose()
+                for k in range(1):
+                    for l in range(2 ** nbits):
+                        m[:, :, j + k] = m[:, :, j + k] + m_twiddle[l, :, :] * big_crosstalk[k, l]
+                data = coinc
 
-    def filter_data_2det_2bit(self,raw_counts, intensities):
-        if not np.isscalar(intensities):
-            self.conf['DoDriftCorrection'] = 0
-        nbits = self.conf['NQubits']
-        do_drift_corr = self.conf['DoDriftCorrection']
-        self.conf['StateDimension'] = 2**nbits
+            else:
+                for k in range(2 ** nbits):
+                    m_twiddle[k, :, :] = np.outer(u[:, k].conj().transpose(), u[:, k])
+                    m2[j * n_coinc + k, :] = u[:, k].conj().transpose()
+                for k in range(2 ** nbits):
+                    for l in range(2 ** nbits):
+                        m[:, :, j * (2 ** nbits) + k] = m[:, :, j * (2 ** nbits) + k] + m_twiddle[l, :, :]* big_crosstalk[k, l]
 
-        n_singles = 2*nbits
-        n_coinc = 2**nbits
-
-        t = raw_counts[:, 0]
-        sings = raw_counts[:, np.arange(n_singles)+1]
-        coinc = raw_counts[:, np.arange(n_singles+1, n_singles+n_coinc+1)]
-        settings = raw_counts[:, np.arange(n_singles+n_coinc+1, len(raw_counts[0]))]
-
-        acc = np.zeros(np.shape(coinc))
-
-        window = self.conf['Window']
-        if not np.isscalar(window):
-            if any(window) > 0:
-                for j in range(n_coinc):
-                    idx = multiloop_index(j, 2*np.ones(nbits))
-                    idx = idx + np.arange(0, n_singles-1, 2) - 1
-                    idx = idx.astype(int)
-                    acc[:, j] = np.prod(np.real(sings[:, idx]), axis=1) * (window[j]*1e-9/np.real(t))**(nbits-1)
-
-        if do_drift_corr:
-            intensity_map = np.dot(np.eye(raw_counts.shape[0]), np.ones(n_coinc))
-            z = np.zeros(np.prod(coinc.shape))
-            self.conf['intensityMap'] = np.concatenate(z, intensity_map)
-
-        eff = self.conf['Efficiency']
-
-        ctalk = self.conf['Crosstalk']
-        if np.ndim(ctalk) < 3:
-            crosstalk = ctalk
-        else:
-            crosstalk = ctalk
-            for j in range(ctalk.shape[2]):
-                crosstalk[j] = ctalk[:, :, j]
-
-        if (ctalk == []):
-            big_crosstalk = np.eye(2**nbits)
-        else:
-            big_crosstalk = crosstalk[:]
-
-        big_crosstalk = big_crosstalk * np.outer(eff, np.ones(n_coinc))
-
-        m = np.zeros([2**nbits, 2**nbits, np.prod(coinc.shape)])+0j
-        m2 = np.zeros([np.prod(coinc.shape), 2**nbits])+0j
-        for j in range(coinc.shape[0]):
-            m_twiddle = np.zeros([2**nbits, 2**nbits, 2**nbits])+0j
-            u = 1
-            for k in range(nbits):
-                alpha = settings[j][2*k]
-                beta = settings[j][2*k+1]
-
-                psi_k = np.array([alpha, beta])
-                psip_k = np.array([np.conj(beta), np.conj(-alpha)])
-                u_k = np.outer((np.array([1, 0])), psi_k) + np.outer((np.array([0, 1])), psip_k)
-                u = tensor_product_2(u, u_k)
-            for k in range(2**nbits):
-                m_twiddle[k, :, :] = np.outer(u[:, k].conj().transpose(), u[:, k])
-                m2[j*n_coinc+k, :] = u[:, k].conj().transpose()
-            for k in range(2**nbits):
-                for l in range(2**nbits):
-                    m[:, :, j*(2**nbits)+k] = m[:, :, j*(2**nbits)+k] + m_twiddle[l, :, :]*big_crosstalk[k, l]
-        m1 = m
-
-        data = coinc.reshape((np.prod(coinc.shape), 1))
-        acc = acc.reshape((np.prod(acc.shape), 1))
-        return [data, m1, m2, acc]
+                data = coinc.reshape((np.prod(coinc.shape), 1))
+                acc = acc.reshape((np.prod(acc.shape), 1))
+        return [data, m, m2, acc]
 
     def initialize_fitness_global(self, m):
         num_t = m.shape[0] ** 2

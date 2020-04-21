@@ -234,6 +234,16 @@ def density2t(rhog):
     return t
 
 
+def toDensity(psiMat):
+    if isinstance(psiMat.size,int):
+        return np.outer(psiMat.conj(), psiMat)
+    else:
+        temp = psiMat[0]
+        for j in range(1, len(psiMat)):
+            temp = np.kron(temp, psiMat[j])
+        return np.outer(temp.conj(), temp)
+
+
 def one_in(idx, length):
     val = np.zeros(length)
     val[idx] = 1
@@ -497,3 +507,28 @@ def purity(rhog):
 
 def rsquare(rhog):
     return (1+purity(rhog))/2
+
+# performs the operation on the density matrix
+def densityOperation(self,psi, gate):
+    return np.matmul(np.matmul(gate, psi), np.conjugate(np.transpose(gate)))
+
+# performs the operation on the ket state
+def ketOperation(self,psi, gate):
+    return np.matmul(gate, psi)
+
+# Performs the operations on the quantum state
+def performOperation(self,psi, g):
+    p = psi
+    if (len(psi.shape) == 1):
+        # ket form
+        for i in range(0, len(g)):
+            p = ketOperation(p, g[i])
+    else:
+        # density matrix form
+        for i in range(0, len(g)):
+            p = densityOperation(p, g[i])
+    return p
+
+def projVal(self,v, a):
+    # projects a onto v
+    return np.dot(a, v) / np.dot(v, v)
