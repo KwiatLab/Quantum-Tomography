@@ -1,19 +1,3 @@
-To users:
-What's new:
-
-1. State Tomography can deal with n qubits now, by changing 'NQubits' option and input matrix. Error estimation and
-   Bell state searching are NOT working for N qubits.
-
-2. Two types of random state generator is added, providing state with different purity.
-
-3. Coincidence generator and tomo_input generator is added, to estimate how good a measurement can be.
-
-4. Hedged MLE method is added, still testing.
-
-5. Cross talk matrix generator is added, providing an easier way to input the property of beam splitter.
-
-6. Faster MLE process.
-
 
 ######################
 ## TO THE DEVELOPER ##
