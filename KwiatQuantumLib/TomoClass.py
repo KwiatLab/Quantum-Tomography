@@ -604,8 +604,8 @@ class Tomography():
 
         return rhop
 
-    def getproperties(self,rho0, errfunc):
-        return [self.fevel(errf, rho0) for errf in errfunc]
+    def getproperties(self,rho0):
+        return [self.fevel(errf, rho0) for errf in self.err_functions]
 
     def websitebellsettings(self,rhog, partsize_init, partsize, t):
 
