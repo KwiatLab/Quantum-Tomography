@@ -328,7 +328,7 @@ def fidelity(state1, state2):
 
 
 def concurrence(rhog):
-    if(conf['NQubits']>1):
+    if(rhog.shape[0]>2):
         if min(rhog.shape) == 1:
             rhog = np.dot(rhog.conj(), rhog.transpose())
 
@@ -348,7 +348,7 @@ def concurrence(rhog):
 
 
 def tangle(rhog):
-    if(conf['NQubits']>1):
+    if(rhog.shape[0]>2>1):
         c = concurrence(rhog)
         t = c ** 2
 
@@ -358,7 +358,7 @@ def tangle(rhog):
 
 
 def entanglement(rhog):
-    if (conf['NQubits'] > 1):
+    if (rhog.shape[0]>2 > 1):
         t = tangle(rhog)
         x = (1 + np.sqrt(1 - t)) / 2
         if x == 0:
@@ -532,3 +532,9 @@ def performOperation(self,psi, g):
 def projVal(self,v, a):
     # projects a onto v
     return np.dot(a, v) / np.dot(v, v)
+
+def coinmat(a, b):
+    k = np.array([np.cos(a)*np.cos(b), np.cos(a)*np.sin(b), np.sin(a)*np.cos(b), np.sin(a)*np.sin(b)])
+    cmat = np.outer(k, k)
+
+    return cmat

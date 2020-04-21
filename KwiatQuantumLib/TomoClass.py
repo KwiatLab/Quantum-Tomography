@@ -51,7 +51,7 @@ class Tomography():
     tomo_input = 0
 
     err_n = 0
-    err_functions = ['']
+    err_functions = ['concurrence','tangle','entanglement','entropy','linear_entropy','negativity']
 
     ##################
     '''Constructors'''
@@ -117,6 +117,8 @@ class Tomography():
 
     def state_tomography(self,raw_counts, intensities):
         rho0 = self.conf['RhoStart']
+        self.tomo_input = raw_counts
+        self.intensity = intensities
         # ndet = self.conf['NDetectors']
         # nBits = self.conf['NQubits']
         # if nBits == 1:
@@ -562,7 +564,7 @@ class Tomography():
     def fevel(self,funcname, *args):
         return eval(funcname)(*args)
 
-    def tomography_error_states_generator(self, intensities, n=30):
+    def tomography_error_states_generator(self,n=30):
         ndet = self.conf['NDetectors']
         nbits = self.conf['NQubits']
         acc = self.conf['DoAccidentalCorrection']
@@ -583,7 +585,7 @@ class Tomography():
 
                 test_data = np.concatenate((time, test_data, meas), axis=1)
 
-                rhop[j, :, :] = self.state_tomography(test_data, intensities)[0]
+                rhop[j, :, :] = self.state_tomography(test_data, self.intensity)[0]
 
         elif ndet == 2:
             time = np.reshape(self.tomo_input[:, 0], (length, 1))
@@ -681,3 +683,50 @@ class Tomography():
 
         return [berrors, bmeans]
 
+    def websitebellsettings_range(self, rhog, partsize, arange, brange, aprange, bprange):
+
+        sval = 0
+        aval = 0
+        apval = 0
+        bval = 0
+        bpval = 0
+
+        for a in np.linspace(arange[0], arange[1], partsize):
+            for ap in np.linspace(aprange[0], aprange[1], partsize):
+                for b in np.linspace(brange[0], brange[1], partsize):
+                    for bp in np.linspace(bprange[0], bprange[1], partsize):
+                        npp = np.real(np.trace(np.dot(coinmat(a, b), rhog)))
+                        nmm = np.real(np.trace(np.dot(coinmat(a + np.pi / 2, b + np.pi / 2), rhog)))
+                        e_ab = 2 * (npp + nmm) - 1
+
+                        npp = np.real(np.trace(np.dot(coinmat(ap, b), rhog)))
+                        nmm = np.real(np.trace(np.dot(coinmat(ap + np.pi / 2, b + np.pi / 2), rhog)))
+                        e_apb = 2 * (npp + nmm) - 1
+
+                        npp = np.real(np.trace(np.dot(coinmat(a, bp), rhog)))
+                        nmm = np.real(np.trace(np.dot(coinmat(a + np.pi / 2, bp + np.pi / 2), rhog)))
+                        e_abp = 2 * (npp + nmm) - 1
+
+                        npp = np.real(np.trace(np.dot(coinmat(ap, bp), rhog)))
+                        nmm = np.real(np.trace(np.dot(coinmat(ap + np.pi / 2, bp + np.pi / 2), rhog)))
+                        e_apbp = 2 * (npp + nmm) - 1
+
+                        s = e_ab + e_abp + e_apb + e_apbp - 2 * np.min([e_ab, e_abp, e_apb, e_apbp])
+
+                        if s > sval:
+                            sval = s
+                            aval = a
+                            apval = ap
+                            bval = b
+                            bpval = bp
+
+        arange_s = [np.max([aval - ((arange[1] - arange[0]) / partsize), 0]),
+                    np.min([aval + ((arange[1] - arange[0]) / partsize), np.pi / 2])]
+        aprange_s = [np.max([apval - ((aprange[1] - aprange[0]) / partsize), 0]),
+                     np.min([apval + ((aprange[1] - aprange[0]) / partsize), np.pi / 2])]
+        brange_s = [np.max([bval - ((brange[1] - brange[0]) / partsize), 0]),
+                    np.min([bval + ((brange[1] - brange[0]) / partsize), np.pi / 2])]
+        bprange_s = [np.max([bpval - ((bprange[1] - bprange[0]) / partsize), 0]),
+                     np.min([bpval + ((bprange[1] - bprange[0]) / partsize), np.pi / 2])]
+
+        return [sval, aval, apval, bval, bpval, arange_s, brange_s, aprange_s, bprange_s]
