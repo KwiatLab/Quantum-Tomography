@@ -3,6 +3,32 @@
 A python library to help perform tomography on a quantum state.
 
 ## Usage
+### Terminal
+For those who do not want to write python code to perform tomography 
+on their data, you can use the following command in the package directory:
+```
+Quantum-Tomography -i C:\Full\Path\To\pythoneval.txt
+```
+This will read the data in the txt file provided. Examples and syntax for a conf file
+is provided at the bottom of this readme.The default output of the data 
+will be in the same location as the main directory folder. This can be changed by 
+adding the following argument to the command:
+```
+Quantum-Tomography -i C:\Full\Path\To\pythoneval.txt -o C:\Full\Path\To\output\Folder 
+```
+There are several other arguments that are also optional like the output location.
+
+- -p true
+    - Values : true/false
+    - Desc : Setting this to true will provide images of real and imaginary values of the 
+    density matrix.
+    - Default : false
+- -s true
+    - Values : true/false
+    - Desc : Setting this to false will NOT SAVE your output data. Only do this if you 
+    just want the output to be printed in the command line
+    - Default : true
+    
 ### Python
 For those running tomography on multiple quantum states it may be easier to use the python 
 package directly for a more hands free process.
