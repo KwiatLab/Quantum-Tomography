@@ -17,13 +17,14 @@ setup(
     author_email="turroscott@gmail.com",
     classifiers=[
         "Programming Language :: Python :: 3.7",
+        "Programming Language :: Python :: 3.8",
     ],
     packages=["src"],
     include_package_data=True,
     install_requires=["scipy","numpy"],
     entry_points={
         "console_scripts": [
-            "Quantum-Tomography=src.main:main",
+            "Quantum-Tomography=main:main",
         ]
     },
 )

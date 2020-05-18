@@ -1,6 +1,6 @@
 import numpy as np
 
-import KwiatQuantumLib as qKLib
+import src as qKLib
 
 # Step 1. Initialize Tomography Object
 t = qKLib.Tomography()

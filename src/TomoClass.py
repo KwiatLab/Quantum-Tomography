@@ -13,6 +13,7 @@ class Tomography():
     # conf['Bellstate']: 'no' or 'yes'
     # conf['DoDriftCorrection'] = 'no' or 'yes'
     # conf['DoAccidentalCorrection'] = 'no' or 'yes'
+    # conf['DoErrorEstimation']: >= 0
     # conf['Window']: 0 or array like, dimension = 1
     # conf['Efficiency']: 0 or array like, dimension = 1
     # conf['Beta']: 0 to 0.5, depending on purity of state and total number of measurements.
@@ -62,6 +63,7 @@ class Tomography():
             'Bellstate': 0,
             'DoDriftCorrection': 0,
             'DoAccidentalCorrection' : 1,
+            'DoErrorEstimation': 0,
             'Window': 0,
             'Efficiency': 0,
             'RhoStart': [],

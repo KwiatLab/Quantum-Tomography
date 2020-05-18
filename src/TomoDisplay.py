@@ -1,12 +1,7 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
-def displayOutput(p,inten,fval,errs,mean,mean_fid):
-    for x in range(0, len(err_functions)):
-        print(err_functions[x], "=", mean[x], "+/-", errs[x])
-    print('Mean fidelity =', mean_fid)
-    print("Intensity =", inten)
-    print("fval =", fval)
+def showRhoImages(p):
     fig = plt.figure()
     ax1 = fig.add_subplot(111, projection='3d')
     xpos = [.5, .5, .5, .5,
@@ -91,3 +86,52 @@ def displayOutput(p,inten,fval,errs,mean,mean_fid):
     ax1.axes.set_zlim3d(-1, 1)
     plt.title("Rho Imaginary")
     plt.show()
+
+def displayOutput(p,inten,fval,tomo):
+    err_n = tomo.conf['DoErrorEstimation']
+    vals = tomo.getproperties(p)
+    if (err_n > 1):
+        rhon = tomo.tomography_error_states_generator(err_n)
+        [mean, errs, mean_fid, err_fid] = tomo.tomography_error(p, rhon)
+        errs = np.around(errs, 5)
+        vals = np.around(vals, 5)
+        intensity = round(inten, 1)
+        fval = round(fval, 5)
+        outputVals, outputNames = outputvalues(tomo.err_functions, vals, errs, intensity, fval, err_n)
+    else:
+        outputNames = tomo.err_functions
+        outputVals = {}
+        for x in range(0, len(outputNames)):
+            outputVals[outputNames[x]] = [vals[x]]
+
+    for x in range(0, len(tomo.err_functions)):
+        if(len(outputVals[outputNames[x]]) == 1):
+            print(outputNames[x], " = ", outputVals[outputNames[x]][0])
+        else:
+            print(outputNames[x], " = ", outputVals[outputNames[x]][0], "+/-", outputVals[outputNames[x]][1])
+    print("State = ")
+    print(p)
+    return outputVals, outputNames
+def outputvalues(func, values, errors, inten, fvalp, err_time):
+    output = {"Intensity": (inten,), "fval": (fvalp,), "Error Estimation Times": (err_time,)}
+    name = ["Intensity", "fval", "Error Estimation Times"]
+    for i in range(len(func)):
+        if func[i] == 'concurrence':
+            output["Concurrence"] = (values[i], errors[i])
+            name = np.append(name, "Concurrence")
+        elif func[i] == 'tangle':
+            output["Tangle"] = (values[i], errors[i])
+            name = np.append(name, "Tangle")
+        elif func[i] == 'entanglement':
+            output["Entanglement"] = (values[i], errors[i])
+            name = np.append(name, "Entanglement")
+        elif func[i] == 'entropy':
+            output["Entropy"] = (values[i], errors[i])
+            name = np.append(name, "Entropy")
+        elif func[i] == 'linear_entropy':
+            output["Linear Entropy"] = (values[i], errors[i])
+            name = np.append(name, "Linear Entropy")
+        elif func[i] == 'negativity':
+            output["Negativity"] = (values[i], errors[i])
+            name = np.append(name, "Negativity")
+    return output, name

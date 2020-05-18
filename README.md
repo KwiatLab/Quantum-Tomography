@@ -19,15 +19,15 @@ Quantum-Tomography -i C:\Full\Path\To\pythoneval.txt -o C:\Full\Path\To\output\F
 There are several other arguments that are also optional like the output location.
 
 - -p true
-    - Values : true/false
+    - Values : True/False
     - Desc : Setting this to true will provide images of real and imaginary values of the 
     density matrix.
-    - Default : false
+    - Default : False
 - -s true
-    - Values : true/false
+    - Values : True/False
     - Desc : Setting this to false will NOT SAVE your output data. Only do this if you 
     just want the output to be printed in the command line
-    - Default : true
+    - Default : True
     
 ### Python
 For those running tomography on multiple quantum states it may be easier to use the python 
@@ -110,6 +110,10 @@ conf settings just like you would set a python dictionary. These are the followi
     - Values : 'no' or 'yes'
     - Desc : Whether of not you want to perform accidental corrections on the state.
     - Default : 'no'
+- 'DoErrorEstimation'
+    - Values : >=0
+    - Desc : Number of states used to calculate the errors on the properties of the state
+    - Default : 0
 - 'Window'
     - Values : 0 or array like, dimension = 1
     - Desc : Coincidence window durations (in nanoseconds) to calculate the accidental rates. The
