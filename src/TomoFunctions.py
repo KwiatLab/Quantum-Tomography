@@ -1,10 +1,7 @@
-from time import clock
-start = clock()
 import scipy as sp
 from scipy.optimize import leastsq
 # from numpy.core.defchararray import add
 import numpy as np
-from math import *
 
 
 ########################
@@ -13,7 +10,7 @@ from math import *
 
 
 def i2array(i, ii, n):
-    nn = np.int(np.ceil((log(ii)/log(n))))
+    nn = np.int(np.ceil((np.log(ii)/np.log(n))))
     rv = np.zeros(nn)
     for j in range(nn):
         rv[j] = i/(n**(nn-j-1))
@@ -141,7 +138,6 @@ def independent_set(measurements):
     s = np.zeros([measurements.shape[0], 1])
     s[0] = 1
     cur_rank = 1
-    measurements
     for j in np.arange(1, measurements.shape[0], 1):
     #may have to switched order of m and measurements, may be wrong but has little effect
         m = measurements[j, :].conj().transpose()

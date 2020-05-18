@@ -1,3 +1,5 @@
+import matplotlib.pyplot as plt
+import numpy as np
 
 def displayOutput(p,inten,fval,errs,mean,mean_fid):
     for x in range(0, len(err_functions)):

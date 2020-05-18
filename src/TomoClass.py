@@ -10,12 +10,11 @@ class Tomography():
     # conf['NQubits']: >= 1, it will take a much longer time for more qubits.
     # conf['NDetectors']: 1 or 2
     # conf['ctalk']: [[C0->0, C0->1],[C1->0, C1->1]]
-    # conf['UseDerivative']: 0 or 1
-    # conf['Bellstate']: 0 or 1
-    # conf['DoErrorEstimation']: 0 or 1
+    # conf['Bellstate']: 'no' or 'yes'
     # conf['DoDriftCorrection'] = 'no' or 'yes'
-    # conf['Window']: 0 or array like, demension = 1
-    # conf['Efficiency']: 0 or array like, demension = 1
+    # conf['DoAccidentalCorrection'] = 'no' or 'yes'
+    # conf['Window']: 0 or array like, dimension = 1
+    # conf['Efficiency']: 0 or array like, dimension = 1
     # conf['Beta']: 0 to 0.5, depending on purity of state and total number of measurements.
     #Default self.conf
     # self.conf = {'NQubits': 2,
@@ -29,25 +28,23 @@ class Tomography():
     #         'Efficiency': [1, 1, 1, 1],
     #         'RhoStart': [],
     #         'IntensityMap': [[1]],
-    #         'StateDimention': 0,
-    #         'StateDimention': 0,
     #         'Beta': 0,
     #         'QuditSizes': [2, 2]
     #
     # }
-    # tomo_input: array like, demension = 2.
+    # tomo_input: array like, dimension = 2.
     #
     # For n detectors:
     # tomo_input[:, 0]: times
     # tomo_input[:, np.arange(1, n_qubit+1)]: singles
-    # input[:, n_qubit+1]: coincidences
-    # input[:, np.arange(n_qubit+2, 3*n_qubit+2)]: measurements
+    # tomo_input[:, n_qubit+1]: coincidences
+    # tomo_input[:, np.arange(n_qubit+2, 3*n_qubit+2)]: measurements
     #
     # For 2n detectors:
     # tomo_input[:, 0]: times
     # tomo_input[:, np.arange(1, 2*n_qubit+1)]: singles
-    # input[:, np.arange(2*n_qubit+1, 2**n_qubit+2*n_qubit+1)]: coincidences
-    # input[:, np.arange(2**n_qubit+2*n_qubit+1, 2**n_qubit+4*n_qubit+1)]: measurements
+    # tomo_input[:, np.arange(2*n_qubit+1, 2**n_qubit+2*n_qubit+1)]: coincidences
+    # tomo_input[:, np.arange(2**n_qubit+2*n_qubit+1, 2**n_qubit+4*n_qubit+1)]: measurements
     tomo_input = 0
 
     err_n = 0
@@ -62,17 +59,14 @@ class Tomography():
         self.conf = {'NQubits': 2,
             'NDetectors': 1,
             'Crosstalk': np.array([[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]]),
-            'UseDerivative': 0,
-            'DoErrorEstimation': 0,
+            'Bellstate': 0,
             'DoDriftCorrection': 0,
             'DoAccidentalCorrection' : 1,
             'Window': 0,
-            'Efficiency': [1, 1, 1, 1],
+            'Efficiency': 0,
             'RhoStart': [],
             'IntensityMap': [[1]],
-            'StateDimention': 0,
-            'Beta': 0,
-            'QuditSizes': [2, 2]}
+            'Beta': 0}
 
     #Sets a specific self.conf setting
     def setConfSetting(self,setting,val):
@@ -98,7 +92,7 @@ class Tomography():
         return self.state_tomography(locals().get('tomo_input'), locals().get('intensity'))
     #inport pythoneval.txt file. Input argument is string of filename
     #Performs Tomography
-    def importPythonEval(self,pythonevaltxt):
+    def importEval(self,pythonevaltxt):
         conf = self.conf
         exec(compile(open(pythonevaltxt, "rb").read(), pythonevaltxt, 'exec'))
         self.standardizeConf()
@@ -159,12 +153,6 @@ class Tomography():
         # t_to_density(t0)
         t0 = t0 + 0.0001
         t0 = t0 * np.sqrt(init_intensity)
-
-        # options
-        # useder = self.conf['UseDerivative']
-        # ndet = self.conf['NDetectors', 1)
-        # if type(useder) is str:
-        #     useder = useder is 'yes'
 
         data = np.real(data)
         data = data.flatten()
@@ -554,12 +542,6 @@ class Tomography():
         err_f = np.std(fid)
 
         return [means, errors, mean_f, err_f]
-
-    def error_n(self):
-        if self.conf['DoErrorEstimation'] > 100:
-            return 100
-        else:
-            return self.conf['DoErrorEstimation']
 
     def fevel(self,funcname, *args):
         return eval(funcname)(*args)
