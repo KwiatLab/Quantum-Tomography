@@ -40,7 +40,28 @@
     <property name="last_opened_file_path" value="$PROJECT_DIR$" />
     <property name="settings.editor.selected.configurable" value="com.jetbrains.python.configuration.PyActiveSdkModuleConfigurable" />
   </component>
-  <component name="RunManager" selected="Python.cli (1)">
+  <component name="RunManager" selected="Python.Example">
+    <configuration name="Example" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
+      <option name="INTERPRETER_OPTIONS" value="" />
+      <option name="PARENT_ENVS" value="true" />
+      <envs>
+        <env name="PYTHONUNBUFFERED" value="1" />
+      </envs>
+      <option name="SDK_HOME" value="C:\dev\Py\venv\Scripts\python.exe" />
+      <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
+      <option name="IS_MODULE_SDK" value="false" />
+      <option name="ADD_CONTENT_ROOTS" value="true" />
+      <option name="ADD_SOURCE_ROOTS" value="true" />
+      <module name="" />
+      <option name="SCRIPT_NAME" value="$PROJECT_DIR$/Example.py" />
+      <option name="PARAMETERS" value="" />
+      <option name="SHOW_COMMAND_LINE" value="false" />
+      <option name="EMULATE_TERMINAL" value="false" />
+      <option name="MODULE_MODE" value="false" />
+      <option name="REDIRECT_INPUT" value="false" />
+      <option name="INPUT_FILE" value="" />
+      <method v="2" />
+    </configuration>
     <configuration name="State_Tomography_WebsiteLib" type="PythonConfigurationType" factoryName="Python" temporary="true" nameIsGenerated="true">
       <module name="Quantum-Tomography_Git" />
       <option name="INTERPRETER_OPTIONS" value="" />
@@ -85,6 +106,7 @@
     </configuration>
     <recent_temporary>
       <list>
+        <item itemvalue="Python.Example" />
         <item itemvalue="Python.cli (1)" />
         <item itemvalue="Python.State_Tomography_WebsiteLib" />
       </list>
@@ -104,6 +126,14 @@
     <servers />
   </component>
   <component name="WindowStateProjectService">
+    <state x="-3331" y="-688" key="#Example" timestamp="1589835839840">
+      <screen x="-3840" y="-698" width="1536" height="848" />
+    </state>
+    <state x="-3331" y="-688" key="#Example/-3840.-698.1536.848/0.0.1920.1040@-3840.-698.1536.848" timestamp="1589835839840" />
+    <state x="-3331" y="-688" key="#State_Tomography_WebsiteLib" timestamp="1589835828757">
+      <screen x="-3840" y="-698" width="1536" height="848" />
+    </state>
+    <state x="-3331" y="-688" key="#State_Tomography_WebsiteLib/-3840.-698.1536.848/0.0.1920.1040@-3840.-698.1536.848" timestamp="1589835828757" />
     <state x="-3331" y="-670" key="#cli" timestamp="1589828120373">
       <screen x="-3840" y="-698" width="1536" height="848" />
     </state>
@@ -120,42 +150,42 @@
       <screen x="-3840" y="-698" width="1536" height="848" />
     </state>
     <state x="-3011" y="-442" key="#xdebugger.evaluate/-3840.-698.1536.848/0.0.1920.1040@-3840.-698.1536.848" timestamp="1589833235025" />
-    <state width="1515" height="262" key="GridCell.Tab.0.bottom" timestamp="1589833525033">
+    <state width="1515" height="170" key="GridCell.Tab.0.bottom" timestamp="1589835908960">
       <screen x="-3840" y="-698" width="1536" height="848" />
     </state>
-    <state width="1515" height="262" key="GridCell.Tab.0.bottom/-3840.-698.1536.848/0.0.1920.1040@-3840.-698.1536.848" timestamp="1589833525033" />
-    <state width="1515" height="262" key="GridCell.Tab.0.center" timestamp="1589833525033">
+    <state width="1515" height="170" key="GridCell.Tab.0.bottom/-3840.-698.1536.848/0.0.1920.1040@-3840.-698.1536.848" timestamp="1589835908960" />
+    <state width="1515" height="170" key="GridCell.Tab.0.center" timestamp="1589835908960">
       <screen x="-3840" y="-698" width="1536" height="848" />
     </state>
-    <state width="1515" height="262" key="GridCell.Tab.0.center/-3840.-698.1536.848/0.0.1920.1040@-3840.-698.1536.848" timestamp="1589833525033" />
-    <state width="1515" height="262" key="GridCell.Tab.0.left" timestamp="1589833525033">
+    <state width="1515" height="170" key="GridCell.Tab.0.center/-3840.-698.1536.848/0.0.1920.1040@-3840.-698.1536.848" timestamp="1589835908960" />
+    <state width="1515" height="170" key="GridCell.Tab.0.left" timestamp="1589835908960">
       <screen x="-3840" y="-698" width="1536" height="848" />
     </state>
-    <state width="1515" height="262" key="GridCell.Tab.0.left/-3840.-698.1536.848/0.0.1920.1040@-3840.-698.1536.848" timestamp="1589833525033" />
-    <state width="1515" height="262" key="GridCell.Tab.0.right" timestamp="1589833525033">
+    <state width="1515" height="170" key="GridCell.Tab.0.left/-3840.-698.1536.848/0.0.1920.1040@-3840.-698.1536.848" timestamp="1589835908960" />
+    <state width="1515" height="170" key="GridCell.Tab.0.right" timestamp="1589835908960">
       <screen x="-3840" y="-698" width="1536" height="848" />
     </state>
-    <state width="1515" height="262" key="GridCell.Tab.0.right/-3840.-698.1536.848/0.0.1920.1040@-3840.-698.1536.848" timestamp="1589833525033" />
-    <state width="1515" height="262" key="GridCell.Tab.1.bottom" timestamp="1589833525034">
+    <state width="1515" height="170" key="GridCell.Tab.0.right/-3840.-698.1536.848/0.0.1920.1040@-3840.-698.1536.848" timestamp="1589835908960" />
+    <state width="1515" height="262" key="GridCell.Tab.1.bottom" timestamp="1589835908956">
       <screen x="-3840" y="-698" width="1536" height="848" />
     </state>
-    <state width="1515" height="262" key="GridCell.Tab.1.bottom/-3840.-698.1536.848/0.0.1920.1040@-3840.-698.1536.848" timestamp="1589833525034" />
-    <state width="1515" height="262" key="GridCell.Tab.1.center" timestamp="1589833525034">
+    <state width="1515" height="262" key="GridCell.Tab.1.bottom/-3840.-698.1536.848/0.0.1920.1040@-3840.-698.1536.848" timestamp="1589835908956" />
+    <state width="1515" height="262" key="GridCell.Tab.1.center" timestamp="1589835908956">
       <screen x="-3840" y="-698" width="1536" height="848" />
     </state>
-    <state width="1515" height="262" key="GridCell.Tab.1.center/-3840.-698.1536.848/0.0.1920.1040@-3840.-698.1536.848" timestamp="1589833525034" />
-    <state width="1515" height="262" key="GridCell.Tab.1.left" timestamp="1589833525033">
+    <state width="1515" height="262" key="GridCell.Tab.1.center/-3840.-698.1536.848/0.0.1920.1040@-3840.-698.1536.848" timestamp="1589835908956" />
+    <state width="1515" height="262" key="GridCell.Tab.1.left" timestamp="1589835908956">
       <screen x="-3840" y="-698" width="1536" height="848" />
     </state>
-    <state width="1515" height="262" key="GridCell.Tab.1.left/-3840.-698.1536.848/0.0.1920.1040@-3840.-698.1536.848" timestamp="1589833525033" />
-    <state width="1515" height="262" key="GridCell.Tab.1.right" timestamp="1589833525034">
+    <state width="1515" height="262" key="GridCell.Tab.1.left/-3840.-698.1536.848/0.0.1920.1040@-3840.-698.1536.848" timestamp="1589835908956" />
+    <state width="1515" height="262" key="GridCell.Tab.1.right" timestamp="1589835908956">
       <screen x="-3840" y="-698" width="1536" height="848" />
     </state>
-    <state width="1515" height="262" key="GridCell.Tab.1.right/-3840.-698.1536.848/0.0.1920.1040@-3840.-698.1536.848" timestamp="1589833525034" />
-    <state x="-3561" y="-642" key="SettingsEditor" timestamp="1589832148833">
+    <state width="1515" height="262" key="GridCell.Tab.1.right/-3840.-698.1536.848/0.0.1920.1040@-3840.-698.1536.848" timestamp="1589835908956" />
+    <state x="-3561" y="-642" key="SettingsEditor" timestamp="1589835907422">
       <screen x="-3840" y="-698" width="1536" height="848" />
     </state>
-    <state x="-3561" y="-642" key="SettingsEditor/-3840.-698.1536.848/0.0.1920.1040@-3840.-698.1536.848" timestamp="1589832148833" />
+    <state x="-3561" y="-642" key="SettingsEditor/-3840.-698.1536.848/0.0.1920.1040@-3840.-698.1536.848" timestamp="1589835907422" />
     <state width="774" height="418" key="XDebugger.FullValuePopup" timestamp="1589831103315">
       <screen x="-3840" y="-698" width="1536" height="848" />
     </state>
