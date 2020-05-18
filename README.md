@@ -32,13 +32,13 @@ There are several other arguments that are also optional like the output locatio
 ### Python
 For those running tomography on multiple quantum states it may be easier to use the python 
 package directly for a more hands free process.
-#####Step 1. Initialize Tomography Object
+##### Step 1. Initialize Tomography Object
 ```
 import KwiatQuantumLib as qKLib
 
 t = qKLib.Tomography()
 ```
-#####Step 2. Set up Configurations
+##### Step 2. Set up Configurations
 This can be done in multiple ways. The first and the easiest is to pass the full path
 to importConf Function. Examples and syntax for a conf file is provided at the bottom of
 this readme.
@@ -52,7 +52,7 @@ t.setConfSetting('DoAccidentalCorrection',1)
 Please refrain from setting the conf settings directly, this does not handle invalid arguments and
 can lead to errors. A list values for config is provided at the bottom of this readme and
 also in the TomoClass.py file.
-#####Step 3. Run Tomography on The data
+##### Step 3. Run Tomography on The data
 This can also be done in multiple ways. The first is using the importData Function. Examples 
 and syntax for a data file is provided at the bottom of this readme and also in the TomoClass.py file..
 ```
@@ -71,7 +71,7 @@ Steps 2 and 3 can be done in one single step by passing in a eval file.
 For running multiple states with the same settings it is recommended to run the tomographying using
 the python eval method since the the configurations is being unnecessarily being reset every time.
 Examples and syntax for a eval file is provided at the bottom of this readme.
-#####Step 4. Optional Methods
+##### Step 4. Optional Methods
 We provide many functions to help describe the state. Properties of the state can be calculated with methods found in
 the TomoFunctions files. Some examples of these are proveded
 ```
@@ -137,19 +137,19 @@ conf['Efficiency'] = [0.9998,1.0146,0.9195,0.9265]
 This file states the data of the measurements. Both tomo_input the intensity must be specified. The syntax of the txt file is python. You write the 
 data settings just like you would set a python matrix. This is the following layout of the tomo_input matrix
 - tomo_input
-    - Values : numpy array, dimension = 2.
+    - Values : numpy array, dimension = 2
     - Desc : Relative pump power (arb. units) during measurement; used for drift correction. 
     #### For n detectors:
     - tomo_input[:, 0]: times
-    - tomo_input[:, 1 : n_qubit+1)]: singles
-    - tomo_input[:, n_qubit+1]: coincidences
-    - tomo_input[:, n_qubit+2 : 3*n_qubit+2)]: measurements
+    - tomo_input[:, 1 : n_qubit + 1)]: singles
+    - tomo_input[:, n_qubit + 1]: coincidences
+    - tomo_input[:, n_qubit + 2 : 3 * n_qubit + 2)]: measurements
     
     #### For 2n detectors:
     - tomo_input[:, 0]: times
-    - tomo_input[:, 1 : 2*n_qubit+1]: singles
-    - tomo_input[:, 2*n_qubit+1 : 2**n_qubit+2*n_qubit+1]: coincidences
-    - tomo_input[:, 2**n_qubit+2*n_qubit+1 : 2**n_qubit+4*n_qubit+1 ]: measurements
+    - tomo_input[:, 1 : 2 * n_qubit + 1]: singles
+    - tomo_input[:, 2 * n_qubit+1 : 2 ** n_qubit + 2 * n_qubit + 1]: coincidences
+    - tomo_input[:, 2 ** n_qubit + 2 * n_qubit + 1 : 2 ** n_qubit + 4 * n_qubit + 1 ]: measurements
 - intensity
     - Values : numpy array
     - Desc : Relative pump power (arb. units) during measurement; used for drift correction. 
