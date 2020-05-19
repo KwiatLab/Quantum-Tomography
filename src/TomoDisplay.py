@@ -112,7 +112,8 @@ def displayOutput(p,inten,fval,tomo):
     print("State = ")
     print(p)
     return outputVals, outputNames
-def outputvalues(func, values, errors, inten, fvalp, err_time):
+
+def outputErrorvalues(func, values, errors, inten, fvalp, err_time):
     output = {"Intensity": (inten,), "fval": (fvalp,), "Error Estimation Times": (err_time,)}
     name = ["Intensity", "fval", "Error Estimation Times"]
     for i in range(len(func)):

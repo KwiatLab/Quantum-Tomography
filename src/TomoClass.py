@@ -1,6 +1,7 @@
 from .TomoFunctions import *
+from .TomoHelpers import *
 import numpy as np
-
+from scipy.optimize import leastsq
 class Tomography():
 
     ######################
@@ -49,7 +50,7 @@ class Tomography():
     tomo_input = 0
 
     err_n = 0
-    err_functions = ['concurrence','tangle','entanglement','entropy','linear_entropy','negativity']
+    err_functions = ['concurrence','tangle','entanglement','entropy','linear_entropy','negativity','purity']
 
     ##################
     '''Constructors'''
@@ -164,13 +165,7 @@ class Tomography():
 
 
         prediction = np.zeros(m.shape[2]) + 0j
-        fvalp = 0
 
-        # if useder:
-        #     [aa, bb] = self.initialize_fitness_global(m)
-        #     t = leastsq(self.maxlike_fitness, np.real(t0), args=(data, acc, m, intmap, n_int, nt, prediction, aa, bb),
-        #                 Dfun=self.maxlike_fitness_der_d)[0]
-        # else:
         if bet == 0:
             t = leastsq(self.maxlike_fitness, np.real(t0), args=(data, acc, m, prediction))[0]
             fvalp = np.sum(self.maxlike_fitness(t, data, acc, m, prediction) ** 2)
@@ -179,8 +174,6 @@ class Tomography():
             leastsq(self.maxlike_fitness_hedged, np.real(t0), args=(data, acc, m, prediction, bet))[0]
             fvalp = np.sum(self.maxlike_fitness_hedged(t, data, acc, m, prediction, bet) ** 2)
 
-        # base_intensity = np.sum((t[range(n_t)])**2)
-        # t_matrix(t[range(n_t)])
         matrix = t_to_density(t)
         intensities = np.trace(matrix)
         rhog = matrix / intensities
@@ -203,6 +196,8 @@ class Tomography():
         val = np.float64(np.real(val))
 
         return val
+
+
     # this is when beta != 0
     def maxlike_fitness_hedged(self,t, data, accidentals, m, prediction, bet):
 
@@ -285,16 +280,6 @@ class Tomography():
         rhog = linear_rhog / intensities
 
         return [rhog, intensities]
-
-    def multiloop_index(j, lengths):
-        ind = np.zeros(len(lengths))
-        for k in range(len(lengths) - 1):
-            sz = np.prod(lengths[np.arange(k + 1, len(lengths))])
-            ind[k] = np.fix(j / sz) + 1
-            j %= sz
-        ind[len(ind) - 1] = j + 1
-
-        return ind
 
     def getNumCoinc(self):
         if (self.conf['NDetectors'] == 2):
@@ -476,7 +461,8 @@ class Tomography():
                 psi_k = np.array([alpha, beta])
                 psip_k = np.array([np.conj(beta), np.conj(-alpha)])
                 u_k = np.outer((np.array([1, 0])), psi_k) + np.outer((np.array([0, 1])), psip_k)
-                u = tensor_product_2(u, u_k)
+                #Changed from tensor_product to np.kron
+                u = np.kron(u,u_k)
             if (ndet == 1):
                 for k in range(0, 2 ** nbits):
                     m_twiddle[k, :, :] = np.outer(u[:, k].conj().transpose(), u[:, k])
@@ -498,26 +484,26 @@ class Tomography():
                 data = coinc.reshape((np.prod(coinc.shape), 1))
                 acc = acc.reshape((np.prod(acc.shape), 1))
         return [data, m, m2, acc]
-
-    def initialize_fitness_global(self, m):
-        num_t = m.shape[0] ** 2
-        num_m = m.shape[2]
-        # M_size = np.shape(M)[0]
-
-        tm = np.zeros([num_t, 4, 4]) + 0j
-
-        for j in range(num_t):
-            tm[j] = t_matrix(one_in(j, num_t))
-
-        aa = np.zeros([num_m, num_t, 4, 4]) + 0j
-        bb = aa
-        for j in range(num_m):
-            for k in range(num_t):
-                # Should use a sparse matrix here to make it easy.
-                aa[j][k] = np.dot(m[:, :, j], tm[k].conj().transpose())
-                bb[j][k] = np.dot(tm[k], m[:, :, j])
-
-        return [aa, bb]
+    #
+    # def initialize_fitness_global(self, m):
+    #     num_t = m.shape[0] ** 2
+    #     num_m = m.shape[2]
+    #     # M_size = np.shape(M)[0]
+    #
+    #     tm = np.zeros([num_t, 4, 4]) + 0j
+    #
+    #     for j in range(num_t):
+    #         tm[j] = t_matrix(one_in(j, num_t))
+    #
+    #     aa = np.zeros([num_m, num_t, 4, 4]) + 0j
+    #     bb = aa
+    #     for j in range(num_m):
+    #         for k in range(num_t):
+    #             # Should use a sparse matrix here to make it easy.
+    #             aa[j][k] = np.dot(m[:, :, j], tm[k].conj().transpose())
+    #             bb[j][k] = np.dot(tm[k], m[:, :, j])
+    #
+    #     return [aa, bb]
 
     #####################
     '''ERROR FUNCTIONS'''
@@ -593,9 +579,9 @@ class Tomography():
     def getproperties(self,rho0):
         return [self.fevel(errf, rho0) for errf in self.err_functions]
 
-    def websitebellsettings(self,rhog, partsize_init, partsize, t):
+    def bellsettings(self,rhog, partsize_init, partsize, t):
 
-        [s, arange, brange, aprange, bprange] = self.websitebellsettings_range_init(rhog, partsize_init)
+        [s, arange, brange, aprange, bprange] = self.bellsettings_range_init(rhog, partsize_init)
         a = 0
         b = 0
         ap = 0
@@ -603,11 +589,11 @@ class Tomography():
 
         for j in range(t):
             [s, a, ap, b, bp, arange, brange, aprange, bprange] = \
-                self.websitebellsettings_range(rhog, partsize, arange, brange, aprange, bprange)
+                self.bellsettings_range(rhog, partsize, arange, brange, aprange, bprange)
 
         return [s, a, ap, b, bp]
 
-    def websitebellsettings_range_init(self,rhog, partsize):
+    def bellsettings_range_init(self,rhog, partsize):
         sval = 0
         aval = 0
         apval = 0
@@ -656,7 +642,7 @@ class Tomography():
         belldata = np.zeros([n, 5])
 
         for j in range(n):
-            belldata[j, :] = self.websitebellsettings(rhop[j, :, :], partsize_init, partsize, t)
+            belldata[j, :] = self.bellsettings(rhop[j, :, :], partsize_init, partsize, t)
 
         bmeans = np.zeros(5)
         berrors = np.zeros(5)
@@ -667,7 +653,7 @@ class Tomography():
 
         return [berrors, bmeans]
 
-    def websitebellsettings_range(self, rhog, partsize, arange, brange, aprange, bprange):
+    def bellsettings_range(self, rhog, partsize, arange, brange, aprange, bprange):
 
         sval = 0
         aval = 0

@@ -1,5 +1,4 @@
 import scipy as sp
-from scipy.optimize import leastsq
 # from numpy.core.defchararray import add
 import numpy as np
 
@@ -8,174 +7,58 @@ import numpy as np
 # TOMOGRAPHY CALCULATE #
 ########################
 
+#
+# def i2array(i, ii, n):
+#     nn = np.int(np.ceil((np.log(ii)/np.log(n))))
+#     rv = np.zeros(nn)
+#     for j in range(nn):
+#         rv[j] = i/(n**(nn-j-1))
+#         i %= n**(nn-j-1)
+#     return rv
+#
+# # returns the tensor product of the two states
+# def tensor_product(A, B):
+#     a = np.ndim(A)
+#     b = np.ndim(B)
+#     if (a == 2) & (b == 2):
+#         [n11, n12] = np.shape(A)
+#         [n21, n22] = np.shape(B)
+#         jj = n11 * n21
+#         kk = n12 * n22
+#         rv = np.zeros([jj, kk]) + 0j
+#         for j in range(jj):
+#             for k in range(kk):
+#                 rv[j, k] = A[int(np.floor(j / n21))][int(np.floor(k / n22))] * B[j % n21][k % n22]
+#     elif (a == 2) & (b == 1):
+#         [n11, n12] = np.shape(A)
+#         n21 = len(B)
+#         jj = n11 * n21
+#         kk = n12
+#         rv = np.zeros([jj, kk]) + 0j
+#         for j in range(jj):
+#             for k in range(kk):
+#                 rv[j, k] = A[int(np.floor(j / n21))][k] * B[j % n21]
+#     elif (a == 1) & (b == 2):
+#         [n21, n22] = np.shape(B)
+#         n11 = len(A)
+#         jj = n11 * n21
+#         kk = n22
+#         rv = np.zeros([jj, kk]) + 0j
+#         for j in range(jj):
+#             for k in range(kk):
+#                 rv[j, k] = A[int(np.floor(j / n21))] * B[j % n21][ k]
+#     elif (a == 1) & (b == 1):
+#         n11 = len(A)
+#         n21 = len(B)
+#         jj = n11 * n21
+#         rv = np.zeros(jj) + 0j
+#         for j in range(jj):
+#             rv[j] = A[int(np.floor(j / n21))] * B[j % n21]
+#     elif (a == 0) | (b == 0):
+#         rv = A * B
+#
+#     return rv
 
-def i2array(i, ii, n):
-    nn = np.int(np.ceil((np.log(ii)/np.log(n))))
-    rv = np.zeros(nn)
-    for j in range(nn):
-        rv[j] = i/(n**(nn-j-1))
-        i %= n**(nn-j-1)
-    return rv
-
-
-def tensor_product_2(A, B):
-    a = np.ndim(A)
-    b = np.ndim(B)
-    if (a == 2) & (b == 2):
-        [n11, n12] = np.shape(A)
-        [n21, n22] = np.shape(B)
-        jj = n11 * n21
-        kk = n12 * n22
-        rv = np.zeros([jj, kk]) + 0j
-        for j in range(jj):
-            for k in range(kk):
-                rv[j, k] = A[int(np.floor(j / n21))][int(np.floor(k / n22))] * B[j % n21][k % n22]
-    elif (a == 2) & (b == 1):
-        [n11, n12] = np.shape(A)
-        n21 = len(B)
-        jj = n11 * n21
-        kk = n12
-        rv = np.zeros([jj, kk]) + 0j
-        for j in range(jj):
-            for k in range(kk):
-                rv[j, k] = A[int(np.floor(j / n21))][k] * B[j % n21]
-    elif (a == 1) & (b == 2):
-        [n21, n22] = np.shape(B)
-        n11 = len(A)
-        jj = n11 * n21
-        kk = n22
-        rv = np.zeros([jj, kk]) + 0j
-        for j in range(jj):
-            for k in range(kk):
-                rv[j, k] = A[int(np.floor(j / n21))] * B[j % n21][ k]
-    elif (a == 1) & (b == 1):
-        n11 = len(A)
-        n21 = len(B)
-        jj = n11 * n21
-        rv = np.zeros(jj) + 0j
-        for j in range(jj):
-            rv[j] = A[int(np.floor(j / n21))] * B[j % n21]
-    elif (a == 0) | (b == 0):
-        rv = A * B
-
-    return rv
-
-
-def tensor_product(*aaa):
-    n = len(aaa)
-    rv = 0
-    if n > 1:
-        rv = tensor_product_2(aaa[n - 2], aaa[n - 1])
-        if n > 2:
-            for i in range(n - 2):
-                rv = tensor_product_2(aaa[n - 3 - i], rv)
-    else:
-        print('Less than 2 matrices or vectors input.')
-
-    return rv
-
-def multiloop_index(j, lengths):
-    ind = np.zeros(len(lengths))
-    for k in range(len(lengths)-1):
-        sz = np.prod(lengths[np.arange(k+1, len(lengths))])
-        ind[k] = np.fix(j/sz)+1
-        j %= sz
-    ind[len(ind)-1] = j+1
-
-    return ind
-
-def sigma_n(j, nn):
-    if j < 0 or j > nn**2-1:
-        print('sigma_N: j out of range for SU(N)')
-
-    m = np.int(np.fix(j/nn))
-    n = np.int(j % nn)
-    tmp1 = np.zeros([nn, 1])
-    tmp2 = np.zeros([nn, 1])
-    tmp1[m] = 1
-    tmp2[n] = 1
-
-    if m < n:
-        matrix = (np.outer(tmp1, tmp2.conj().transpose())+np.outer(tmp2, tmp1.conj().transpose()))*np.sqrt(nn/2.0)
-    elif m > n:
-        matrix = 1j*(np.outer(tmp1, tmp2.conj().transpose())-np.outer(tmp2, tmp1.conj().transpose()))*np.sqrt(nn/2.0)
-    elif (m+1) < nn:
-        z = np.zeros(nn)
-        for i in range(m+1):
-            z[i] = 1
-        matrix = -(np.sqrt(nn/((m+1.0)**2+m+1.0)))*np.diag(z)
-        matrix[m+1, m+1] = (m+1.0)*(np.sqrt(nn/((m+1.0)**2+m+1.0)))
-    else:  # n=m=N
-        matrix = np.identity(nn)
-
-    return matrix
-
-
-def rho2stokes(rhog):
-    if rhog.ndim == 1:
-        rhog = np.outer(rhog, rhog.conj().transpose())
-
-    d = len(rhog)
-    n = d**2
-
-    ss = np.zeros([n, 1])+0j
-    for j in range(n):
-        ss[j] = np.trace(np.inner(rhog, sigma_n(j, d)))
-
-    return ss
-
-
-def independent_set(measurements):
-    m = measurements[0, :].conj().transpose()
-    #may have to switched order of m and measurements, may be wrong but has little effect
-    matrix = rho2stokes(np.outer(m,measurements[0, :]))
-    max_rank = matrix.shape[0]
-
-    if (measurements.shape[0]) == max_rank:
-        s = np.ones([measurements.shape[0], 1])
-        return s
-
-    s = np.zeros([measurements.shape[0], 1])
-    s[0] = 1
-    cur_rank = 1
-    for j in np.arange(1, measurements.shape[0], 1):
-    #may have to switched order of m and measurements, may be wrong but has little effect
-        m = measurements[j, :].conj().transpose()
-        sv = rho2stokes(np.outer(m,measurements[j, :]))
-        if (np.linalg.matrix_rank(np.concatenate((matrix, sv), axis=1), tol=0.001)) > cur_rank:
-            matrix = np.concatenate((matrix, sv), axis=1)
-            cur_rank += 1
-            s[j] = 1
-        else:
-            s[j] = 0
-        if cur_rank == max_rank:
-            break
-
-    return s
-
-
-def b_matrix(projectors):
-    dim_m = projectors.shape[1]
-    dim_b = dim_m**2
-    tmp = np.zeros([dim_b, dim_b])+0j
-    for i in range(dim_b):
-        for j in range(dim_b):
-            tmp[i][j] = np.inner(projectors[i], np.inner(sigma_n(j, dim_m), projectors[i].conj().transpose()))
-    b = tmp.transpose()
-
-    return b
-
-
-def m_matrix(mu, projectors, b_inv):
-    dim_m = projectors.shape[1]
-    dim_b = dim_m**2
-
-    tmp = np.zeros([dim_m, dim_m])
-    for j in range(dim_b):
-        tmp = tmp + b_inv[mu][j]*sigma_n(j, dim_m)
-    m = tmp
-
-    return m
 
 
 def make_positive(rhog_in):
@@ -188,6 +71,7 @@ def make_positive(rhog_in):
     return rhog
 
 
+# Converts a density matrix into a lower t matrix
 def density2tm(rhog):
     d = rhog.shape[0]
     if d == 1:
@@ -210,7 +94,7 @@ def density2tm(rhog):
 
     return tm
 
-
+# Converts a density matrix into a list of t values
 def density2t(rhog):
     tm = density2tm(rhog)
     d = len(tm)
@@ -229,7 +113,7 @@ def density2t(rhog):
 
     return t
 
-
+# Converts a pure state into a density matrix
 def toDensity(psiMat):
     if isinstance(psiMat.size,int):
         return np.outer(psiMat.conj(), psiMat)
@@ -239,14 +123,15 @@ def toDensity(psiMat):
             temp = np.kron(temp, psiMat[j])
         return np.outer(temp.conj(), temp)
 
+#
+# def one_in(idx, length):
+#     val = np.zeros(length)
+#     val[idx] = 1
+#
+#     return val
 
-def one_in(idx, length):
-    val = np.zeros(length)
-    val[idx] = 1
 
-    return val
-
-
+# Converts a list of t values to an lower t matrix
 def t_matrix(t):
     d = np.int(np.sqrt(len(t)))
 
@@ -266,7 +151,7 @@ def t_matrix(t):
 
     return tm
 
-
+# Converts a list of t values to a density matrix
 def t_to_density(t):
     tm = t_matrix(t)
     tm = tm.conj()
@@ -390,7 +275,7 @@ def linear_entropy(rhog):
     return lin_e
 
 
-def partial_transpose_first(m, d):
+def partial_transpose_helper(m, d):
     if m.shape[0] == d:
         val = m.transpose()
     else:
@@ -444,7 +329,7 @@ def partial_transpose(rhog, n, d=np.nan):
         nc = 1.0
 
     if na == 1:
-        rv = partial_transpose_first(rhog, nb)
+        rv = partial_transpose_helper(rhog, nb)
     # I did't check from here
     else:
         sub_sizes = nb*nc
@@ -457,7 +342,7 @@ def partial_transpose(rhog, n, d=np.nan):
 
         for j in range(na):
             for k in range(na):
-                rv[j*nb:j*nb+na, k*nb:k*nb+na] = partial_transpose_first(y[j, k], nb)
+                rv[j*nb:j*nb+na, k*nb:k*nb+na] = partial_transpose_helper(y[j, k], nb)
 
     return rv
 
@@ -471,26 +356,19 @@ def negativity(rhog):
 
     return val
 
-
-def trace_dist(rho1, rho2):
-    #didn't checked, and would not be called in this version.
-    s1 = rho2stokes(rho1)
-    s2 = rho2stokes(rho2)
-    s = s1 - s2
-    val = np.sqrt(np.dot(s.conj().transpose(), s))/2
-
-    return val
+#
+# def trace_dist(rho1, rho2):
+#     #didn't checked, and would not be called in this version.
+#     s1 = rho2stokes(rho1)
+#     s2 = rho2stokes(rho2)
+#     s = s1 - s2
+#     val = np.sqrt(np.dot(s.conj().transpose(), s))/2
+#
+#     return val
 
 ################
 ## Bell State ##
 ################
-
-
-def coinmat(a, b):
-    k = np.array([np.cos(a)*np.cos(b), np.cos(a)*np.sin(b), np.sin(a)*np.cos(b), np.sin(a)*np.sin(b)])
-    cmat = np.outer(k, k)
-
-    return cmat
 
 ####################
 ## OTHER MEASURES ##
@@ -505,15 +383,15 @@ def rsquare(rhog):
     return (1+purity(rhog))/2
 
 # performs the operation on the density matrix
-def densityOperation(self,psi, gate):
+def densityOperation(psi, gate):
     return np.matmul(np.matmul(gate, psi), np.conjugate(np.transpose(gate)))
 
 # performs the operation on the ket state
-def ketOperation(self,psi, gate):
+def ketOperation(psi, gate):
     return np.matmul(gate, psi)
 
-# Performs the operations on the quantum state
-def performOperation(self,psi, g):
+# Performs the operations on a ket state or density matrix
+def performOperation(psi, g):
     p = psi
     if (len(psi.shape) == 1):
         # ket form
@@ -525,12 +403,8 @@ def performOperation(self,psi, g):
             p = densityOperation(p, g[i])
     return p
 
-def projVal(self,v, a):
+# calculates the projection values of a onto v
+def projVal(v, a):
     # projects a onto v
     return np.dot(a, v) / np.dot(v, v)
 
-def coinmat(a, b):
-    k = np.array([np.cos(a)*np.cos(b), np.cos(a)*np.sin(b), np.sin(a)*np.cos(b), np.sin(a)*np.sin(b)])
-    cmat = np.outer(k, k)
-
-    return cmat
