@@ -2,6 +2,30 @@ from .TomoFunctions import *
 from .TomoHelpers import *
 import numpy as np
 from scipy.optimize import leastsq
+
+
+
+"""
+    Function()
+    Desc: short desc
+
+    Parameters
+    ----------
+    x1, x2 : array_like
+        Input arrays to be multiplied. If ``x1.shape != x2.shape``, they must be broadcastable to a common shape (which becomes the shape of the output).
+
+    Returns
+    -------
+    y : ndarray
+        The product of `x1` and `x2`, element-wise.
+    """
+
+
+"""
+    class Tomography()
+    Desc: This is the main tomography object that the library is built around. The goal is to only have one tomography object and edit the 
+    configuration settings as you go. The conf settings are saved in the class however the input data and the output data are not stored in the object.
+    """
 class Tomography():
 
     ######################
@@ -18,22 +42,7 @@ class Tomography():
     # conf['Window']: 0 or array like, dimension = 1
     # conf['Efficiency']: 0 or array like, dimension = 1
     # conf['Beta']: 0 to 0.5, depending on purity of state and total number of measurements.
-    #Default self.conf
-    # self.conf = {'NQubits': 2,
-    #         'NDetectors': 1,
-    #         'Crosstalk': np.array([[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]]),
-    #         'UseDerivative': 0,
-    #         'DoErrorEstimation': 0,
-    #         'DoDriftCorrection': 'no',
-    #         'DoAccidentalCorrection' : 1,
-    #         'Window': 0,
-    #         'Efficiency': [1, 1, 1, 1],
-    #         'RhoStart': [],
-    #         'IntensityMap': [[1]],
-    #         'Beta': 0,
-    #         'QuditSizes': [2, 2]
-    #
-    # }
+
     # tomo_input: array like, dimension = 2.
     #
     # For n detectors:
@@ -47,16 +56,15 @@ class Tomography():
     # tomo_input[:, np.arange(1, 2*n_qubit+1)]: singles
     # tomo_input[:, np.arange(2*n_qubit+1, 2**n_qubit+2*n_qubit+1)]: coincidences
     # tomo_input[:, np.arange(2**n_qubit+2*n_qubit+1, 2**n_qubit+4*n_qubit+1)]: measurements
-    tomo_input = 0
-
-    err_n = 0
-    err_functions = ['concurrence','tangle','entanglement','entropy','linear_entropy','negativity','purity']
 
     ##################
     '''Constructors'''
     ##################
 
-    #Default Constructor
+    """
+    Default Constructor
+    Desc: This initializes a default tomography object
+    """
     def __init__(self):
         self.conf = {'NQubits': 2,
             'NDetectors': 1,
@@ -70,8 +78,20 @@ class Tomography():
             'RhoStart': [],
             'IntensityMap': [[1]],
             'Beta': 0}
+        self.err_functions = ['concurrence','tangle','entanglement','entropy','linear_entropy','negativity','purity']
 
-    #Sets a specific self.conf setting
+    """
+    setConfSetting(setting,val)
+    Desc: Sets a specific self.conf setting
+
+    Parameters
+    ----------
+    setting : string
+        The setting you want to update. 
+        Possible values are ['NQubits','NDetectors','Crosstalk','Bellstate','DoDriftCorrection','DoAccidentalCorrection','DoErrorEstimation','Window','Efficiency','RhoStart','IntensityMap','Beta']
+    val: array_like, int, or string
+            The new value you want to the setting to be.
+    """
     def setConfSetting(self,setting,val):
         try:
             valC = val.copy()
@@ -84,22 +104,51 @@ class Tomography():
                 valC = 0
         self.conf[setting] = valC
 
-    #inport self.conf.txt file. Input argument is string of filename
+    """
+    importConf(conftxt)
+    Desc: Import a text file containing the configuration settings. 
+
+    Parameters
+    ----------
+    conftxt : string
+        path to configuration file
+    """
     def importConf(self,conftxt):
         conf = self.conf
         exec(compile(open(conftxt, "rb").read(), conftxt, 'exec'))
         self.standardizeConf()
-    #inport data.txt file. Input argument is string of filename
+
+    """
+   importData(datatxt)
+   Desc: Import a text file containing the tomography data and run tomography.
+
+   Parameters
+   ----------
+   datatxt : string
+       path to data file
+   """
     def importData(self,datatxt):
         exec(compile(open(datatxt, "rb").read(), datatxt, 'exec'))
         return self.state_tomography(locals().get('tomo_input'), locals().get('intensity'))
-    #inport pythoneval.txt file. Input argument is string of filename
-    #Performs Tomography
-    def importEval(self,pythonevaltxt):
+
+    """
+    importEval(evaltxt)
+    Desc: Import a eval file containing the tomography data and the configuration setting, then run tomography.
+
+    Parameters
+    ----------
+    evaltxt : string
+        path to eval file
+    """
+    def importEval(self,evaltxt):
         conf = self.conf
-        exec(compile(open(pythonevaltxt, "rb").read(), pythonevaltxt, 'exec'))
+        exec(compile(open(evaltxt, "rb").read(), evaltxt, 'exec'))
         self.standardizeConf()
         return self.state_tomography(locals().get('tomo_input'), locals().get('intensity'))
+    """
+    standardizeConf()
+    Desc: Helper function to handle different cases of conf inputs
+    """
     def standardizeConf(self):
         for k in self.conf.keys():
             if (isinstance(self.conf[k], str)):
@@ -112,40 +161,63 @@ class Tomography():
     '''Tomography Functions'''
     ##########################
 
+    """
+    state_tomography(raw_counts, intensities)
+    Desc: Main function that runs tomography.
+    
+    Parameters
+    ----------
+    raw_counts : ndarray
+        The input data for the current tomography. This is what tomo_input will be set to.
+    intensities : ndarray with length = number of measurements
+        Relative pump power (arb. units) during measurement; used for drift correction.
+    Returns
+    -------
+    rhog : ndarray with size = (2^numQubits,2^numQubits) 
+        The predicted density matrix.
+    intensity : float
+        The predicted overall intensity used to normalize the state.
+    fvalp : float
+        Final value of the internal optimization function. Values greater than the number
+        of measurements indicate poor agreement with a quantum state.
+    """
     def state_tomography(self,raw_counts, intensities):
         rho0 = self.conf['RhoStart']
         self.tomo_input = raw_counts
         self.intensity = intensities
-        # ndet = self.conf['NDetectors']
-        # nBits = self.conf['NQubits']
-        # if nBits == 1:
-        #     if ndet == 2:
-        #         [data, m1, m2, acc] = self.filter_data_2det_1bit(raw_counts, intensities)
-        #         # 2ndet still need to check with data
-        #     elif ndet == 1:
-        #         [data, m1, m2, acc] = self.filter_data_1det_1bit(raw_counts)
-        # else:
-        #     if ndet == 2:
-        #         [data, m1, m2, acc] = self.filter_data_2det_2bit(raw_counts, intensities)
-        #         # 2ndet still need to check with data
-        #     elif ndet == 1:
-        #         [data, m1, m2, acc] = self.filter_data_1det_2bit(raw_counts)
-        #     else:
-        #         print("n_det is neither 1 or 2")
-        #         data = 0
-        #         m1 = 0
-        #         m2 = 0
-        #         acc = 0
-        # [data, m1, m2, acc] = self.filter_data_1det_1bit(raw_counts)
         [data, m1, m2, acc] = self.filter_data(raw_counts, intensities)
 
         if not rho0:
             rho0 = self.linear_tomography(data, m2)[0]
 
-        [rhog, intensities, fvalp] = self.maximum_likelihood_tomography(rho0, data, m1, acc)
-        return [rhog, intensities, fvalp]
+        [rhog, intensity, fvalp] = self.maximum_likelihood_tomography(rho0, data, m1, acc)
+        return [rhog, intensity, fvalp]
 
 
+    """
+    maximum_likelihood_tomography(rho0, data, m, acc)
+    Desc: Calculates the most likely state given the data.
+
+    Parameters
+    ----------
+    rho0 : ndarray with size = (2^numQubits,2^numQubits) 
+        The starting predicted state found with linear tomography.
+    data : ndarray with length = number of measurements or size =(number of measurements,2^numQubits) for 2 det/qubit
+        The counts of the tomography.
+    m : ndarray with size = (2^numQubits,2^numQubits,number of measurements) 
+        The measurements of the tomography in density matrix form.
+    acc : ndarray with length = number of measurements or size =(number of measurements,2^numQubits) for 2 det/qubit
+        The singles values of the tomography. Used for accidental correction.
+    Returns
+    -------
+    rhog : ndarray with size = (2^numQubits,2^numQubits) 
+        The predicted density matrix.
+    intensity : float
+        The predicted overall intensity used to normalize the state.
+    fvalp : float
+        Final value of the internal optimization function. Values greater than the number
+        of measurements indicate poor agreement with a quantum state.
+    """
     def maximum_likelihood_tomography(self,rho0, data, m, acc):
         rho0 = make_positive(rho0)
         rho0 /= np.trace(rho0)
@@ -175,12 +247,34 @@ class Tomography():
             fvalp = np.sum(self.maxlike_fitness_hedged(t, data, acc, m, prediction, bet) ** 2)
 
         matrix = t_to_density(t)
-        intensities = np.trace(matrix)
+        intensity = np.trace(matrix)
         rhog = matrix / intensities
-        intensities = np.float64(np.real(intensities))
+        intensity = np.float64(np.real(intensities))
 
-        return [rhog, intensities, fvalp]
+        return [rhog, intensity, fvalp]
 
+    """
+    maxlike_fitness(t, data, accidentals, m, prediction)
+    Desc: Calculates the diffrence between the current predicted state data and the actual data.
+
+    Parameters
+    ----------
+    t : ndarray
+        T values of the current predicted state.
+    data : ndarray with length = number of measurements or size =(number of measurements,2^numQubits) for 2 det/qubit
+        The counts of the tomography.
+    accidentals : ndarray with length = number of measurements or size =(number of measurements,2^numQubits) for 2 det/qubit
+        The singles values of the tomography. Used for accidental correction.   
+    m : ndarray with size = (2^numQubits,2^numQubits,number of measurements) 
+        The measurements of the tomography in density matrix form.
+    prediction : ndarray
+        Predicted counts from the predicted state.
+    
+    Returns
+    -------
+    val : float
+        value of the optimization function.
+    """
     def maxlike_fitness(self, t, data, accidentals, m, prediction):
 
         tm = t_matrix(t)
@@ -198,11 +292,33 @@ class Tomography():
         return val
 
 
-    # this is when beta != 0
+    """
+    maxlike_fitness_hedged(t, data, accidentals, m, prediction,bet)
+    Desc: Calculates the diffrence between the current predicted state data and the actual data using hedged maximum likelihood.
+
+    Parameters
+    ----------
+    t : ndarray
+        T values of the current predicted state.
+    data : ndarray with length = number of measurements or size =(number of measurements,2^numQubits) for 2 det/qubit
+        The counts of the tomography.
+    accidentals : ndarray with length = number of measurements or size =(number of measurements,2^numQubits) for 2 det/qubit
+        The singles values of the tomography. Used for accidental correction.   
+    m : ndarray with size = (2^numQubits,2^numQubits,number of measurements) 
+        The measurements of the tomography in density matrix form .
+    prediction : ndarray
+        Predicted counts from the predicted state.
+    bet : float 0 to .5
+        The beta value used.
+    
+    Returns
+    -------
+    val : float
+        value of the optimization function.
+    """
     def maxlike_fitness_hedged(self,t, data, accidentals, m, prediction, bet):
 
         tm = t_matrix(t)
-        # do not change
         rhog = np.dot(tm.conj().transpose(), tm)
 
 
@@ -217,42 +333,25 @@ class Tomography():
 
         return val
 
-    def maxlike_fitness_der_d(self,t, data, accidentals, m, intmap, n_int, nt, prediction, aa, bb):
 
-        tm = t_matrix(t[0:nt])
-        # do not change
-        rhog = np.dot(tm.conj().transpose(), tm)
+    """
+    linear_tomography(data, measurements)
+    Desc: Uses linear techniques to find a starting state for maximum likelihood estimation.
 
-        # I ignore something here using nargin and nargout, kinda difficult in python, seems like A and B checkpoint
-
-        if n_int > 0:
-            rel_intensity = np.dot(intmap, [1, t[nt:len(t)]])
-        else:
-            rel_intensity = np.ones(m.shape[2])
-
-        for j in range(len(prediction)):
-            prediction[j] = rel_intensity[j] * np.real(np.trace(np.dot(m[:, :, j], rhog))) + accidentals[j]
-            prediction[j] = np.max([prediction[j], 0.01])
-
-        jacob = 0
-        jacob1 = np.zeros([len(data), nt]) + 0j
-        for j in range(len(data)):
-            for k in range(nt):
-                tmp = np.dot(aa[j][k].conj().transpose(), tm) + np.dot(tm.conj().transpose(), bb[j][k])
-                jacob1[j][k] = rel_intensity[j] * np.trace(tmp) / np.sqrt(prediction[j])
-                jacob1[j][k] = jacob1[j][k] * (1 - 0.5 + 0.5 * data[j] / prediction[j])
-
-        if n_int > 0:
-            tmp1 = ((prediction - accidentals) / np.sqrt(prediction)) * (1 - 0.5 + 0.5 * data / prediction)
-            tmp2 = np.outer(tmp1, 1 / t[np.arange(nt, len(t))].transpose())
-            jacob2 = np.dot(intmap, np.vstack((np.zeros(10), np.identity(10)))) * tmp2
-            jacob = np.hstack((jacob1, jacob2))
-        else:
-            jacob = jacob1
-        jacob = np.array(np.float64(np.real(jacob)))
-
-        return jacob
-
+    Parameters
+    ----------
+    data : ndarray with length = number of measurements or size =(number of measurements,2^numQubits) for 2 det/qubit
+        The counts of the tomography.
+    measurements : ndarray with size = (number of measurements,2*numQubits) 
+        The measurements of the tomography in pure state form .
+        
+    Returns
+    -------
+    rhog : ndarray with size = (2^numQubits,2^numQubits) 
+        The starting predicted state.
+    intensity : float
+        The predicted overall intensity used to normalize the state.
+    """
     def linear_tomography(self,data, measurements, m_set=()):
         if m_set == ():
             m_set = independent_set(measurements)
@@ -281,48 +380,228 @@ class Tomography():
 
         return [rhog, intensities]
 
+    """
+    filter_data(raw_counts, intensities)
+    Desc: filters the data into separate arrays
+
+    Parameters
+    ----------
+    raw_counts : ndarray
+        The input data for the current tomography.
+    intensities : ndarray with length = number of measurements
+        Relative pump power (arb. units) during measurement; used for drift correction.
+        
+    Returns
+    -------
+    data : ndarray with length = number of measurements or size =(number of measurements,2^numQubits) for 2 det/qubit
+        The counts of the tomography.
+    m : ndarray with size = (2^numQubits,2^numQubits,number of measurements) 
+        The measurements of the tomography in density matrix form.
+    m2 : ndarray with size = (number of measurements,2*numQubits) 
+        The measurements of the tomography in pure state form.
+    acc : ndarray with length = number of measurements or size =(number of measurements,2^numQubits) for 2 det/qubit
+        The singles values of the tomography. Used for accidental correction.
+    """
+    def filter_data(self, raw_counts, intensities):
+        # getting variables
+        self.input = raw_counts
+        # if not np.isscalar(intensities):
+        #     self.conf['DoDriftCorrection'] = 0
+        nbits = self.conf['NQubits']
+        ndet = self.conf['NDetectors']
+        eff = self.conf['Efficiency'][0:2 ** nbits]
+
+        # time values
+        t = raw_counts[:, 0]
+
+        # singles values
+        n_singles = self.getNumSingles()
+        # sings = raw_counts[:, np.arange(n_singles) + 1]
+        sings = self.getSingles()
+
+        # state dimension @ qudit size
+        # qudit_sizes = self.conf['QuditSizes']
+        # if (ndet == 1 and nbits == 1):
+        #     qudit_sizes = 2
+        # if (ndet == 2):
+        #     self.conf['StateDimension'] = 2 ** nbits
+        # else:
+        #     self.conf['StateDimension'] = np.prod(qudit_sizes)
+
+        # coincidences
+        n_coinc = self.getNumCoinc()
+        # coinc = raw_counts[:, np.arange(n_singles + 1, n_singles + n_coinc + 1)]
+        # if (ndet == 1):
+        #     coinc = raw_counts[:, n_singles + 1]
+        coinc = self.getCoincidences()
+
+        # settings
+        settings = raw_counts[:, np.arange(n_singles + n_coinc + 1, len(raw_counts[0]))]
+
+        # Accidental Correction
+        acc = np.zeros_like(coinc)
+        if (len(coinc.shape) == 1):
+            acc = acc[:, np.newaxis]
+        window = self.conf['Window']
+        if np.isscalar(window):
+            window = np.array([window])
+        if any(window) > 0:
+            for j in range(n_coinc):
+                idx = (multiloop_index(j, 2 * np.ones(nbits)) - 1) * nbits + range(nbits)
+                idx = idx.astype(int)
+                acc[:, j] = np.prod(np.real(sings[:, idx]), axis=1) * (window[j] * 1e-9 / np.real(t)) ** (nbits - 1)
+        if (acc.shape != coinc.shape):
+            acc = acc[:, 0]
+
+        # Drift Correction
+        self.conf['IntensityMap'] = np.kron(intensities, np.ones(n_coinc))
+
+        # crosstalk
+        ctalk = np.array(self.conf['Crosstalk'])[0:2 ** nbits, 0:2 ** nbits]
+        crosstalk = ctalk
+        if np.ndim(ctalk) >= 3:
+            for j in range(ctalk.shape[2]):
+                crosstalk[j] = ctalk[:, :, j]
+
+        if (ctalk == []):
+            big_crosstalk = np.eye(2 ** nbits)
+        else:
+            big_crosstalk = crosstalk[:]
+
+        big_crosstalk = big_crosstalk * np.outer(eff, np.ones(n_coinc))
+
+        m = np.zeros([2 ** nbits, 2 ** nbits, np.prod(coinc.shape)]) + 0j
+        m2 = np.zeros([np.prod(coinc.shape), 2 ** nbits]) + 0j
+        for j in range(coinc.shape[0]):
+            m_twiddle = np.zeros([2 ** nbits, 2 ** nbits, 2 ** nbits]) + 0j
+            u = 1
+            for k in range(nbits):
+                alpha = settings[j][2 * k]
+                beta = settings[j][2 * k + 1]
+                psi_k = np.array([alpha, beta])
+                psip_k = np.array([np.conj(beta), np.conj(-alpha)])
+                u_k = np.outer((np.array([1, 0])), psi_k) + np.outer((np.array([0, 1])), psip_k)
+                # Changed from tensor_product to np.kron
+                u = np.kron(u, u_k)
+            if (ndet == 1):
+                for k in range(0, 2 ** nbits):
+                    m_twiddle[k, :, :] = np.outer(u[:, k].conj().transpose(), u[:, k])
+
+                m2[j * n_coinc, :] = u[:, 0].conj().transpose()
+                for k in range(1):
+                    for l in range(2 ** nbits):
+                        m[:, :, j + k] = m[:, :, j + k] + m_twiddle[l, :, :] * big_crosstalk[k, l]
+                data = coinc
+
+            else:
+                for k in range(2 ** nbits):
+                    m_twiddle[k, :, :] = np.outer(u[:, k].conj().transpose(), u[:, k])
+                    m2[j * n_coinc + k, :] = u[:, k].conj().transpose()
+                for k in range(2 ** nbits):
+                    for l in range(2 ** nbits):
+                        m[:, :, j * (2 ** nbits) + k] = m[:, :, j * (2 ** nbits) + k] + m_twiddle[l, :, :] * \
+                                                        big_crosstalk[k, l]
+
+                data = coinc.reshape((np.prod(coinc.shape), 1))
+                acc = acc.reshape((np.prod(acc.shape), 1))
+        return [data, m, m2, acc]
+
+    ###################
+    '''Get Functions'''
+    ###################
+
+
+    """
+    getNumCoinc()
+    Desc: Returns the number of coincidences per measurement for the current configurations.
+    """
     def getNumCoinc(self):
         if (self.conf['NDetectors'] == 2):
             return 2 ** self.conf['NQubits']
         else:
             return 1
+
+    """
+    getNumSingles()
+    Desc: Returns the number of singles per measurement for the current configurations.
+    """
     def getNumSingles(self):
         if (self.conf['NDetectors'] == 2):
             return 2 * self.conf['NQubits']
         else:
            return self.conf['NQubits']
 
+    """
+    getCoincidences()
+    Desc: Returns an array of counts for all the measurments.
+    """
     def getCoincidences(self):
         if (self.conf['NDetectors'] == 2):
             return self.input[:, np.arange(2*self.conf['NQubits']+1, 2**self.conf['NQubits']+2*self.conf['NQubits']+1)]
         else:
             return self.input[:, self.conf['NQubits']+1]
 
+    """
+    getSingles()
+    Desc: Returns an array of singles for all the measurments.
+    """
     def getSingles(self):
         if (self.conf['NDetectors'] == 2):
             return self.input[:, np.arange(1, 2*self.conf['NQubits']+1)]
         else:
             return self.input[:, np.arange(1, self.conf['NQubits']+1)]
 
+    """
+    getTimes()
+    Desc: Returns an array of times for all the measurments.
+    """
     def getTimes(self):
         return self.tomo_input[:, 0]
 
+    """
+        getMeasurements()
+        Desc: Returns an array of measurements in pure state form for all the measurments.
+        """
     def getMeasurements(self):
         if (self.conf['NDetectors'] == 2):
             return self.input[:, np.arange(2**self.conf['NQubits']+2*self.conf['NQubits']+1, 2**self.conf['NQubits']+4*self.conf['NQubits']+1)]
         else:
             return self.input[:, np.arange(self.conf['NQubits']+2, 3*self.conf['NQubits']+2)]
+
+    """
+    getNumBits()
+    Desc: returns the number of qubits for the current configurations.
+    """
     def getNumBits(self):
         return self.conf['NQubits']
 
+    """
+    getNumDetPerQubit()
+    Desc: returns the number of detectors per qubit for the current configurations.
+    """
     def getNumDetPerQubit(self):
         return self.conf['NDetectors']
-    def getNumOfDetectors(self):
+
+    """
+    getNumOfDetectorsTotal()
+    Desc: Returns the total number of detectors for the current configurations.
+    """
+    def getNumOfDetectorsTotal(self):
         return self.getNumDetPerQubit()*self.getNumBits()
 
-    def getBasisMeas(self):
-
-        if(self.getNumDetPerQubit() == 1):
+    """
+    getBasisMeas(numBits)
+    Desc: Returns an array of standard measurments in pure state form for the given number of qubits.
+    
+    Parameters
+    ----------
+    numBits : int
+        number of qubits you want for each measurement. Default will use the number of qubits in the current configurations.
+    """
+    def getBasisMeas(self,numBits = -1):
+        if(numBits == -1):
+            numBits = self.getNumDetPerQubit()
+        if(numBits == 1):
             basis = np.array([[1, 0], [0, 1], [(2 ** (-1 / 2)), (2 ** (-1 / 2))], [(2 ** (-1 / 2)), -(2 ** (-1 / 2))],
                               [(2 ** (-1 / 2)), (2 ** (-1 / 2)) * 1j], [(2 ** (-1 / 2)), -(2 ** (-1 / 2)) * 1j]],
                              dtype=complex)
@@ -347,9 +626,18 @@ class Tomography():
         return m
 
 
-    def getTomoInputTemplate(self):
+    """
+    getTomoInputTemplate()
+    Desc: returns a standard template for tomo_input for the given number of qubits.
+    
+    Parameters
+    ----------
+    numBits : int
+        number of qubits you want for each measurement. Default will use the number of qubits in the current configurations.
+    """
+    def getTomoInputTemplate(self,numBits = -1):
 
-        measurements = self.getBasisMeas()
+        measurements = self.getBasisMeas(numBits)
 
         if(self.getNumDetPerQubit() == 1):
             # For n detectors:
@@ -378,144 +666,71 @@ class Tomography():
         # singles left zero
         return Tomoinput
 
-    def filter_data(self, raw_counts, intensities):
-        # getting variables
-        self.input = raw_counts
-        # if not np.isscalar(intensities):
-        #     self.conf['DoDriftCorrection'] = 0
-        nbits = self.conf['NQubits']
-        ndet = self.conf['NDetectors']
-        eff = self.conf['Efficiency'][0:2**nbits]
+    """
+    getAllProperties(rho)
+    Desc: returns the properties of the given density matrix. 
 
-        #time values
-        t = raw_counts[:, 0]
-
-        #singles values
-        n_singles = self.getNumSingles()
-        # sings = raw_counts[:, np.arange(n_singles) + 1]
-        sings = self.getSingles()
-
-
-        #state dimension @ qudit size
-        # qudit_sizes = self.conf['QuditSizes']
-        # if (ndet == 1 and nbits == 1):
-        #     qudit_sizes = 2
-        # if (ndet == 2):
-        #     self.conf['StateDimension'] = 2 ** nbits
-        # else:
-        #     self.conf['StateDimension'] = np.prod(qudit_sizes)
-
-        #coincidences
-        n_coinc = self.getNumCoinc()
-        # coinc = raw_counts[:, np.arange(n_singles + 1, n_singles + n_coinc + 1)]
-        # if (ndet == 1):
-        #     coinc = raw_counts[:, n_singles + 1]
-        coinc = self.getCoincidences()
-
-
-        #settings
-        settings = raw_counts[:, np.arange(n_singles + n_coinc + 1, len(raw_counts[0]))]
-
-
-        # Accidental Correction
-        acc = np.zeros_like(coinc)
-        if (len(coinc.shape) == 1):
-            acc = acc[:, np.newaxis]
-        window = self.conf['Window']
-        if np.isscalar(window):
-            window = np.array([window])
-        if any(window) > 0:
-            for j in range(n_coinc):
-                idx = (multiloop_index(j, 2 * np.ones(nbits)) - 1) * nbits + range(nbits)
-                idx = idx.astype(int)
-                acc[:, j] = np.prod(np.real(sings[:, idx]), axis=1) * (window[j] * 1e-9 / np.real(t)) ** (nbits - 1)
-        if (acc.shape != coinc.shape):
-            acc = acc[:, 0]
-
-        # Drift Correction
-        self.conf['IntensityMap'] = np.kron(intensities,np.ones(n_coinc))
-
-
-        # crosstalk
-        ctalk = np.array(self.conf['Crosstalk'])[0:2**nbits,0:2**nbits]
-        crosstalk = ctalk
-        if np.ndim(ctalk) >= 3:
-            for j in range(ctalk.shape[2]):
-                crosstalk[j] = ctalk[:, :, j]
-
-        if (ctalk == []):
-            big_crosstalk = np.eye(2 ** nbits)
+    Parameters
+    ----------
+    rho : ndarray with size = (2^numQubits,2^numQubits) 
+        The density matrix you would like to know the properties of.
+    bounds : boolean
+        Set this to true if you want error bounds on your estimated property values. Default is False.
+        These are determined with monte carlo simulation.
+        
+    Returns
+    -------
+    err_list : ndarray with size = (length of self.err_functions,2)
+        The first row is the value of the property and the second is the error bound on the property.
+    """
+    def getAllProperties(self,rho,bounds = False):
+        vals = tomo.getproperties(rho)
+        if (bounds > 1):
+            err_n = tomo.conf['DoErrorEstimation']
+            if(err_n<=1):
+                err_n =2
+            rhon = tomo.tomography_error_states_generator(err_n)
+            [mean, errs, mean_fid, err_fid] = tomo.tomography_error(rho, rhon)
+            rho = np.around(rho, 5)
+            mean = np.around(mean, 5)
+            errs = np.around(errs, 5)
+            vals = np.around(vals, 5)
+            intensity = round(intensity, 1)
+            fval = round(fval, 5)
+            err_list = qLib.outputErrorValues(tomo.err_functions, vals, errs, intensity, fval, err_n)
         else:
-            big_crosstalk = crosstalk[:]
-
-        big_crosstalk = big_crosstalk * np.outer(eff, np.ones(n_coinc))
-
-        m = np.zeros([2 ** nbits, 2 ** nbits, np.prod(coinc.shape)]) + 0j
-        m2 = np.zeros([np.prod(coinc.shape), 2 ** nbits]) + 0j
-        for j in range(coinc.shape[0]):
-            m_twiddle = np.zeros([2 ** nbits, 2 ** nbits, 2 ** nbits]) + 0j
-            u = 1
-            for k in range(nbits):
-                alpha = settings[j][2 * k]
-                beta = settings[j][2 * k + 1]
-                psi_k = np.array([alpha, beta])
-                psip_k = np.array([np.conj(beta), np.conj(-alpha)])
-                u_k = np.outer((np.array([1, 0])), psi_k) + np.outer((np.array([0, 1])), psip_k)
-                #Changed from tensor_product to np.kron
-                u = np.kron(u,u_k)
-            if (ndet == 1):
-                for k in range(0, 2 ** nbits):
-                    m_twiddle[k, :, :] = np.outer(u[:, k].conj().transpose(), u[:, k])
-
-                m2[j * n_coinc, :] = u[:, 0].conj().transpose()
-                for k in range(1):
-                    for l in range(2 ** nbits):
-                        m[:, :, j + k] = m[:, :, j + k] + m_twiddle[l, :, :] * big_crosstalk[k, l]
-                data = coinc
-
-            else:
-                for k in range(2 ** nbits):
-                    m_twiddle[k, :, :] = np.outer(u[:, k].conj().transpose(), u[:, k])
-                    m2[j * n_coinc + k, :] = u[:, k].conj().transpose()
-                for k in range(2 ** nbits):
-                    for l in range(2 ** nbits):
-                        m[:, :, j * (2 ** nbits) + k] = m[:, :, j * (2 ** nbits) + k] + m_twiddle[l, :, :]* big_crosstalk[k, l]
-
-                data = coinc.reshape((np.prod(coinc.shape), 1))
-                acc = acc.reshape((np.prod(acc.shape), 1))
-        return [data, m, m2, acc]
-    #
-    # def initialize_fitness_global(self, m):
-    #     num_t = m.shape[0] ** 2
-    #     num_m = m.shape[2]
-    #     # M_size = np.shape(M)[0]
-    #
-    #     tm = np.zeros([num_t, 4, 4]) + 0j
-    #
-    #     for j in range(num_t):
-    #         tm[j] = t_matrix(one_in(j, num_t))
-    #
-    #     aa = np.zeros([num_m, num_t, 4, 4]) + 0j
-    #     bb = aa
-    #     for j in range(num_m):
-    #         for k in range(num_t):
-    #             # Should use a sparse matrix here to make it easy.
-    #             aa[j][k] = np.dot(m[:, :, j], tm[k].conj().transpose())
-    #             bb[j][k] = np.dot(tm[k], m[:, :, j])
-    #
-    #     return [aa, bb]
+            outputNames = tomo.err_functions
+            outputVals = {}
+            for x in range(0, len(outputNames)):
+                outputVals[outputNames[x]] = [vals[x],0]
+            err_list = [outputNames,outputVals]
+        return err_list
 
     #####################
     '''ERROR FUNCTIONS'''
     #####################
 
+    """
+    Function()
+    Desc: short desc
+
+    Parameters
+    ----------
+    x1, x2 : array_like
+        Input arrays to be multiplied. If ``x1.shape != x2.shape``, they must be broadcastable to a common shape (which becomes the shape of the output).
+
+    Returns
+    -------
+    y : ndarray
+        The product of `x1` and `x2`, element-wise.
+    """
     def tomography_error(self, rho0, rhop):
-        if (self.err_n == 0):
-            self.err_n = 2
+        if (self.conf['DoErrorEstimation'] == 0):
+            self.conf['DoErrorEstimation'] = 2
         n_fun = len(self.err_functions)
-        data = np.zeros([self.err_n, n_fun])
-        fid = np.zeros(self.err_n)
-        for j in range(self.err_n):
+        data = np.zeros([self.conf['DoErrorEstimation'], n_fun])
+        fid = np.zeros(self.conf['DoErrorEstimation'])
+        for j in range(self.conf['DoErrorEstimation']):
             fid[j] = fidelity(rho0, rhop[j, :, :])
             for k in range(n_fun):
                 data[j, k] = self.fevel(self.err_functions[k], rhop[j, :, :])
@@ -531,10 +746,38 @@ class Tomography():
 
         return [means, errors, mean_f, err_f]
 
+    """
+    Function()
+    Desc: short desc
+
+    Parameters
+    ----------
+    x1, x2 : array_like
+        Input arrays to be multiplied. If ``x1.shape != x2.shape``, they must be broadcastable to a common shape (which becomes the shape of the output).
+
+    Returns
+    -------
+    y : ndarray
+        The product of `x1` and `x2`, element-wise.
+    """
     def fevel(self,funcname, *args):
         return eval(funcname)(*args)
 
-    def tomography_error_states_generator(self,n=30):
+    """
+    Function()
+    Desc: short desc
+
+    Parameters
+    ----------
+    x1, x2 : array_like
+        Input arrays to be multiplied. If ``x1.shape != x2.shape``, they must be broadcastable to a common shape (which becomes the shape of the output).
+
+    Returns
+    -------
+    y : ndarray
+        The product of `x1` and `x2`, element-wise.
+    """
+    def tomography_error_states_generator(self):
         ndet = self.conf['NDetectors']
         nbits = self.conf['NQubits']
         acc = self.conf['DoAccidentalCorrection']
@@ -543,7 +786,7 @@ class Tomography():
         if ndet == 1:
             time = np.reshape(self.tomo_input[:, 0], (length, 1))
             meas = self.tomo_input[:, np.arange(nbits + 2, len(self.tomo_input[0, :]))]
-            for j in range(n):
+            for j in range(self.conf['Do']):
                 test_data = np.zeros([length, nbits + 1])
                 if acc:
                     kk = range(nbits + 1)
@@ -576,9 +819,37 @@ class Tomography():
 
         return rhop
 
+    """
+    Function()
+    Desc: short desc
+
+    Parameters
+    ----------
+    x1, x2 : array_like
+        Input arrays to be multiplied. If ``x1.shape != x2.shape``, they must be broadcastable to a common shape (which becomes the shape of the output).
+
+    Returns
+    -------
+    y : ndarray
+        The product of `x1` and `x2`, element-wise.
+    """
     def getproperties(self,rho0):
         return [self.fevel(errf, rho0) for errf in self.err_functions]
 
+    """
+    Function()
+    Desc: short desc
+
+    Parameters
+    ----------
+    x1, x2 : array_like
+        Input arrays to be multiplied. If ``x1.shape != x2.shape``, they must be broadcastable to a common shape (which becomes the shape of the output).
+
+    Returns
+    -------
+    y : ndarray
+        The product of `x1` and `x2`, element-wise.
+    """
     def bellsettings(self,rhog, partsize_init, partsize, t):
 
         [s, arange, brange, aprange, bprange] = self.bellsettings_range_init(rhog, partsize_init)
@@ -593,6 +864,20 @@ class Tomography():
 
         return [s, a, ap, b, bp]
 
+    """
+    Function()
+    Desc: short desc
+
+    Parameters
+    ----------
+    x1, x2 : array_like
+        Input arrays to be multiplied. If ``x1.shape != x2.shape``, they must be broadcastable to a common shape (which becomes the shape of the output).
+
+    Returns
+    -------
+    y : ndarray
+        The product of `x1` and `x2`, element-wise.
+    """
     def bellsettings_range_init(self,rhog, partsize):
         sval = 0
         aval = 0
@@ -638,6 +923,20 @@ class Tomography():
 
         return [sval, arange_s, brange_s, aprange_s, bprange_s]
 
+    """
+    Function()
+    Desc: short desc
+
+    Parameters
+    ----------
+    x1, x2 : array_like
+        Input arrays to be multiplied. If ``x1.shape != x2.shape``, they must be broadcastable to a common shape (which becomes the shape of the output).
+
+    Returns
+    -------
+    y : ndarray
+        The product of `x1` and `x2`, element-wise.
+    """
     def tomography_error_bell(self,rhop, partsize_init, partsize, t, n):
         belldata = np.zeros([n, 5])
 
@@ -653,6 +952,20 @@ class Tomography():
 
         return [berrors, bmeans]
 
+    """
+    Function()
+    Desc: short desc
+
+    Parameters
+    ----------
+    x1, x2 : array_like
+        Input arrays to be multiplied. If ``x1.shape != x2.shape``, they must be broadcastable to a common shape (which becomes the shape of the output).
+
+    Returns
+    -------
+    y : ndarray
+        The product of `x1` and `x2`, element-wise.
+    """
     def bellsettings_range(self, rhog, partsize, arange, brange, aprange, bprange):
 
         sval = 0

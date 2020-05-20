@@ -1,6 +1,20 @@
 import matplotlib.pyplot as plt
 import numpy as np
 
+"""
+    Function()
+    Desc: short desc
+
+    Parameters
+    ----------
+    x1, x2 : array_like
+        Input arrays to be multiplied. If ``x1.shape != x2.shape``, they must be broadcastable to a common shape (which becomes the shape of the output).
+
+    Returns
+    -------
+    y : ndarray
+        The product of `x1` and `x2`, element-wise.
+    """
 def showRhoImages(p):
     fig = plt.figure()
     ax1 = fig.add_subplot(111, projection='3d')
@@ -87,6 +101,20 @@ def showRhoImages(p):
     plt.title("Rho Imaginary")
     plt.show()
 
+"""
+    Function()
+    Desc: short desc
+
+    Parameters
+    ----------
+    x1, x2 : array_like
+        Input arrays to be multiplied. If ``x1.shape != x2.shape``, they must be broadcastable to a common shape (which becomes the shape of the output).
+
+    Returns
+    -------
+    y : ndarray
+        The product of `x1` and `x2`, element-wise.
+    """
 def displayOutput(p,inten,fval,tomo):
     err_n = tomo.conf['DoErrorEstimation']
     vals = tomo.getproperties(p)
@@ -113,6 +141,20 @@ def displayOutput(p,inten,fval,tomo):
     print(p)
     return outputVals, outputNames
 
+"""
+    Function()
+    Desc: short desc
+
+    Parameters
+    ----------
+    x1, x2 : array_like
+        Input arrays to be multiplied. If ``x1.shape != x2.shape``, they must be broadcastable to a common shape (which becomes the shape of the output).
+
+    Returns
+    -------
+    y : ndarray
+        The product of `x1` and `x2`, element-wise.
+    """
 def outputErrorvalues(func, values, errors, inten, fvalp, err_time):
     output = {"Intensity": (inten,), "fval": (fvalp,), "Error Estimation Times": (err_time,)}
     name = ["Intensity", "fval", "Error Estimation Times"]

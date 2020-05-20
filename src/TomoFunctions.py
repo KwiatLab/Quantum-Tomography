@@ -61,6 +61,20 @@ import numpy as np
 
 
 
+"""
+    Function()
+    Desc: short desc
+
+    Parameters
+    ----------
+    x1, x2 : array_like
+        Input arrays to be multiplied. If ``x1.shape != x2.shape``, they must be broadcastable to a common shape (which becomes the shape of the output).
+
+    Returns
+    -------
+    y : ndarray
+        The product of `x1` and `x2`, element-wise.
+    """
 def make_positive(rhog_in):
     d, v = np.linalg.eig(rhog_in)
     rhog = np.zeros(rhog_in.shape)
@@ -72,6 +86,20 @@ def make_positive(rhog_in):
 
 
 # Converts a density matrix into a lower t matrix
+"""
+    Function()
+    Desc: short desc
+
+    Parameters
+    ----------
+    x1, x2 : array_like
+        Input arrays to be multiplied. If ``x1.shape != x2.shape``, they must be broadcastable to a common shape (which becomes the shape of the output).
+
+    Returns
+    -------
+    y : ndarray
+        The product of `x1` and `x2`, element-wise.
+    """
 def density2tm(rhog):
     d = rhog.shape[0]
     if d == 1:
@@ -95,6 +123,20 @@ def density2tm(rhog):
     return tm
 
 # Converts a density matrix into a list of t values
+"""
+    Function()
+    Desc: short desc
+
+    Parameters
+    ----------
+    x1, x2 : array_like
+        Input arrays to be multiplied. If ``x1.shape != x2.shape``, they must be broadcastable to a common shape (which becomes the shape of the output).
+
+    Returns
+    -------
+    y : ndarray
+        The product of `x1` and `x2`, element-wise.
+    """
 def density2t(rhog):
     tm = density2tm(rhog)
     d = len(tm)
@@ -114,6 +156,20 @@ def density2t(rhog):
     return t
 
 # Converts a pure state into a density matrix
+"""
+    Function()
+    Desc: short desc
+
+    Parameters
+    ----------
+    x1, x2 : array_like
+        Input arrays to be multiplied. If ``x1.shape != x2.shape``, they must be broadcastable to a common shape (which becomes the shape of the output).
+
+    Returns
+    -------
+    y : ndarray
+        The product of `x1` and `x2`, element-wise.
+    """
 def toDensity(psiMat):
     if isinstance(psiMat.size,int):
         return np.outer(psiMat.conj(), psiMat)
@@ -132,6 +188,20 @@ def toDensity(psiMat):
 
 
 # Converts a list of t values to an lower t matrix
+"""
+    Function()
+    Desc: short desc
+
+    Parameters
+    ----------
+    x1, x2 : array_like
+        Input arrays to be multiplied. If ``x1.shape != x2.shape``, they must be broadcastable to a common shape (which becomes the shape of the output).
+
+    Returns
+    -------
+    y : ndarray
+        The product of `x1` and `x2`, element-wise.
+    """
 def t_matrix(t):
     d = np.int(np.sqrt(len(t)))
 
@@ -152,6 +222,20 @@ def t_matrix(t):
     return tm
 
 # Converts a list of t values to a density matrix
+"""
+    Function()
+    Desc: short desc
+
+    Parameters
+    ----------
+    x1, x2 : array_like
+        Input arrays to be multiplied. If ``x1.shape != x2.shape``, they must be broadcastable to a common shape (which becomes the shape of the output).
+
+    Returns
+    -------
+    y : ndarray
+        The product of `x1` and `x2`, element-wise.
+    """
 def t_to_density(t):
     tm = t_matrix(t)
     tm = tm.conj()
@@ -165,6 +249,20 @@ def t_to_density(t):
 ##################
 
 
+"""
+    Function()
+    Desc: short desc
+
+    Parameters
+    ----------
+    x1, x2 : array_like
+        Input arrays to be multiplied. If ``x1.shape != x2.shape``, they must be broadcastable to a common shape (which becomes the shape of the output).
+
+    Returns
+    -------
+    y : ndarray
+        The product of `x1` and `x2`, element-wise.
+    """
 def fidelity(state1, state2):
     pure = 0
     rho1 = state1
@@ -208,6 +306,20 @@ def fidelity(state1, state2):
     return val
 
 
+"""
+    Function()
+    Desc: short desc
+
+    Parameters
+    ----------
+    x1, x2 : array_like
+        Input arrays to be multiplied. If ``x1.shape != x2.shape``, they must be broadcastable to a common shape (which becomes the shape of the output).
+
+    Returns
+    -------
+    y : ndarray
+        The product of `x1` and `x2`, element-wise.
+    """
 def concurrence(rhog):
     if(rhog.shape[0]>2):
         if min(rhog.shape) == 1:
@@ -228,6 +340,20 @@ def concurrence(rhog):
         return 0
 
 
+"""
+    Function()
+    Desc: short desc
+
+    Parameters
+    ----------
+    x1, x2 : array_like
+        Input arrays to be multiplied. If ``x1.shape != x2.shape``, they must be broadcastable to a common shape (which becomes the shape of the output).
+
+    Returns
+    -------
+    y : ndarray
+        The product of `x1` and `x2`, element-wise.
+    """
 def tangle(rhog):
     if(rhog.shape[0]>2>1):
         c = concurrence(rhog)
@@ -238,6 +364,20 @@ def tangle(rhog):
         return 0
 
 
+"""
+    Function()
+    Desc: short desc
+
+    Parameters
+    ----------
+    x1, x2 : array_like
+        Input arrays to be multiplied. If ``x1.shape != x2.shape``, they must be broadcastable to a common shape (which becomes the shape of the output).
+
+    Returns
+    -------
+    y : ndarray
+        The product of `x1` and `x2`, element-wise.
+    """
 def entanglement(rhog):
     if (rhog.shape[0]>2 > 1):
         t = tangle(rhog)
@@ -254,6 +394,20 @@ def entanglement(rhog):
         return 0
 
 
+"""
+    Function()
+    Desc: short desc
+
+    Parameters
+    ----------
+    x1, x2 : array_like
+        Input arrays to be multiplied. If ``x1.shape != x2.shape``, they must be broadcastable to a common shape (which becomes the shape of the output).
+
+    Returns
+    -------
+    y : ndarray
+        The product of `x1` and `x2`, element-wise.
+    """
 def entropy(rhog):
     d = np.linalg.eig(rhog)[0]
     e = np.real(d)
@@ -265,6 +419,20 @@ def entropy(rhog):
     return s
 
 
+"""
+    Function()
+    Desc: short desc
+
+    Parameters
+    ----------
+    x1, x2 : array_like
+        Input arrays to be multiplied. If ``x1.shape != x2.shape``, they must be broadcastable to a common shape (which becomes the shape of the output).
+
+    Returns
+    -------
+    y : ndarray
+        The product of `x1` and `x2`, element-wise.
+    """
 def linear_entropy(rhog):
     if min(rhog.shape) == 1:
         lin_e = 0
@@ -275,6 +443,20 @@ def linear_entropy(rhog):
     return lin_e
 
 
+"""
+    Function()
+    Desc: short desc
+
+    Parameters
+    ----------
+    x1, x2 : array_like
+        Input arrays to be multiplied. If ``x1.shape != x2.shape``, they must be broadcastable to a common shape (which becomes the shape of the output).
+
+    Returns
+    -------
+    y : ndarray
+        The product of `x1` and `x2`, element-wise.
+    """
 def partial_transpose_helper(m, d):
     if m.shape[0] == d:
         val = m.transpose()
@@ -293,6 +475,20 @@ def partial_transpose_helper(m, d):
     return val
 
 
+"""
+    Function()
+    Desc: short desc
+
+    Parameters
+    ----------
+    x1, x2 : array_like
+        Input arrays to be multiplied. If ``x1.shape != x2.shape``, they must be broadcastable to a common shape (which becomes the shape of the output).
+
+    Returns
+    -------
+    y : ndarray
+        The product of `x1` and `x2`, element-wise.
+    """
 def partial_transpose(rhog, n, d=np.nan):
     if min(rhog.shape) == 1:
             rhog = np.dot(rhog, rhog.conj().transpose())
@@ -347,6 +543,20 @@ def partial_transpose(rhog, n, d=np.nan):
     return rv
 
 
+"""
+    Function()
+    Desc: short desc
+
+    Parameters
+    ----------
+    x1, x2 : array_like
+        Input arrays to be multiplied. If ``x1.shape != x2.shape``, they must be broadcastable to a common shape (which becomes the shape of the output).
+
+    Returns
+    -------
+    y : ndarray
+        The product of `x1` and `x2`, element-wise.
+    """
 def negativity(rhog):
     if min(rhog.shape) == 1:
         rhog = np.dot(rhog, rhog.conj().transpose())
@@ -375,22 +585,92 @@ def negativity(rhog):
 ####################
 
 
+"""
+    Function()
+    Desc: short desc
+
+    Parameters
+    ----------
+    x1, x2 : array_like
+        Input arrays to be multiplied. If ``x1.shape != x2.shape``, they must be broadcastable to a common shape (which becomes the shape of the output).
+
+    Returns
+    -------
+    y : ndarray
+        The product of `x1` and `x2`, element-wise.
+    """
 def purity(rhog):
     return np.real(np.trace(np.dot(rhog, rhog)))
 
 
+"""
+    Function()
+    Desc: short desc
+
+    Parameters
+    ----------
+    x1, x2 : array_like
+        Input arrays to be multiplied. If ``x1.shape != x2.shape``, they must be broadcastable to a common shape (which becomes the shape of the output).
+
+    Returns
+    -------
+    y : ndarray
+        The product of `x1` and `x2`, element-wise.
+    """
 def rsquare(rhog):
     return (1+purity(rhog))/2
 
 # performs the operation on the density matrix
+"""
+    Function()
+    Desc: short desc
+
+    Parameters
+    ----------
+    x1, x2 : array_like
+        Input arrays to be multiplied. If ``x1.shape != x2.shape``, they must be broadcastable to a common shape (which becomes the shape of the output).
+
+    Returns
+    -------
+    y : ndarray
+        The product of `x1` and `x2`, element-wise.
+    """
 def densityOperation(psi, gate):
     return np.matmul(np.matmul(gate, psi), np.conjugate(np.transpose(gate)))
 
 # performs the operation on the ket state
+"""
+    Function()
+    Desc: short desc
+
+    Parameters
+    ----------
+    x1, x2 : array_like
+        Input arrays to be multiplied. If ``x1.shape != x2.shape``, they must be broadcastable to a common shape (which becomes the shape of the output).
+
+    Returns
+    -------
+    y : ndarray
+        The product of `x1` and `x2`, element-wise.
+    """
 def ketOperation(psi, gate):
     return np.matmul(gate, psi)
 
 # Performs the operations on a ket state or density matrix
+"""
+    Function()
+    Desc: short desc
+
+    Parameters
+    ----------
+    x1, x2 : array_like
+        Input arrays to be multiplied. If ``x1.shape != x2.shape``, they must be broadcastable to a common shape (which becomes the shape of the output).
+
+    Returns
+    -------
+    y : ndarray
+        The product of `x1` and `x2`, element-wise.
+    """
 def performOperation(psi, g):
     p = psi
     if (len(psi.shape) == 1):
@@ -404,6 +684,20 @@ def performOperation(psi, g):
     return p
 
 # calculates the projection values of a onto v
+"""
+    Function()
+    Desc: short desc
+
+    Parameters
+    ----------
+    x1, x2 : array_like
+        Input arrays to be multiplied. If ``x1.shape != x2.shape``, they must be broadcastable to a common shape (which becomes the shape of the output).
+
+    Returns
+    -------
+    y : ndarray
+        The product of `x1` and `x2`, element-wise.
+    """
 def projVal(v, a):
     # projects a onto v
     return np.dot(a, v) / np.dot(v, v)
