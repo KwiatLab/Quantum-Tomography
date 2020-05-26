@@ -6,25 +6,9 @@ from scipy.optimize import leastsq
 
 
 """
-    Function()
-    Desc: short desc
-
-    Parameters
-    ----------
-    x1, x2 : array_like
-        Input arrays to be multiplied. If ``x1.shape != x2.shape``, they must be broadcastable to a common shape (which becomes the shape of the output).
-
-    Returns
-    -------
-    y : ndarray
-        The product of `x1` and `x2`, element-wise.
-    """
-
-
-"""
     class Tomography()
     Desc: This is the main tomography object that the library is built around. The goal is to only have one tomography object and edit the 
-    configuration settings as you go. The conf settings are saved in the class however the input data and the output data are not stored in the object.
+    configuration settings as you go.
     """
 class Tomography():
 
@@ -44,7 +28,8 @@ class Tomography():
     # conf['Beta']: 0 to 0.5, depending on purity of state and total number of measurements.
 
     # tomo_input: array like, dimension = 2.
-    #
+    # input data of the last tomography run.
+
     # For n detectors:
     # tomo_input[:, 0]: times
     # tomo_input[:, np.arange(1, n_qubit+1)]: singles
@@ -56,6 +41,13 @@ class Tomography():
     # tomo_input[:, np.arange(1, 2*n_qubit+1)]: singles
     # tomo_input[:, np.arange(2*n_qubit+1, 2**n_qubit+2*n_qubit+1)]: coincidences
     # tomo_input[:, np.arange(2**n_qubit+2*n_qubit+1, 2**n_qubit+4*n_qubit+1)]: measurements
+
+    # last_rho: The predicted density matrix of the last tomography run.
+    # last_intensity: The predicted intensity of the state for the last tomography run.
+    # last_fval: The final value of the internal optimization function for the last tomography run.
+    # mont_carl_states: The generated monte carlo states. 0 if no states have been generated yet.
+    # intensity: Relative pump power (arb. units) during measurement for the last tomography run.
+    # err_functions: These are the properties that you want to be calculated when getProperties is called.
 
     ##################
     '''Constructors'''
@@ -78,7 +70,7 @@ class Tomography():
             'RhoStart': [],
             'IntensityMap': [[1]],
             'Beta': 0}
-        self.err_functions = ['concurrence','tangle','entanglement','entropy','linear_entropy','negativity','purity']
+        self.err_functions = ['concurrence','tangle','entropy','linear_entropy','negativity','purity']
 
     """
     setConfSetting(setting,val)
@@ -89,7 +81,7 @@ class Tomography():
     setting : string
         The setting you want to update. 
         Possible values are ['NQubits','NDetectors','Crosstalk','Bellstate','DoDriftCorrection','DoAccidentalCorrection','DoErrorEstimation','Window','Efficiency','RhoStart','IntensityMap','Beta']
-    val: array_like, int, or string
+    val: ndarray, int, or string
             The new value you want to the setting to be.
     """
     def setConfSetting(self,setting,val):
@@ -173,7 +165,7 @@ class Tomography():
         Relative pump power (arb. units) during measurement; used for drift correction.
     Returns
     -------
-    rhog : ndarray with size = (2^numQubits,2^numQubits) 
+    rhog : ndarray with shape = (2^numQubits,2^numQubits) 
         The predicted density matrix.
     intensity : float
         The predicted overall intensity used to normalize the state.
@@ -191,6 +183,11 @@ class Tomography():
             rho0 = self.linear_tomography(data, m2)[0]
 
         [rhog, intensity, fvalp] = self.maximum_likelihood_tomography(rho0, data, m1, acc)
+        self.last_rho = rhog.copy()
+        self.last_intensity = intensity
+        self.last_fval = fvalp
+        self.mont_carl_states = 0
+
         return [rhog, intensity, fvalp]
 
 
@@ -200,17 +197,17 @@ class Tomography():
 
     Parameters
     ----------
-    rho0 : ndarray with size = (2^numQubits,2^numQubits) 
+    rho0 : ndarray with shape = (2^numQubits,2^numQubits) 
         The starting predicted state found with linear tomography.
-    data : ndarray with length = number of measurements or size =(number of measurements,2^numQubits) for 2 det/qubit
+    data : ndarray with length = number of measurements or shape =(number of measurements,2^numQubits) for 2 det/qubit
         The counts of the tomography.
-    m : ndarray with size = (2^numQubits,2^numQubits,number of measurements) 
+    m : ndarray with shape = (2^numQubits,2^numQubits,number of measurements) 
         The measurements of the tomography in density matrix form.
-    acc : ndarray with length = number of measurements or size =(number of measurements,2^numQubits) for 2 det/qubit
+    acc : ndarray with length = number of measurements or shape =(number of measurements,2^numQubits) for 2 det/qubit
         The singles values of the tomography. Used for accidental correction.
     Returns
     -------
-    rhog : ndarray with size = (2^numQubits,2^numQubits) 
+    rhog : ndarray with shape = (2^numQubits,2^numQubits) 
         The predicted density matrix.
     intensity : float
         The predicted overall intensity used to normalize the state.
@@ -248,8 +245,8 @@ class Tomography():
 
         matrix = t_to_density(t)
         intensity = np.trace(matrix)
-        rhog = matrix / intensities
-        intensity = np.float64(np.real(intensities))
+        rhog = matrix / intensity
+        intensity = np.float64(np.real(intensity))
 
         return [rhog, intensity, fvalp]
 
@@ -261,11 +258,11 @@ class Tomography():
     ----------
     t : ndarray
         T values of the current predicted state.
-    data : ndarray with length = number of measurements or size =(number of measurements,2^numQubits) for 2 det/qubit
+    data : ndarray with length = number of measurements or shape =(number of measurements,2^numQubits) for 2 det/qubit
         The counts of the tomography.
-    accidentals : ndarray with length = number of measurements or size =(number of measurements,2^numQubits) for 2 det/qubit
+    accidentals : ndarray with length = number of measurements or shape =(number of measurements,2^numQubits) for 2 det/qubit
         The singles values of the tomography. Used for accidental correction.   
-    m : ndarray with size = (2^numQubits,2^numQubits,number of measurements) 
+    m : ndarray with shape = (2^numQubits,2^numQubits,number of measurements) 
         The measurements of the tomography in density matrix form.
     prediction : ndarray
         Predicted counts from the predicted state.
@@ -300,11 +297,11 @@ class Tomography():
     ----------
     t : ndarray
         T values of the current predicted state.
-    data : ndarray with length = number of measurements or size =(number of measurements,2^numQubits) for 2 det/qubit
+    data : ndarray with length = number of measurements or shape =(number of measurements,2^numQubits) for 2 det/qubit
         The counts of the tomography.
-    accidentals : ndarray with length = number of measurements or size =(number of measurements,2^numQubits) for 2 det/qubit
+    accidentals : ndarray with length = number of measurements or shape =(number of measurements,2^numQubits) for 2 det/qubit
         The singles values of the tomography. Used for accidental correction.   
-    m : ndarray with size = (2^numQubits,2^numQubits,number of measurements) 
+    m : ndarray with shape = (2^numQubits,2^numQubits,number of measurements) 
         The measurements of the tomography in density matrix form .
     prediction : ndarray
         Predicted counts from the predicted state.
@@ -340,14 +337,14 @@ class Tomography():
 
     Parameters
     ----------
-    data : ndarray with length = number of measurements or size =(number of measurements,2^numQubits) for 2 det/qubit
+    data : ndarray with length = number of measurements or shape =(number of measurements,2^numQubits) for 2 det/qubit
         The counts of the tomography.
-    measurements : ndarray with size = (number of measurements,2*numQubits) 
+    measurements : ndarray with shape = (number of measurements,2*numQubits) 
         The measurements of the tomography in pure state form .
         
     Returns
     -------
-    rhog : ndarray with size = (2^numQubits,2^numQubits) 
+    rhog : ndarray with shape = (2^numQubits,2^numQubits) 
         The starting predicted state.
     intensity : float
         The predicted overall intensity used to normalize the state.
@@ -375,14 +372,14 @@ class Tomography():
             m[:, :, j] = m_matrix(j, linear_measurements, b_inv)
             linear_rhog = linear_rhog + linear_data[j] * m[:, :, j]
 
-        intensities = np.trace(linear_rhog)
-        rhog = linear_rhog / intensities
+        intensity = np.trace(linear_rhog)
+        rhog = linear_rhog / intensity
 
-        return [rhog, intensities]
+        return [rhog, intensity]
 
     """
     filter_data(raw_counts, intensities)
-    Desc: filters the data into separate arrays
+    Desc: Filters the data into separate arrays.
 
     Parameters
     ----------
@@ -393,13 +390,13 @@ class Tomography():
         
     Returns
     -------
-    data : ndarray with length = number of measurements or size =(number of measurements,2^numQubits) for 2 det/qubit
+    data : ndarray with length = number of measurements or shape =(number of measurements,2^numQubits) for 2 det/qubit
         The counts of the tomography.
-    m : ndarray with size = (2^numQubits,2^numQubits,number of measurements) 
+    m : ndarray with shape = (2^numQubits,2^numQubits,number of measurements) 
         The measurements of the tomography in density matrix form.
-    m2 : ndarray with size = (number of measurements,2*numQubits) 
+    m2 : ndarray with shape = (number of measurements,2*numQubits) 
         The measurements of the tomography in pure state form.
-    acc : ndarray with length = number of measurements or size =(number of measurements,2^numQubits) for 2 det/qubit
+    acc : ndarray with length = number of measurements or shape =(number of measurements,2^numQubits) for 2 det/qubit
         The singles values of the tomography. Used for accidental correction.
     """
     def filter_data(self, raw_counts, intensities):
@@ -666,127 +663,99 @@ class Tomography():
         # singles left zero
         return Tomoinput
 
-    """
-    getAllProperties(rho)
-    Desc: returns the properties of the given density matrix. 
-
-    Parameters
-    ----------
-    rho : ndarray with size = (2^numQubits,2^numQubits) 
-        The density matrix you would like to know the properties of.
-    bounds : boolean
-        Set this to true if you want error bounds on your estimated property values. Default is False.
-        These are determined with monte carlo simulation.
-        
-    Returns
-    -------
-    err_list : ndarray with size = (length of self.err_functions,2)
-        The first row is the value of the property and the second is the error bound on the property.
-    """
-    def getAllProperties(self,rho,bounds = False):
-        vals = tomo.getproperties(rho)
-        if (bounds > 1):
-            err_n = tomo.conf['DoErrorEstimation']
-            if(err_n<=1):
-                err_n =2
-            rhon = tomo.tomography_error_states_generator(err_n)
-            [mean, errs, mean_fid, err_fid] = tomo.tomography_error(rho, rhon)
-            rho = np.around(rho, 5)
-            mean = np.around(mean, 5)
-            errs = np.around(errs, 5)
-            vals = np.around(vals, 5)
-            intensity = round(intensity, 1)
-            fval = round(fval, 5)
-            err_list = qLib.outputErrorValues(tomo.err_functions, vals, errs, intensity, fval, err_n)
-        else:
-            outputNames = tomo.err_functions
-            outputVals = {}
-            for x in range(0, len(outputNames)):
-                outputVals[outputNames[x]] = [vals[x],0]
-            err_list = [outputNames,outputVals]
-        return err_list
-
     #####################
     '''ERROR FUNCTIONS'''
     #####################
 
     """
-    Function()
-    Desc: short desc
+    getProperties(rho)
+    Desc: Returns all the properties of the given density matrix.
+          Using bounds will not change the conf settings. The calculated properties are determined by self.err_functions.
 
     Parameters
     ----------
-    x1, x2 : array_like
-        Input arrays to be multiplied. If ``x1.shape != x2.shape``, they must be broadcastable to a common shape (which becomes the shape of the output).
-
+    rho : ndarray with shape = (2^numQubits,2^numQubits) 
+        The density matrix you would like to know the properties of.
+    bounds : boolean
+        Set this to true if you want error bounds on your estimated property values. Default is False.
+        These are determined with monte carlo simulation and the states are saved under self.mont_carl_states
+        
     Returns
     -------
-    y : ndarray
-        The product of `x1` and `x2`, element-wise.
+    vals : ndarray with shape = (length of self.err_functions,2)
+        The first col is the name of the property. 
+        The second col is the value of the property.
+        The third col is the error bound on the property.
     """
-    def tomography_error(self, rho0, rhop):
-        if (self.conf['DoErrorEstimation'] == 0):
-            self.conf['DoErrorEstimation'] = 2
-        n_fun = len(self.err_functions)
-        data = np.zeros([self.conf['DoErrorEstimation'], n_fun])
-        fid = np.zeros(self.conf['DoErrorEstimation'])
-        for j in range(self.conf['DoErrorEstimation']):
-            fid[j] = fidelity(rho0, rhop[j, :, :])
-            for k in range(n_fun):
-                data[j, k] = self.fevel(self.err_functions[k], rhop[j, :, :])
+    def getProperties(self,rho,bounds = -1):
+        # if bounds not set use the conf settings
+        if(type(bounds) == int):
+            bounds = (self.conf['DoErrorEstimation'] > 1) or self.mont_carl_states != 0
+        if (bounds):
+            # check if given state is of the current data
+            if(fidelity(self.last_rho,rho) < .95):
+                raise ValueError("Input data needed. You can only calculate bounds on the state used in the tomography.")
+            err_n = self.conf['DoErrorEstimation']
+            # increase err_n if needed
+            if(err_n<=1):
+                err_n = 2
+            # generate states if needed
+            if(self.mont_carl_states == 0):
+                states = self.tomography_states_generator(err_n)
+            else:
+                states = self.mont_carl_states
+                err_n = len(states[1])
+            vals1 = np.array([["intensity",np.mean(np.hstack((states[1],self.last_intensity))),
+                               np.std(np.hstack((states[1],self.last_intensity)),ddof=err_n-1)],
+                              ["fval",np.mean(np.hstack((states[2],self.last_fval))),
+                               np.std(np.hstack((states[2],self.last_fval)),ddof=err_n-1)]],dtype="O")
+            vals2 = getProperties_helper_bounds(self.err_functions,states[0],rho)
+        else:
+            vals1 = np.array([["intensity",self.last_intensity],["fval",self.last_fval]],dtype="O")
+            vals2 = getProperties_helper(self.err_functions, rho)
 
-        errors = np.zeros(n_fun)
-        means = np.zeros(n_fun)
 
-        for k in range(n_fun):
-            errors[k] = np.std(data[:, k])
-            means[k] = np.mean(data[:, k])
-        mean_f = np.mean(fid)
-        err_f = np.std(fid)
 
-        return [means, errors, mean_f, err_f]
+        vals = np.concatenate((vals1,vals2))
+        return vals
+
+
 
     """
-    Function()
-    Desc: short desc
+    tomography_states_generator(n)
+    Desc: Uses monte carlo simulation to create random states similar to the estimated state.
+          The states are also saved under self.mont_carl_states
 
     Parameters
     ----------
-    x1, x2 : array_like
-        Input arrays to be multiplied. If ``x1.shape != x2.shape``, they must be broadcastable to a common shape (which becomes the shape of the output).
-
+    n : int
+        Number of approximate states you want to create. 
+        If no value is given it will use the conf settings.
     Returns
     -------
-    y : ndarray
-        The product of `x1` and `x2`, element-wise.
+    rhop : ndarray with shape = (n,2^numQubits,2^numQubits) 
+        The approximate density matrices.
+    intenp : ndarray with length = n
+        The intensity of each approximate density matrices.
+    fvalp : ndarray with length = n
+        The fval of the regression associated with each approximate density matrices.
     """
-    def fevel(self,funcname, *args):
-        return eval(funcname)(*args)
+    def tomography_states_generator(self,n = -1):
+        if(n <= 1):
+            n = max(self.conf['DoErrorEstimation'],2)
+        last_outPut = [self.last_rho,self.last_intensity,self.last_fval]
 
-    """
-    Function()
-    Desc: short desc
-
-    Parameters
-    ----------
-    x1, x2 : array_like
-        Input arrays to be multiplied. If ``x1.shape != x2.shape``, they must be broadcastable to a common shape (which becomes the shape of the output).
-
-    Returns
-    -------
-    y : ndarray
-        The product of `x1` and `x2`, element-wise.
-    """
-    def tomography_error_states_generator(self):
         ndet = self.conf['NDetectors']
         nbits = self.conf['NQubits']
         acc = self.conf['DoAccidentalCorrection']
         rhop = np.zeros([n, 2 ** nbits, 2 ** nbits]) + 0j
+        intenp = np.zeros(n)
+        fvalp = np.zeros(n)
         length = len(self.tomo_input[:, 0])
         if ndet == 1:
             time = np.reshape(self.tomo_input[:, 0], (length, 1))
             meas = self.tomo_input[:, np.arange(nbits + 2, len(self.tomo_input[0, :]))]
-            for j in range(self.conf['Do']):
+            for j in range(n):
                 test_data = np.zeros([length, nbits + 1])
                 if acc:
                     kk = range(nbits + 1)
@@ -798,7 +767,7 @@ class Tomography():
 
                 test_data = np.concatenate((time, test_data, meas), axis=1)
 
-                rhop[j, :, :] = self.state_tomography(test_data, self.intensity)[0]
+                [rhop[j, :, :],intenp[j],fvalp[j]] = self.state_tomography(test_data, self.intensity)
 
         elif ndet == 2:
             time = np.reshape(self.tomo_input[:, 0], (length, 1))
@@ -815,201 +784,53 @@ class Tomography():
 
                 test_data = np.concatenate((time, test_data, meas), axis=1)
 
-                rhop[j, :, :] = self.state_tomography(test_data, intensities)[0]
+                [rhop[j, :, :],intenp[j],fvalp[j]] = self.state_tomography(test_data, intensities)[0]
 
-        return rhop
-
-    """
-    Function()
-    Desc: short desc
-
-    Parameters
-    ----------
-    x1, x2 : array_like
-        Input arrays to be multiplied. If ``x1.shape != x2.shape``, they must be broadcastable to a common shape (which becomes the shape of the output).
-
-    Returns
-    -------
-    y : ndarray
-        The product of `x1` and `x2`, element-wise.
-    """
-    def getproperties(self,rho0):
-        return [self.fevel(errf, rho0) for errf in self.err_functions]
+        [self.last_rho, self.last_intensity, self.last_fval] = last_outPut
+        self.mont_carl_states = [rhop,intenp,fvalp]
+        return [rhop,intenp,fvalp]
 
     """
-    Function()
-    Desc: short desc
-
-    Parameters
-    ----------
-    x1, x2 : array_like
-        Input arrays to be multiplied. If ``x1.shape != x2.shape``, they must be broadcastable to a common shape (which becomes the shape of the output).
-
-    Returns
-    -------
-    y : ndarray
-        The product of `x1` and `x2`, element-wise.
-    """
-    def bellsettings(self,rhog, partsize_init, partsize, t):
-
-        [s, arange, brange, aprange, bprange] = self.bellsettings_range_init(rhog, partsize_init)
-        a = 0
-        b = 0
-        ap = 0
-        bp = 0
-
-        for j in range(t):
-            [s, a, ap, b, bp, arange, brange, aprange, bprange] = \
-                self.bellsettings_range(rhog, partsize, arange, brange, aprange, bprange)
-
-        return [s, a, ap, b, bp]
-
-    """
-    Function()
-    Desc: short desc
-
-    Parameters
-    ----------
-    x1, x2 : array_like
-        Input arrays to be multiplied. If ``x1.shape != x2.shape``, they must be broadcastable to a common shape (which becomes the shape of the output).
-
-    Returns
-    -------
-    y : ndarray
-        The product of `x1` and `x2`, element-wise.
-    """
-    def bellsettings_range_init(self,rhog, partsize):
-        sval = 0
-        aval = 0
-        apval = 0
-        bval = 0
-        bpval = 0
-
-        for a in np.linspace(0, np.pi / 2, partsize):
-            for ap in np.linspace(a, np.pi / 2, partsize):
-                for b in np.linspace(0, np.pi / 2, partsize):
-                    for bp in np.linspace(b, np.pi / 2, partsize):
-                        npp = np.real(np.trace(np.dot(coinmat(a, b), rhog)))
-                        nmm = np.real(np.trace(np.dot(coinmat(a + np.pi / 2, b + np.pi / 2), rhog)))
-                        e_ab = 2 * (npp + nmm) - 1
-
-                        npp = np.real(np.trace(np.dot(coinmat(ap, b), rhog)))
-                        nmm = np.real(np.trace(np.dot(coinmat(ap + np.pi / 2, b + np.pi / 2), rhog)))
-                        e_apb = 2 * (npp + nmm) - 1
-
-                        npp = np.real(np.trace(np.dot(coinmat(a, bp), rhog)))
-                        nmm = np.real(np.trace(np.dot(coinmat(a + np.pi / 2, bp + np.pi / 2), rhog)))
-                        e_abp = 2 * (npp + nmm) - 1
-
-                        npp = np.real(np.trace(np.dot(coinmat(ap, bp), rhog)))
-                        nmm = np.real(np.trace(np.dot(coinmat(ap + np.pi / 2, bp + np.pi / 2), rhog)))
-                        e_apbp = 2 * (npp + nmm) - 1
-
-                        s = e_ab + e_abp + e_apb + e_apbp - 2 * np.min([e_ab, e_abp, e_apb, e_apbp])
-
-                        if s > sval:
-                            sval = s
-                            aval = a
-                            apval = ap
-                            bval = b
-                            bpval = bp
-
-        arange_s = [np.max([aval - ((np.pi / 2) / partsize), 0]), np.min([aval + ((np.pi / 2) / partsize), np.pi / 2])]
-        aprange_s = [np.max([apval - ((np.pi / 2) / partsize), 0]),
-                     np.min([apval + ((np.pi / 2) / partsize), np.pi / 2])]
-        brange_s = [np.max([bval - ((np.pi / 2) / partsize), 0]), np.min([bval + ((np.pi / 2) / partsize), np.pi / 2])]
-        bprange_s = [np.max([bpval - ((np.pi / 2) / partsize), 0]),
-                     np.min([bpval + ((np.pi / 2) / partsize), np.pi / 2])]
-
-        return [sval, arange_s, brange_s, aprange_s, bprange_s]
-
-    """
-    Function()
-    Desc: short desc
-
-    Parameters
-    ----------
-    x1, x2 : array_like
-        Input arrays to be multiplied. If ``x1.shape != x2.shape``, they must be broadcastable to a common shape (which becomes the shape of the output).
-
-    Returns
-    -------
-    y : ndarray
-        The product of `x1` and `x2`, element-wise.
-    """
-    def tomography_error_bell(self,rhop, partsize_init, partsize, t, n):
-        belldata = np.zeros([n, 5])
-
-        for j in range(n):
-            belldata[j, :] = self.bellsettings(rhop[j, :, :], partsize_init, partsize, t)
-
-        bmeans = np.zeros(5)
-        berrors = np.zeros(5)
-
-        for m in range(5):
-            berrors[m] = np.std(belldata[:, m])
-            bmeans[m] = np.mean(belldata[:, m])
-
-        return [berrors, bmeans]
-
-    """
-    Function()
-    Desc: short desc
-
-    Parameters
-    ----------
-    x1, x2 : array_like
-        Input arrays to be multiplied. If ``x1.shape != x2.shape``, they must be broadcastable to a common shape (which becomes the shape of the output).
-
-    Returns
-    -------
-    y : ndarray
-        The product of `x1` and `x2`, element-wise.
-    """
-    def bellsettings_range(self, rhog, partsize, arange, brange, aprange, bprange):
-
-        sval = 0
-        aval = 0
-        apval = 0
-        bval = 0
-        bpval = 0
-
-        for a in np.linspace(arange[0], arange[1], partsize):
-            for ap in np.linspace(aprange[0], aprange[1], partsize):
-                for b in np.linspace(brange[0], brange[1], partsize):
-                    for bp in np.linspace(bprange[0], bprange[1], partsize):
-                        npp = np.real(np.trace(np.dot(coinmat(a, b), rhog)))
-                        nmm = np.real(np.trace(np.dot(coinmat(a + np.pi / 2, b + np.pi / 2), rhog)))
-                        e_ab = 2 * (npp + nmm) - 1
-
-                        npp = np.real(np.trace(np.dot(coinmat(ap, b), rhog)))
-                        nmm = np.real(np.trace(np.dot(coinmat(ap + np.pi / 2, b + np.pi / 2), rhog)))
-                        e_apb = 2 * (npp + nmm) - 1
-
-                        npp = np.real(np.trace(np.dot(coinmat(a, bp), rhog)))
-                        nmm = np.real(np.trace(np.dot(coinmat(a + np.pi / 2, bp + np.pi / 2), rhog)))
-                        e_abp = 2 * (npp + nmm) - 1
-
-                        npp = np.real(np.trace(np.dot(coinmat(ap, bp), rhog)))
-                        nmm = np.real(np.trace(np.dot(coinmat(ap + np.pi / 2, bp + np.pi / 2), rhog)))
-                        e_apbp = 2 * (npp + nmm) - 1
-
-                        s = e_ab + e_abp + e_apb + e_apbp - 2 * np.min([e_ab, e_abp, e_apb, e_apbp])
-
-                        if s > sval:
-                            sval = s
-                            aval = a
-                            apval = ap
-                            bval = b
-                            bpval = bp
-
-        arange_s = [np.max([aval - ((arange[1] - arange[0]) / partsize), 0]),
-                    np.min([aval + ((arange[1] - arange[0]) / partsize), np.pi / 2])]
-        aprange_s = [np.max([apval - ((aprange[1] - aprange[0]) / partsize), 0]),
-                     np.min([apval + ((aprange[1] - aprange[0]) / partsize), np.pi / 2])]
-        brange_s = [np.max([bval - ((brange[1] - brange[0]) / partsize), 0]),
-                    np.min([bval + ((brange[1] - brange[0]) / partsize), np.pi / 2])]
-        bprange_s = [np.max([bpval - ((bprange[1] - bprange[0]) / partsize), 0]),
-                     np.min([bpval + ((bprange[1] - bprange[0]) / partsize), np.pi / 2])]
-
-        return [sval, aval, apval, bval, bpval, arange_s, brange_s, aprange_s, bprange_s]
+        getBellSettings(rho,bounds = -1)
+        Desc: Returns the optimal measurment settings for the CHSH bell inequality.
+              Using bounds will not change the conf settings.
+        
+        DISCLAIMER : In Progress, have not checked.
+        
+        Parameters
+        ----------
+        rho : ndarray with shape = (2^numQubits,2^numQubits) 
+            The density matrix you would like to know the optimal bell measurment settings of.
+        bounds : boolean
+            Set this to true if you want error bounds on your estimated measurment settings. Default will use the conf settings.
+            These are determined with monte carlo simulation and the states are saved under self.mont_carl_states
+            
+        Returns
+        -------
+        vals : ndarray with shape = (length of self.err_functions,2 or 3)
+            The first col is the associated side
+            The second col is the detector settings on the associated side.
+            The third col is the error bound on the detector settings.
+        """
+    def getBellSettings(self, rho, partsize_init = 9, partsize = 5, t = 3,bounds = -1):
+        # if bounds not set use the conf settings
+        if (type(bounds) == int):
+            bounds = (self.conf['DoErrorEstimation'] > 1) or self.mont_carl_states != 0
+        if (bounds):
+            # check if given state is of the current data
+            if (fidelity(self.last_rho, rho) < .95):
+                raise ValueError("Input data needed. You can only calculate bounds on the state used in the tomography.")
+            err_n = self.conf['DoErrorEstimation']
+            # increase err_n if needed
+            if (err_n <= 1):
+                err_n = 2
+            # generate states if needed
+            if (self.mont_carl_states == 0):
+                states = self.tomography_states_generator(err_n)
+            else:
+                states = self.mont_carl_states
+                err_n = len(states[1])
+            vals = getBellSettings_helper_bounds(states[0],rho, partsize_init, partsize, t, err_n)
+        else:
+            vals = getBellSettings_helper(rho, partsize_init, partsize, t)
+        return vals
