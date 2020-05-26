@@ -112,7 +112,7 @@ This file states the data of the measurements. Both tomo_input the intensity mus
 data settings just like you would set a python matrix. This is the following layout of the tomo_input matrix
 - tomo_input
     - Values : numpy array, dimension = 2
-    - Desc : Relative pump power (arb. units) during measurement; used for drift correction. 
+    - Desc : Raw data of the tomography 
     #### For n detectors:
     - tomo_input[:, 0]: times
     - tomo_input[:, 1 : n_qubit + 1)]: singles
