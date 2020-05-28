@@ -66,7 +66,7 @@ def makeRhoImages(p,plt_given,customColor = True):
     fig = plt_given.figure()
     ax1 = fig.add_subplot(111, projection='3d')
     dz = p.flatten().astype(float)
-    img = ax1.bar3d(xpos, ypos, zpos, dx, dy, dz, color=colorMap((dz + 1) / 2),alpha=.8)
+    img = ax1.bar3d(xpos, ypos, zpos, dx, dy, dz, color=colorMap((dz + 1) / 2),edgecolor="black",alpha=.8)
 
 
 
@@ -87,7 +87,7 @@ def makeRhoImages(p,plt_given,customColor = True):
     fig = plt_given.figure()
     ax1 = fig.add_subplot(111, projection='3d')
     dz = p.flatten().imag.astype(float)
-    ax1.bar3d(xpos, ypos, zpos, dx, dy, dz, color=colorMap((dz + 1) / 2),alpha=.8)
+    ax1.bar3d(xpos, ypos, zpos, dx, dy, dz, color=colorMap((dz + 1) / 2),edgecolor="black",alpha=.8)
 
     ax1.axes.set_xticklabels(xTicks)
     ax1.axes.set_yticklabels(yTicks)
@@ -186,7 +186,7 @@ def saveRhoImages(p,pathToDirectory,customColor = True):
     fig = plt.figure()
     ax1 = fig.add_subplot(111, projection='3d')
     dz = p.flatten().astype(float)
-    img = ax1.bar3d(xpos, ypos, zpos, dx, dy, dz, color=colorMap((dz + 1) / 2),alpha=.8)
+    img = ax1.bar3d(xpos, ypos, zpos, dx, dy, dz, color=colorMap((dz + 1) / 2),edgecolor="black",alpha=.8)
 
     ax1.axes.set_xticklabels(xTicks)
     ax1.axes.set_yticklabels(yTicks)
@@ -206,7 +206,7 @@ def saveRhoImages(p,pathToDirectory,customColor = True):
     fig = plt.figure()
     ax1 = fig.add_subplot(111, projection='3d')
     dz = p.flatten().imag.astype(float)
-    ax1.bar3d(xpos, ypos, zpos, dx, dy, dz, color=colorMap((dz + 1) / 2),alpha=.8)
+    ax1.bar3d(xpos, ypos, zpos, dx, dy, dz, color=colorMap((dz + 1) / 2),edgecolor="black",alpha=.8)
 
     ax1.axes.set_xticklabels(xTicks)
     ax1.axes.set_yticklabels(yTicks)
