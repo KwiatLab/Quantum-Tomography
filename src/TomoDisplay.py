@@ -1,180 +1,265 @@
-import matplotlib.pyplot as plt
+import scipy as sp
+from numpy.core.defchararray import add
 import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib as mpl
+from mpl_toolkits.mplot3d import Axes3D
+import sys
+
 
 """
-    Function()
-    Desc: short desc
+    makeRhoImages(p,plt_given,customColor)
+    Desc: Creates matlab plots of the density matrix.
 
     Parameters
     ----------
-    x1, x2 : array_like
-        Input arrays to be multiplied. If ``x1.shape != x2.shape``, they must be broadcastable to a common shape (which becomes the shape of the output).
-
-    Returns
-    -------
-    y : ndarray
-        The product of `x1` and `x2`, element-wise.
+    p : ndarray with shape = (n,2^numQubits,2^numQubits) 
+        The density matrix you want to create plots of.
+    plt_given : matplotlib.pyplot
+        Input pyplot for which the figures will be saved on to.
+    customColor : boolean
+        Specify if you want our custom colorMap. Default is true
     """
-def showRhoImages(p):
-    fig = plt.figure()
-    ax1 = fig.add_subplot(111, projection='3d')
-    xpos = [.5, .5, .5, .5,
-            1.5, 1.5, 1.5, 1.5,
-            2.5, 2.5, 2.5, 2.5,
-            3.5, 3.5, 3.5, 3.5]
-    ypos = [.5, 1.5, 2.5, 3.5,
-            .5, 1.5, 2.5, 3.5,
-            .5, 1.5, 2.5, 3.5,
-            .5, 1.5, 2.5, 3.5, ]
-    zpos = np.zeros(16)
-    dx = [.9, .9, .9, .9
-        , .9, .9, .9, .9
-        , .9, .9, .9, .9
-        , .9, .9, .9, .9]
-    dy = [.9, .9, .9, .9
-        , .9, .9, .9, .9
-        , .9, .9, .9, .9
-        , .9, .9, .9, .9]
+def makeRhoImages(p,plt_given,customColor = True):
+    # Set up
+    numQubits = int(np.log2(p.shape[0]))
+    xpos = np.zeros_like(p.flatten(),dtype=float)
+    ypos = np.zeros_like(p.flatten(),dtype=float)
+    for i in range(0,2**numQubits):
+        xpos[i*2**numQubits:(1+i)*2**numQubits] = .5+i
+    for i in range(0,2**numQubits):
+        ypos[i::2**numQubits] = .5+i
+    zpos = np.zeros_like(p.flatten(),dtype=float)
+    # width of cols
+    dx = .9*np.ones_like(xpos)
+    dy = .9*np.ones_like(ypos)
+    # custom color map
+    n_bin = 100
+    if(customColor):
+        from matplotlib.colors import LinearSegmentedColormap
+        cmap_name = 'my_list'
+        colors = [(1 / 255.0, 221 / 255.0, 137 / 255.0),
+                  (32 / 255.0, 151 / 255.0, 138 / 255.0),
+                  (53 / 255.0, 106 / 255.0, 138 / 255.0),
+                  (86 / 255.0, 33 / 255.0, 139 / 255.0),
+                  (131 / 255.0, 75 / 255.0, 114 / 255.0),
+                  (173 / 255.0, 114 / 255.0, 90 / 255.0),
+                  (253 / 255.0, 187 / 255.0, 45 / 255.0)]
+        colorMap = LinearSegmentedColormap.from_list(cmap_name, colors, N=n_bin)
+    else:
+        colorMap = plt.cm.jet
+    norm = mpl.colors.Normalize(vmin=-1, vmax=1)
 
-    dz = [.5, 1.5, 2.5, 3.5,
-          .5, 1.5, 2.5, 3.5,
-          .5, 1.5, 2.5, 3.5,
-          .5, 1.5, 2.5, 3.5, ]
+    tickBase = ["H","V"]
+    tick = [""]
+    for x in range(numQubits):
+        newTick = np.zeros(len(tick)*2,dtype="O")
+        for i in range(len(tick)):
+            for j in range(len(tickBase)):
+                newTick[len(tick)*i +j] = tick[i] + tickBase[j]
+        tick = newTick
+    xTicks = ["|"+x+">" for x in tick]
+    yTicks = ["|"+x+">" for x in tick]
+
+
+    # Real Graph
+    fig = plt_given.figure()
+    ax1 = fig.add_subplot(111, projection='3d')
     dz = p.flatten().astype(float)
+    img = ax1.bar3d(xpos, ypos, zpos, dx, dy, dz, color=colorMap((dz + 1) / 2),alpha=.8)
 
 
-    colors = ['r','g','b','purple']
 
-    #ax1.bar3d(xpos, ypos, zpos, dx, dy, dz, color='#00ceaa')
-    for i in range(4):
-        ax1.bar3d(xpos[i*4:i*4+4], ypos[i*4:i*4+4], zpos[i*4:i*4+4], dx[i*4:i*4+4], dy[i*4:i*4+4], dz[i*4:i*4+4],edgecolor="black",alpha=.65, color=colors[i])
-
-    ax1.axes.set_xticklabels(["|HH>", "|HV>", "|VH>", "|VV>"])
-    ax1.axes.set_yticklabels(["<HH|", "<HV|", "<VH|", "<VV|"])
-    ax1.axes.set_xticks([1, 2, 3, 4])
-    ax1.axes.set_yticks([1, 2, 3, 4])
-    ax1.axes.set_zticks([-1.0, -.8, -.6, -.4, -.2, 0, .2, .4, .6, .8, 1.0])
+    ax1.axes.set_xticklabels(xTicks)
+    ax1.axes.set_yticklabels(yTicks)
+    ax1.axes.set_xticks(range(1,2**numQubits+1))
+    ax1.axes.set_yticks(range(1,2**numQubits+1))
+    ax1.axes.set_zticks(np.arange(-1, 1.1, .2))
     ax1.axes.set_zlim3d(-1, 1)
-    plt.title("Rho")
+    plt_given.title("Rho Real")
+    fig.subplots_adjust(bottom=0.2)
+    ax1 = fig.add_axes([0.05, 0.10, 0.9, 0.065])
+    cb1 = mpl.colorbar.ColorbarBase(ax1, cmap=colorMap,
+                                    norm=norm,
+                                    orientation='horizontal')
+
+    # Imaginary graph
+    fig = plt_given.figure()
+    ax1 = fig.add_subplot(111, projection='3d')
+    dz = p.flatten().imag.astype(float)
+    ax1.bar3d(xpos, ypos, zpos, dx, dy, dz, color=colorMap((dz + 1) / 2),alpha=.8)
+
+    ax1.axes.set_xticklabels(xTicks)
+    ax1.axes.set_yticklabels(yTicks)
+    ax1.axes.set_xticks(range(1, 2 ** numQubits + 1))
+    ax1.axes.set_yticks(range(1, 2 ** numQubits + 1))
+    ax1.axes.set_zticks(np.arange(-1, 1.1, .2))
+    ax1.axes.set_zlim3d(-1, 1)
+    plt_given.title("Rho Imaginary")
+
+    fig.subplots_adjust(bottom=0.2)
+    ax1 = fig.add_axes([0.05, 0.10, 0.9, 0.065])
+    cb1 = mpl.colorbar.ColorbarBase(ax1, cmap=colorMap,
+                                    norm=norm,
+                                    orientation='horizontal')
 
 
+"""
+    printLastOutput(tomo,bounds)
+    Desc: Prints the properties of the last tomography to the console. Properties are defined in tomography conf settings.
+          Using bounds will not change the conf settings. The calculated properties are determined by self.err_functions.
 
+    Parameters
+    ----------
+    tomo : Tomography() Object
+        This is the main tomography object. It will get the data from it's last tomography and print it. 
+    bounds : boolean
+        Set this to true if you want error bounds on your estimated property values. Default is False.
+        These are determined with monte carlo simulation and the states are saved under self.mont_carl_states
+    """
+def printLastOutput(tomo,bounds = -1):
+    p = tomo.last_rho
+    print("State: ")
+    print(p)
+    properties = tomo.getProperties(p, bounds)
+    for prop in properties:
+        if(len(prop) >3):
+            print(prop[0] + " : " + str(prop[1]) + " +/- " + str(prop[2]))
+        else:
+            print(prop[0] + " : " + str(prop[1]))
+
+"""
+    saveRhoImages(p,pathToDirectory,customColor)
+    Desc: Creates and saves matlab plots of the density matrix.
+
+    Parameters
+    ----------
+    p : ndarray with shape = (n,2^numQubits,2^numQubits) 
+        The density matrix you want to create plots of.
+    pathToDirectory : string
+        Path to where you want your images to be saved.
+    customColor : boolean
+        Specify if you want our custom colorMap. Default is true.
+    """
+def saveRhoImages(p,pathToDirectory,customColor = True):
+    # Set up
+    numQubits = int(np.log2(p.shape[0]))
+    xpos = np.zeros_like(p.flatten(), dtype=float)
+    ypos = np.zeros_like(p.flatten(), dtype=float)
+    for i in range(0, 2 ** numQubits):
+        xpos[i * 2 ** numQubits:(1 + i) * 2 ** numQubits] = .5 + i
+    for i in range(0, 2 ** numQubits):
+        ypos[i::2 ** numQubits] = .5 + i
+    zpos = np.zeros_like(p.flatten(), dtype=float)
+    # width of cols
+    dx = .9 * np.ones_like(xpos)
+    dy = .9 * np.ones_like(ypos)
+    # custom color map
+    n_bin = 100
+    if (customColor):
+        from matplotlib.colors import LinearSegmentedColormap
+        cmap_name = 'my_list'
+        colors = [(1 / 255.0, 221 / 255.0, 137 / 255.0),
+                  (32 / 255.0, 151 / 255.0, 138 / 255.0),
+                  (53 / 255.0, 106 / 255.0, 138 / 255.0),
+                  (86 / 255.0, 33 / 255.0, 139 / 255.0),
+                  (131 / 255.0, 75 / 255.0, 114 / 255.0),
+                  (173 / 255.0, 114 / 255.0, 90 / 255.0),
+                  (253 / 255.0, 187 / 255.0, 45 / 255.0)]
+        colorMap = LinearSegmentedColormap.from_list(cmap_name, colors, N=n_bin)
+    else:
+        colorMap = plt.cm.jet
+    norm = mpl.colors.Normalize(vmin=-1, vmax=1)
+
+    tickBase = ["H", "V"]
+    tick = [""]
+    for x in range(numQubits):
+        newTick = np.zeros(len(tick) * 2, dtype="O")
+        for i in range(len(tick)):
+            for j in range(len(tickBase)):
+                newTick[len(tick) * i + j] = tick[i] + tickBase[j]
+        tick = newTick
+    xTicks = ["|" + x + ">" for x in tick]
+    yTicks = ["|" + x + ">" for x in tick]
+
+    # Real Graph
     fig = plt.figure()
     ax1 = fig.add_subplot(111, projection='3d')
-    xpos = [.5, .5, .5, .5,
-            1.5, 1.5, 1.5, 1.5,
-            2.5, 2.5, 2.5, 2.5,
-            3.5, 3.5, 3.5, 3.5]
-    ypos = [.5, 1.5, 2.5, 3.5,
-            .5, 1.5, 2.5, 3.5,
-            .5, 1.5, 2.5, 3.5,
-            .5, 1.5, 2.5, 3.5, ]
-    zpos = np.zeros(16)
-    dx = [.9, .9, .9, .9
-        , .9, .9, .9, .9
-        , .9, .9, .9, .9
-        , .9, .9, .9, .9]
-    dy = [.9, .9, .9, .9
-        , .9, .9, .9, .9
-        , .9, .9, .9, .9
-        , .9, .9, .9, .9]
+    dz = p.flatten().astype(float)
+    img = ax1.bar3d(xpos, ypos, zpos, dx, dy, dz, color=colorMap((dz + 1) / 2),alpha=.8)
 
-    dz = [.5, 1.5, 2.5, 3.5,
-          .5, 1.5, 2.5, 3.5,
-          .5, 1.5, 2.5, 3.5,
-          .5, 1.5, 2.5, 3.5, ]
+    ax1.axes.set_xticklabels(xTicks)
+    ax1.axes.set_yticklabels(yTicks)
+    ax1.axes.set_xticks(range(1, 2 ** numQubits + 1))
+    ax1.axes.set_yticks(range(1, 2 ** numQubits + 1))
+    ax1.axes.set_zticks(np.arange(-1, 1.1, .2))
+    ax1.axes.set_zlim3d(-1, 1)
+    plt.title("Rho Real")
+    fig.subplots_adjust(bottom=0.2)
+    ax1 = fig.add_axes([0.05, 0.10, 0.9, 0.065])
+    cb1 = mpl.colorbar.ColorbarBase(ax1, cmap=colorMap,
+                                    norm=norm,
+                                    orientation='horizontal')
+    plt.savefig(pathToDirectory + "/rhobarReal.png")
+
+    # Imaginary graph
+    fig = plt.figure()
+    ax1 = fig.add_subplot(111, projection='3d')
     dz = p.flatten().imag.astype(float)
-    colors = ['r', 'g', 'b', 'purple']
+    ax1.bar3d(xpos, ypos, zpos, dx, dy, dz, color=colorMap((dz + 1) / 2),alpha=.8)
 
-    # ax1.bar3d(xpos, ypos, zpos, dx, dy, dz, color='#00ceaa')
-    for i in range(4):
-        ax1.bar3d(xpos[i * 4:i * 4 + 4], ypos[i * 4:i * 4 + 4], zpos[i * 4:i * 4 + 4], dx[i * 4:i * 4 + 4],
-                  dy[i * 4:i * 4 + 4], dz[i * 4:i * 4 + 4], edgecolor="black", alpha=.65, color=colors[i])
-
-
-    ax1.axes.set_xticklabels(["|HH>", "|HV>", "|VH>", "|VV>"])
-    ax1.axes.set_yticklabels(["<HH|", "<HV|", "<VH|", "<VV|"])
-    ax1.axes.set_xticks([1, 2, 3, 4])
-    ax1.axes.set_yticks([1, 2, 3, 4])
-    ax1.axes.set_zticks([-1.0, -.8, -.6, -.4, -.2, 0, .2, .4, .6, .8, 1.0])
+    ax1.axes.set_xticklabels(xTicks)
+    ax1.axes.set_yticklabels(yTicks)
+    ax1.axes.set_xticks(range(1, 2 ** numQubits + 1))
+    ax1.axes.set_yticks(range(1, 2 ** numQubits + 1))
+    ax1.axes.set_zticks(np.arange(-1, 1.1, .2))
     ax1.axes.set_zlim3d(-1, 1)
     plt.title("Rho Imaginary")
-    plt.show()
+    fig.subplots_adjust(bottom=0.2)
+    ax1 = fig.add_axes([0.05, 0.10, 0.9, 0.065])
+    cb1 = mpl.colorbar.ColorbarBase(ax1, cmap=colorMap,
+                                    norm=norm,
+                                    orientation='horizontal')
+    plt.savefig(pathToDirectory + "/rhobarImag.png")
+
 
 """
-    Function()
-    Desc: short desc
+    matrixToHTML(M)
+    Desc: Creates an HTML table based on the given matrix.
 
     Parameters
     ----------
-    x1, x2 : array_like
-        Input arrays to be multiplied. If ``x1.shape != x2.shape``, they must be broadcastable to a common shape (which becomes the shape of the output).
-
+    M : ndarray
+        Matrix you would like to display on your html page.
+    printEigenVals : boolean
+        Specify if you want eigen values to be calculated and displayed at the bottom of the table.
     Returns
     -------
-    y : ndarray
-        The product of `x1` and `x2`, element-wise.
+    res : string
+        HTML code of the created table.
     """
-def displayOutput(p,inten,fval,tomo):
-    err_n = tomo.conf['DoErrorEstimation']
-    vals = tomo.getproperties(p)
-    if (err_n > 1):
-        rhon = tomo.tomography_error_states_generator(err_n)
-        [mean, errs, mean_fid, err_fid] = tomo.tomography_error(p, rhon)
-        errs = np.around(errs, 5)
-        vals = np.around(vals, 5)
-        intensity = round(inten, 1)
-        fval = round(fval, 5)
-        outputVals, outputNames = outputvalues(tomo.err_functions, vals, errs, intensity, fval, err_n)
-    else:
-        outputNames = tomo.err_functions
-        outputVals = {}
-        for x in range(0, len(outputNames)):
-            outputVals[outputNames[x]] = [vals[x]]
 
-    for x in range(0, len(tomo.err_functions)):
-        if(len(outputVals[outputNames[x]]) == 1):
-            print(outputNames[x], " = ", outputVals[outputNames[x]][0])
-        else:
-            print(outputNames[x], " = ", outputVals[outputNames[x]][0], "+/-", outputVals[outputNames[x]][1])
-    print("State = ")
-    print(p)
-    return outputVals, outputNames
-
-"""
-    Function()
-    Desc: short desc
-
-    Parameters
-    ----------
-    x1, x2 : array_like
-        Input arrays to be multiplied. If ``x1.shape != x2.shape``, they must be broadcastable to a common shape (which becomes the shape of the output).
-
-    Returns
-    -------
-    y : ndarray
-        The product of `x1` and `x2`, element-wise.
-    """
-def outputErrorvalues(func, values, errors, inten, fvalp, err_time):
-    output = {"Intensity": (inten,), "fval": (fvalp,), "Error Estimation Times": (err_time,)}
-    name = ["Intensity", "fval", "Error Estimation Times"]
-    for i in range(len(func)):
-        if func[i] == 'concurrence':
-            output["Concurrence"] = (values[i], errors[i])
-            name = np.append(name, "Concurrence")
-        elif func[i] == 'tangle':
-            output["Tangle"] = (values[i], errors[i])
-            name = np.append(name, "Tangle")
-        elif func[i] == 'entanglement':
-            output["Entanglement"] = (values[i], errors[i])
-            name = np.append(name, "Entanglement")
-        elif func[i] == 'entropy':
-            output["Entropy"] = (values[i], errors[i])
-            name = np.append(name, "Entropy")
-        elif func[i] == 'linear_entropy':
-            output["Linear Entropy"] = (values[i], errors[i])
-            name = np.append(name, "Linear Entropy")
-        elif func[i] == 'negativity':
-            output["Negativity"] = (values[i], errors[i])
-            name = np.append(name, "Negativity")
-    return output, name
+def matrixToHTML(M,printEigenVals = False):
+    s = np.shape(M)
+    res = '<table style=\"border: 1px solid black;border-collapse: collapse;font-size: 15px; table-layout:fixed;width:100%;\">'
+    for i in range(s[0]):
+        res = res+' <tr>'
+        for j in range(s[1]):
+            res = res + '<td style = "border: 1px solid black;">' + str(np.real(M[i,j])) + "<div style=\"color:rebeccapurple;font-weight: bold;display:inline;\">+</div><BR>"+ str(np.imag(M[i,j]))
+            res = res + '<div style=\"color:rebeccapurple;font-weight: bold;display:inline;\">j</div></td>'
+        res = res +'</tr>'
+    res = res+'</table>'
+    if(printEigenVals):
+        d, v = np.linalg.eig(M)
+        eigenVals = "<h5>Eigen Values: "
+        for x in range(0,len(d)):
+            eigenVals = eigenVals+str(round(d[x].real, 5))
+            if(abs(d[x].imag)>.00001):
+                eigenVals = eigenVals+"< div style =\"color:rebeccapurple;font-weight: bold;display:inline;\">+</div>"
+                eigenVals = eigenVals+str(round(d[x].imag, 5))
+                eigenVals = eigenVals+"<div style=\"color:rebeccapurple;font-weight: bold;display:inline;\">j</div>"
+            eigenVals = eigenVals+" , "
+        eigenVals = str(eigenVals)[0:len(str(eigenVals))-2]
+        eigenVals = eigenVals+"</h5>"
+        res = res+eigenVals
+    return res

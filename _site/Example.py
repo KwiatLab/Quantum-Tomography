@@ -1,6 +1,5 @@
 import numpy as np
 
-import matplotlib.pyplot as plt
 import src as qKLib
 
 # Step 1. Initialize Tomography Object
@@ -21,14 +20,17 @@ intensity=np.array([1,1,1,1,1,1])
 [rho, intens, fval] = t.state_tomography(tomo_input, intensity)
 # or import the eval file to import both the config and data
 [rho, intensity, fval] = t.importEval('ExampleFiles/pythoneval.txt')
+print("State: ")
+print(rho)
 
 # Step 4. Optional Methods
 # The library also include useful functions you may use included in TomoFunctions.py.
 # See http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/ for a full reference guide of all the functions.
-qKLib.printLastOutput(t)
+
+properties = t.getProperties(rho,True)
+for prop in properties:
+    print(prop[0] + " : " + prop[1] + " +/- " + prop[2])
+
 
 expectedState = np.array([[1.0,0.0],[0.0,0.0]])
 print("Fidelity: " + str(qKLib.fidelity(rho,expectedState)))
-rho = np.kron(rho,rho)
-qKLib.makeRhoImages(rho,plt,True)
-plt.show()
