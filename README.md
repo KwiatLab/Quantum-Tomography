@@ -9,25 +9,22 @@ on their data, you can use the following command in the package directory:
 ```
 Quantum-Tomography -i C:\Full\Path\To\pythoneval.txt
 ```
-This will read the data in the txt file provided. Examples and syntax for a conf file
-is provided at the bottom of this readme.The default output of the data 
-will be in the same location as the main directory folder. This can be changed by 
-adding the following argument to the command:
+This will read the data in the txt file provided and print the output ot the console. Examples and syntax for a conf file
+is provided at the bottom of this readme. If you would like to save your data you can provide the save location like in the following example:
 ```
 Quantum-Tomography -i C:\Full\Path\To\pythoneval.txt -o C:\Full\Path\To\output\Folder 
 ```
-There are several other arguments that are also optional like the output location.
+There are several other arguments that are optional like save option. Here is the full list of arguments:
 
-- -p true
-    - Values : True/False
-    - Desc : Setting this to true will provide images of real and imaginary values of the 
-    density matrix.
+- -i or --eval
+    - Values : string
+    - Desc : The full path to the file that contains the data and configuration for the tomography.
+- -s or --save
+    - Values : string
+    - Desc : The full path to the folder where you want the output to be saved. If not included it will not save your data.
+- -p or --pic
+    - Desc : Including this will show images of real and imaginary values of the density matrix. If save is also included pictures will only be saved and not shown.
     - Default : False
-- -s true
-    - Values : True/False
-    - Desc : Setting this to false will NOT SAVE your output data. Only do this if you 
-    just want the output to be printed in the command line
-    - Default : True
     
 ### Python
 For those running tomography on multiple quantum states it may be easier to use the python 

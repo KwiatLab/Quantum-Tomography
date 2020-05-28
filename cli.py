@@ -32,17 +32,14 @@ def main():
     parser = argparse.ArgumentParser(description="Weather Reporter")
 
     parser.add_argument("-i", "--eval", type=file_path, nargs=1,
-                        metavar="evalFile", default= None, help="The full path to the file that contains the data and configuration for the tomography")
+                        metavar="evalFile", default= None, help="The full path to the file that contains the data and configuration for the tomography.")
 
-    parser.add_argument("-o", "--outPut", type=dir_path, nargs=1,
-                        metavar="outPutFolder", default= None, help="The full path to the folder where you want the output to be saved")
+    parser.add_argument("-s", "--save", type=dir_path, nargs=1,
+                        metavar="outPutFolder", default= None, help="The full path to the folder where you want the output to be saved. If not included it will not save your data.")
 
-    parser.add_argument("-p", "--pic", type=bool, nargs=1,
-                        metavar="pictureBool", default=False,
-                        help="Setting this to true will provide images of real and imaginary values of the density matrix")
-    parser.add_argument("-s", "--save", type=bool, nargs=1,
-                        metavar="saveBool", default=False,
-                        help=" Setting this to true will save your output data in HTML format")
+    parser.add_argument("-p", "--pic", action='store_true',default=False,
+                        help="Including this will show images of real and imaginary values of the density matrix. If save is also included pictures will be saved and not shown.")
+
 
     # parse the arguments from standard input
     args = parser.parse_args()
@@ -52,10 +49,10 @@ def main():
     except:
         raise ValueError("input not defined")
     try:
-        outPutfilePath = args.outPut[0]
+        outPutfilePath = args.save[0]
+        save = True
     except:
-        raise ValueError("output not defined")
-    save = args.save
+        save = False
     pictures = args.pic
 
     t = qKLib.Tomography()
@@ -64,7 +61,7 @@ def main():
     [rho, intensity, fval] = t.importEval(inPutfilePath)
     qKLib.printLastOutput(t)
 
-    if(save):
+    if(save and save != "False"):
         #Prints the data to a html file
         FORREPLACE = '<h1 style="text-align: center;"> Tomography Results</h1>'
         if(pictures):
@@ -270,6 +267,13 @@ def main():
             ff.write(fff)
             ff.close()
         print("Output saved to "+outPutfilePath + '\\TomoOutPut')
+    else:
+        if(pictures):
+            import matplotlib.pyplot as plt
+            import warnings
+            warnings.filterwarnings('ignore')
+            qKLib.makeRhoImages(rho,plt)
+            plt.show()
 #
 # def createtable(M):
 #     s = np.shape(M)
