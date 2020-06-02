@@ -15,16 +15,18 @@ setup(
     url="https://github.com/KwiatQIM/Quantum-Tomography",
     author="Scott Turro",
     author_email="turroscott@gmail.com",
+    license="MIT",
     classifiers=[
+        "License :: OSI Approved :: MIT License",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
     ],
     packages=["src"],
     include_package_data=True,
-    install_requires=["scipy","numpy"],
+    install_requires=["scipy","numpy","matplotlib"],
     entry_points={
         "console_scripts": [
-            "Quantum-Tomography=main:main",
+            "Quantum-Tomography=cli:main",
         ]
     },
 )

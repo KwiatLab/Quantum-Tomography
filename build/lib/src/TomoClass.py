@@ -668,7 +668,7 @@ class Tomography():
     #####################
 
     """
-    getProperties(rho)
+    getProperties(rho, bounds)
     Desc: Returns all the properties of the given density matrix.
           Using bounds will not change the conf settings. The calculated properties are determined by self.err_functions.
 

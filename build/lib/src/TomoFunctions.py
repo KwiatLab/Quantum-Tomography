@@ -106,7 +106,7 @@ def make_positive(rhog_in):
     Returns
     -------
     tm : ndarray
-        lower t matrix defining the input matrix
+        Lower t matrix defining the input matrix.
     """
 def density2tm(rhog):
     d = rhog.shape[0]
@@ -141,8 +141,8 @@ def density2tm(rhog):
 
     Returns
     -------
-    tm : ndarray
-        List of t values defining the input matrix
+    t : ndarray
+        List of t values defining the input matrix.
     """
 def density2t(rhog):
     tm = density2tm(rhog)
@@ -177,13 +177,7 @@ def density2t(rhog):
         Density Matrix of the input state.
     """
 def toDensity(psiMat):
-    if isinstance(psiMat.shape,int):
-        return np.outer(psiMat.conj(), psiMat)
-    else:
-        temp = psiMat[0]
-        for j in range(1, len(psiMat)):
-            temp = np.kron(temp, psiMat[j])
-        return np.outer(temp.conj(), temp)
+    return np.outer(psiMat.conj(), psiMat)
 
 #
 # def one_in(idx, length):
@@ -393,7 +387,7 @@ def entropy(rhog):
 
 """
     linear_entropy(rhog)
-    Desc: Calculates the linear_entropy of the input state.
+    Desc: Calculates the linear entropy of the input state.
 
     Parameters
     ----------
@@ -403,7 +397,7 @@ def entropy(rhog):
     Returns
     -------
     val : float
-        The calculated linear_entropy.
+        The calculated linear entropy.
     """
 def linear_entropy(rhog):
     if min(rhog.shape) == 1:
@@ -533,7 +527,7 @@ def partial_transpose(rhog, n = 0, d=np.nan):
     psi : ndarray
         The input state to do the operation on. Can be a pure state or a density matrix.
     g : ndarray with shape = (num operations,2^numQubits,2^numQubits) 
-        The operations you would like to be done. Can be one operation or an array of operations in matrix form.    
+        The operations you would like to be done. Can be one operation or an array of operations.    
         
     Returns
     -------

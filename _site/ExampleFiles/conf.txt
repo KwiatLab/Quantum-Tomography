@@ -1,9 +1,0 @@
-conf['NQubits'] = 1
-conf['NDetectors'] = 1
-conf['Crosstalk'] = [[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]]
-conf['UseDerivative'] = 0
-conf['Bellstate'] = 0
-conf['DoErrorEstimation'] = 0
-conf['DoDriftCorrection'] = 'no'
-conf['Window'] = 0
-conf['Efficiency'] = [1,1,1,1];
