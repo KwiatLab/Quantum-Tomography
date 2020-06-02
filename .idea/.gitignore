@@ -1,2 +1,12 @@
 # Default ignored files
 /workspace.xml
+
+*.egg-info
+*.dist-info
+*.pyc
+build
+dist
+__pycache__
+.coverage
+.pytest_cache
+.cache
