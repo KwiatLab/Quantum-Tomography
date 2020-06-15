@@ -335,7 +335,7 @@ def concurrence(rhog):
 
         return val
     else:
-        return 0
+        return 'NA'
 
 
 """
@@ -345,7 +345,7 @@ def concurrence(rhog):
     Parameters
     ----------
     rhog : ndarray
-        Density Matrix of the desired state.
+        Density Matrix of the desired state. Tangle is calculated by squaring the concurrence.
 
     Returns
     -------
@@ -353,13 +353,13 @@ def concurrence(rhog):
         The calculated tangle.
     """
 def tangle(rhog):
-    if(rhog.shape[0]>2>1):
+    if(rhog.shape[0]>2):
         c = concurrence(rhog)
         val = c ** 2
 
         return val
     else:
-        return 0
+        return 'NA'
 
 """
     entropy(rhog)
@@ -397,16 +397,12 @@ def entropy(rhog):
     Returns
     -------
     val : float
-        The calculated linear entropy.
+        The calculated linear entropy ranging from 0 to 1/(2^numQubits).
+        A value of zero corresponds to a completly pure state.
     """
 def linear_entropy(rhog):
-    if min(rhog.shape) == 1:
-        val = 0
-    else:
-        d = len(rhog)
-        val = d * np.real(1-np.trace(np.dot(rhog, rhog)))/(d-1)
 
-    return val
+    return 1- purity(rhog)
 
 
 """
@@ -424,13 +420,16 @@ def linear_entropy(rhog):
         The calculated negativity.
     """
 def negativity(rhog):
-    if min(rhog.shape) == 1:
-        rhog = np.dot(rhog, rhog.conj().transpose())
+    if(rhog.shape[0]>2):
+        if min(rhog.shape) == 1:
+            rhog = np.dot(rhog, rhog.conj().transpose())
 
-    rho1 = partial_transpose(rhog)
-    val = -2*np.min(np.min(np.real(np.linalg.eig(rho1)[0])), 0)
+        rho1 = partial_transpose(rhog)
+        val = -2*np.min(np.min(np.real(np.linalg.eig(rho1)[0])), 0)
 
-    return val
+        return val
+    else:
+        return 'NA'
 
 """
     purity(rhog)
@@ -444,7 +443,8 @@ def negativity(rhog):
     Returns
     -------
     val : float
-        The calculated purity.
+        The calculated purity ranging from 1/(2^numQubits) to 1.
+        A value of one corresponds to a completly pure state.
     """
 def purity(rhog):
     return np.real(np.trace(np.dot(rhog, rhog)))

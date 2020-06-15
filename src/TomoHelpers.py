@@ -131,17 +131,21 @@ def getProperties_helper(errf,rho0):
 def getProperties_helper_bounds(errf, rhop,rho):
     n = rhop.shape[0]
     n_fun = len(errf)
-    data = np.zeros([n+1, n_fun])
+    data = np.zeros([n+1, n_fun],dtype="O")
     for j in range(n):
         data[j] = getProperties_helper(errf, rhop[j, :, :])[:, 1]
     data[-1] = getProperties_helper(errf, rho)[:, 1]
 
-    errors = np.zeros(n_fun)
-    means = np.zeros(n_fun)
+    errors = np.zeros(n_fun,dtype="O")
+    means = np.zeros(n_fun,dtype="O")
 
     for k in range(n_fun):
-        errors[k] = np.std(data[:, k], ddof=n - 1)
-        means[k] = np.mean(data[:, k])
+        if any(data[:, k] == 'NA'):
+            errors[k] = ''
+            means[k] = 'NA'
+        else:
+            errors[k] = np.std(data[:, k], ddof=n - 1)
+            means[k] = np.mean(data[:, k])
 
     return np.array([np.array(errf), means, errors],dtype="O").transpose()
 
