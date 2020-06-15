@@ -1,3 +1,7 @@
+"""
+Copyright 2020 University of Illinois Board of Trustees.
+Licensed under the terms of an MIT license
+"""
 from .TomoFunctions import *
 from .TomoHelpers import *
 import numpy as np

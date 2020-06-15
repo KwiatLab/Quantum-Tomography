@@ -1,3 +1,7 @@
+"""
+Copyright 2020 University of Illinois Board of Trustees.
+Licensed under the terms of an MIT license
+"""
 #These are various helper functions used in other main functions in the TomoFunction file
 import numpy as np
 

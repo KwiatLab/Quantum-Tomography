@@ -1,3 +1,7 @@
+"""
+Copyright 2020 University of Illinois Board of Trustees.
+Licensed under the terms of an MIT license
+"""
 import scipy as sp
 # from numpy.core.defchararray import add
 import numpy as np
