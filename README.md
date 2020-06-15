@@ -3,6 +3,32 @@
 A python library to help perform tomography on a quantum state.
 
 ## Usage
+<<<<<<< HEAD
+=======
+### Terminal
+For those who do not want to write python code to perform tomography 
+on their data, you can use the following command in the package directory:
+```
+Quantum-Tomography -i C:\Full\Path\To\pythoneval.txt
+```
+This will read the data in the txt file provided and print the output ot the console. Examples and syntax for a conf file
+is provided at the bottom of this readme. If you would like to save your data you can provide the save location like in the following example:
+```
+Quantum-Tomography -i C:\Full\Path\To\pythoneval.txt -o C:\Full\Path\To\output\Folder 
+```
+There are several other arguments that are optional like save option. Here is the full list of arguments:
+
+- -i or --eval
+    - Values : string
+    - Desc : The full path to the file that contains the data and configuration for the tomography.
+- -s or --save
+    - Values : string
+    - Desc : The full path to the folder where you want the output to be saved. If not included it will not save your data.
+- -p or --pic
+    - Desc : Including this will show images of real and imaginary values of the density matrix. If save is also included pictures will only be saved and not shown.
+    - Default : False
+    
+>>>>>>> pypiReady
 ### Python
 For those running tomography on multiple quantum states it may be easier to use the python 
 package directly for a more hands free process.
@@ -84,6 +110,13 @@ conf settings just like you would set a python dictionary. These are the followi
     - Values : 'no' or 'yes'
     - Desc : Whether of not you want to perform accidental corrections on the state.
     - Default : 'no'
+<<<<<<< HEAD
+=======
+- 'DoErrorEstimation'
+    - Values : >=0
+    - Desc : Number of states used to calculate the errors on the properties of the state
+    - Default : 0
+>>>>>>> pypiReady
 - 'Window'
     - Values : 0 or array like, dimension = 1
     - Desc : Coincidence window durations (in nanoseconds) to calculate the accidental rates. The
@@ -112,7 +145,11 @@ This file states the data of the measurements. Both tomo_input the intensity mus
 data settings just like you would set a python matrix. This is the following layout of the tomo_input matrix
 - tomo_input
     - Values : numpy array, dimension = 2
+<<<<<<< HEAD
     - Desc : Raw data of the tomography 
+=======
+    - Desc : Relative pump power (arb. units) during measurement; used for drift correction. 
+>>>>>>> pypiReady
     #### For n detectors:
     - tomo_input[:, 0]: times
     - tomo_input[:, 1 : n_qubit + 1)]: singles
