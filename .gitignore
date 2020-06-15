@@ -1,0 +1,14 @@
+*.egg-info
+*.dist-info
+*.pyc
+build
+dist
+.coverage
+.pytest_cache
+.cache
+.idea
+__pycache__
+MANIFEST.in
+setup.py
+cli.py
+Debugger.py
