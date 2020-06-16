@@ -7,7 +7,10 @@
 import argparse
 import os
 import sys                                          #for path to external scripts
-import __init__ as qKLib
+
+import QuantumTomography as qKLib
+
+
 import numpy as np
 from numpy.core.defchararray import add
 
@@ -29,7 +32,7 @@ def dir_path(string):
 
 def main():
     # create argument parser object
-    parser = argparse.ArgumentParser(description="Weather Reporter")
+    parser = argparse.ArgumentParser(description="Quantum Tomography")
 
     parser.add_argument("-i", "--eval", type=file_path, nargs=1,
                         metavar="evalFile", default= None, help="The full path to the file that contains the data and configuration for the tomography.")

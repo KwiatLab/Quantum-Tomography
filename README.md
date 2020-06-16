@@ -12,7 +12,7 @@ Quantum-Tomography -i C:\Full\Path\To\pythoneval.txt
 This will read the data in the txt file provided and print the output ot the console. Examples and syntax for a conf file
 is provided at the bottom of this readme. If you would like to save your data you can provide the save location like in the following example:
 ```
-Quantum-Tomography -i C:\Full\Path\To\pythoneval.txt -o C:\Full\Path\To\output\Folder 
+Quantum-Tomography -i C:\Full\Path\To\pythoneval.txt -s C:\Full\Path\To\output\Folder 
 ```
 There are several other arguments that are optional like save option. Here is the full list of arguments:
 

@@ -3,7 +3,9 @@ Copyright 2020 University of Illinois Board of Trustees.
 Licensed under the terms of an MIT license
 """
 import sys
-from src import *
+
+from .TomoClass import *
+from .TomoDisplay import *
 
 __author__ = 'Quoleon/Turro'
 #################
