@@ -8,7 +8,4 @@ dist
 .cache
 .idea
 __pycache__
-MANIFEST.in
-setup.py
-cli.py
 Debugger.py
