@@ -7,7 +7,7 @@
 import argparse
 import os
 import sys                                          #for path to external scripts
-import QuatumTomography as qKLib
+import __init__ as qKLib
 import numpy as np
 from numpy.core.defchararray import add
 
