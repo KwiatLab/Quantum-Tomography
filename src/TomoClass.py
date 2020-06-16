@@ -8,7 +8,6 @@ import numpy as np
 from scipy.optimize import leastsq
 
 
-
 """
     class Tomography()
     Desc: This is the main tomography object that the library is built around. The goal is to only have one tomography object and edit the 
