@@ -2,9 +2,16 @@
 Copyright 2020 University of Illinois Board of Trustees.
 Licensed under the terms of an MIT license
 """
-#These are various helper functions used in other main functions
+
+__author__ = 'Quoleon/Turro'
+"""CHECK OUT THE REFERENCE PAGE ON OUR WEBSITE : http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
+
 import numpy as np
 from .TomoFunctions import *
+
+
+#These are various helper functions used in other main functions
+
 
 # helper function used in linear tomography
 def independent_set(measurements):

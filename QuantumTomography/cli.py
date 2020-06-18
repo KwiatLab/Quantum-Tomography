@@ -1,9 +1,11 @@
-# This script is used to run quantum tomography from the command line.
-#
-# Running the command Quantum-Tomography from the command line in the package directory will run this script
-#
-# Arguments:
-#
+"""
+Copyright 2020 University of Illinois Board of Trustees.
+Licensed under the terms of an MIT license
+"""
+
+__author__ = 'Quoleon/Turro'
+"""CHECK OUT THE REFERENCE PAGE ON OUR WEBSITE : http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
+
 import argparse
 import os
 import sys                                          #for path to external scripts
@@ -14,6 +16,10 @@ import QuantumTomography as qKLib
 import numpy as np
 from numpy.core.defchararray import add
 
+
+# This script is used to run quantum tomography from the command line.
+#
+# Running the command Quantum-Tomography from the command line in the package directory will run this script
 
 
 def file_path(string):

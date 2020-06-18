@@ -2,10 +2,15 @@
 Copyright 2020 University of Illinois Board of Trustees.
 Licensed under the terms of an MIT license
 """
+
+__author__ = 'Quoleon/Turro'
+"""CHECK OUT THE REFERENCE PAGE ON OUR WEBSITE : http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
+
 import numpy as np
 
 import matplotlib.pyplot as plt
 import src as qKLib
+
 
 # Step 1. Initialize Tomography Object
 t = qKLib.Tomography()

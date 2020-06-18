@@ -2,8 +2,15 @@
 Copyright 2020 University of Illinois Board of Trustees.
 Licensed under the terms of an MIT license
 """
-#These are various helper functions used in other main functions in the TomoFunction file
+
+__author__ = 'Quoleon/Turro'
+"""CHECK OUT THE REFERENCE PAGE ON OUR WEBSITE : http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
+
 import numpy as np
+
+
+#These are various helper functions used in other main functions in the TomoFunction file
+
 
 # Helper function for partial Transpose in TomoFunctions
 def partial_transpose_helper(m, d):

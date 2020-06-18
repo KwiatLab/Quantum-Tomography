@@ -2,6 +2,10 @@
 Copyright 2020 University of Illinois Board of Trustees.
 Licensed under the terms of an MIT license
 """
+
+__author__ = 'Quoleon/Turro'
+"""CHECK OUT THE REFERENCE PAGE ON OUR WEBSITE : http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
+
 import scipy as sp
 from numpy.core.defchararray import add
 import numpy as np
@@ -9,6 +13,7 @@ import matplotlib.pyplot as plt
 import matplotlib as mpl
 from mpl_toolkits.mplot3d import Axes3D
 import sys
+from .TomoDisplayHelpers import *
 
 
 """
@@ -107,31 +112,6 @@ def makeRhoImages(p,plt_given,customColor = True):
                                     norm=norm,
                                     orientation='horizontal')
 
-
-"""
-    printLastOutput(tomo,bounds)
-    Desc: Prints the properties of the last tomography to the console. Properties are defined in tomography conf settings.
-          Using bounds will not change the conf settings. The calculated properties are determined by self.err_functions.
-
-    Parameters
-    ----------
-    tomo : Tomography() Object
-        This is the main tomography object. It will get the data from it's last tomography and print it.
-    bounds : boolean
-        Set this to true if you want error bounds on your estimated property values. Default is False.
-        These are determined with monte carlo simulation and the states are saved under self.mont_carl_states
-    """
-def printLastOutput(tomo,bounds = -1):
-    p = tomo.last_rho
-    print("State: ")
-    print(p)
-    properties = tomo.getProperties(p, bounds)
-    for prop in properties:
-        if(len(prop) >3):
-            print(prop[0] + " : " + str(prop[1]) + " +/- " + str(prop[2]))
-        else:
-            print(prop[0] + " : " + str(prop[1]))
-
 """
     saveRhoImages(p,pathToDirectory,customColor)
     Desc: Creates and saves matlab plots of the density matrix.
@@ -226,6 +206,29 @@ def saveRhoImages(p,pathToDirectory,customColor = True):
                                     orientation='horizontal')
     plt.savefig(pathToDirectory + "/rhobarImag.png",bbox_inches = 'tight', pad_inches = 0)
 
+"""
+    printLastOutput(tomo,bounds)
+    Desc: Prints the properties of the last tomography to the console. Properties are defined in tomography conf settings.
+          Using bounds will not change the conf settings. The calculated properties are determined by self.err_functions.
+
+    Parameters
+    ----------
+    tomo : Tomography() Object
+        This is the main tomography object. It will get the data from it's last tomography and print it.
+    bounds : boolean
+        Set this to true if you want error bounds on your estimated property values. Default is False.
+        These are determined with monte carlo simulation and the states are saved under self.mont_carl_states
+    """
+def printLastOutput(tomo,bounds = -1):
+    p = tomo.last_rho
+    print("State: ")
+    print(p)
+    properties = tomo.getProperties(p, bounds)
+    for prop in properties:
+        if(len(prop) >3):
+            print(prop[0] + " : " + floatToString(prop[1]) + " +/- " + floatToString(prop[2]))
+        else:
+            print(prop[0] + " : " + floatToString(prop[1]))
 
 """
     matrixToHTML(M)
@@ -249,8 +252,9 @@ def matrixToHTML(M,printEigenVals = False):
     for i in range(s[0]):
         res = res+' <tr>'
         for j in range(s[1]):
-            res = res + '<td style = "border: 1px solid black;">' + str(np.real(M[i,j])) + "<div style=\"color:rebeccapurple;font-weight: bold;display:inline;\">+</div><BR>"+ str(np.imag(M[i,j]))
-            res = res + '<div style=\"color:rebeccapurple;font-weight: bold;display:inline;\">j</div></td>'
+            # res = res + '<td style = "border: 1px solid black;">' + str(np.real(M[i,j])) + "<div style=\"color:rebeccapurple;font-weight: bold;display:inline;\">+</div><BR>"+ str(np.imag(M[i,j]))
+            # res = res + '<div style=\"color:rebeccapurple;font-weight: bold;display:inline;\">j</div></td>'
+            res = res + '<td style = "border: 1px solid black;">' + floatToString(M[i,j])+ '</td>'
         res = res +'</tr>'
     res = res+'</table>'
     if(printEigenVals):
@@ -267,3 +271,40 @@ def matrixToHTML(M,printEigenVals = False):
         eigenVals = eigenVals+"</h5>"
         res = res+eigenVals
     return res
+
+
+"""
+    propertiesToHTML(vals)
+    Desc: Creates an HTML table based on the given property values.
+
+    Parameters
+    ----------
+    vals : ndarray with shape = (length of self.err_functions,2)
+        The first col is the name of the property. 
+        The second col is the value of the property.
+        The third col is the error bound on the property.
+    
+    Returns
+    -------
+    res : string
+        HTML code of the created table.
+    """
+
+def propertiesToHTML(vals):
+    f = '<h3 >Properties of Rho</h3><table style=\"width:60%;margin-top:10px;font-size: 15px;padding-bottom:5px;float:none;\"><tr><td style="font-size: 20;font-weight: 1000;color: rebeccapurple;">Property</td><td  style="font-size: 20;font-weight: 1000;color: rebeccapurple;padding-bottom:5px;">Value</td>'
+    if(vals.shape[1] < 3):
+        f += '<td style = "font-size: 20;font-weight: 1000;color: rebeccapurple;padding-bottom:5px;"></td></tr>'
+    else:
+        f += '<td style = "font-size: 20;font-weight: 1000;color: rebeccapurple;padding-bottom:5px;"> STD Deviation </td></tr>'
+    for v in vals:
+        if(v[1] != "NA"):
+            f += '<tr>'
+            f += '<td><div onmouseover="Tip( ' + v[0].replace(" ", "") + 'Tip)" onmouseout="hideTip()">'+v[0] + '</td>'
+            f += '<td name= "' + v[0].replace(" ", "") + '_value">' + floatToString(v[1]) + '</td>'
+            if (len(v) > 2 and v[2] != ""):
+                f += '<td> +/- ' + floatToString(v[2]) + '</td>'
+            else:
+                f += "<td></td>"
+            f += '</tr>'
+    f += "</table>"
+    return f
