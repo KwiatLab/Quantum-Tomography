@@ -8,14 +8,13 @@ __author__ = 'Quoleon/Turro'
 
 import argparse
 import os
-import sys                                          #for path to external scripts
-
-import QuantumTomography as qKLib
-
-
+import sys
+import warnings
+warnings.filterwarnings('ignore')
 import numpy as np
 from numpy.core.defchararray import add
 
+import QuantumTomography as qKLib
 
 # This script is used to run quantum tomography from the command line.
 #
@@ -75,171 +74,14 @@ def main():
         FORREPLACE = '<h1 style="text-align: center;"> Tomography Results</h1>'
         if(pictures):
             import matplotlib.pyplot as plt
-            import warnings
-            warnings.filterwarnings('ignore')
             FORREPLACE = FORREPLACE + '<img src="rhobarReal.png" style="float: left;" width="550" height="auto">'
             FORREPLACE = FORREPLACE + '<img src="rhobarImag.png" width="550" height="auto"><br>'
             qKLib.saveRhoImages(rho,outPutfilePath + '/TomoOutPut')
-            # if (t.conf['NQubits'] > 1):
-            #     fig = plt.figure()
-            #     ax1 = fig.add_subplot(111, projection='3d')
-            #     xpos = [.5, .5, .5, .5,
-            #             1.5, 1.5, 1.5, 1.5,
-            #             2.5, 2.5, 2.5, 2.5,
-            #             3.5, 3.5, 3.5, 3.5]
-            #     ypos = [.5, 1.5, 2.5, 3.5,
-            #             .5, 1.5, 2.5, 3.5,
-            #             .5, 1.5, 2.5, 3.5,
-            #             .5, 1.5, 2.5, 3.5, ]
-            #     zpos = np.zeros(16)
-            #     dx = [.9, .9, .9, .9
-            #         , .9, .9, .9, .9
-            #         , .9, .9, .9, .9
-            #         , .9, .9, .9, .9]
-            #     dy = [.9, .9, .9, .9
-            #         , .9, .9, .9, .9
-            #         , .9, .9, .9, .9
-            #         , .9, .9, .9, .9]
-            #
-            #     dz = [.5, 1.5, 2.5, 3.5,
-            #           .5, 1.5, 2.5, 3.5,
-            #           .5, 1.5, 2.5, 3.5,
-            #           .5, 1.5, 2.5, 3.5, ]
-            #     dz = rho.flatten().astype(float)
-            #
-            #     colors = ['r', 'g', 'b', 'purple']
-            #
-            #     # ax1.bar3d(xpos, ypos, zpos, dx, dy, dz, color='#00ceaa')
-            #     for i in range(4):
-            #         ax1.bar3d(xpos[i * 4:i * 4 + 4], ypos[i * 4:i * 4 + 4], zpos[i * 4:i * 4 + 4], dx[i * 4:i * 4 + 4],
-            #                   dy[i * 4:i * 4 + 4], dz[i * 4:i * 4 + 4], edgecolor="black", alpha=.65, color=colors[i])
-            #
-            #     ax1.axes.set_xticklabels(["|HH>", "|HV>", "|VH>", "|VV>"])
-            #     ax1.axes.set_yticklabels(["<HH|", "<HV|", "<VH|", "<VV|"])
-            #     ax1.axes.set_xticks([1, 2, 3, 4])
-            #     ax1.axes.set_yticks([1, 2, 3, 4])
-            #     ax1.axes.set_zticks([-1.0, -.8, -.6, -.4, -.2, 0, .2, .4, .6, .8, 1.0])
-            #     ax1.axes.set_zlim3d(-1, 1)
-            #     plt.title("Rho Real")
-            #     plt.savefig(outPutfilePath + 'TomoOutPut/rhobarRreal.png')
-            #
-            #     fig = plt.figure()
-            #     ax1 = fig.add_subplot(111, projection='3d')
-            #     xpos = [.5, .5, .5, .5,
-            #             1.5, 1.5, 1.5, 1.5,
-            #             2.5, 2.5, 2.5, 2.5,
-            #             3.5, 3.5, 3.5, 3.5]
-            #     ypos = [.5, 1.5, 2.5, 3.5,
-            #             .5, 1.5, 2.5, 3.5,
-            #             .5, 1.5, 2.5, 3.5,
-            #             .5, 1.5, 2.5, 3.5, ]
-            #     zpos = np.zeros(16)
-            #     dx = [.9, .9, .9, .9
-            #         , .9, .9, .9, .9
-            #         , .9, .9, .9, .9
-            #         , .9, .9, .9, .9]
-            #     dy = [.9, .9, .9, .9
-            #         , .9, .9, .9, .9
-            #         , .9, .9, .9, .9
-            #         , .9, .9, .9, .9]
-            #
-            #     dz = [.5, 1.5, 2.5, 3.5,
-            #           .5, 1.5, 2.5, 3.5,
-            #           .5, 1.5, 2.5, 3.5,
-            #           .5, 1.5, 2.5, 3.5, ]
-            #     dz = rho.flatten().imag.astype(float)
-            #     colors = ['r', 'g', 'b', 'purple']
-            #
-            #     for i in range(4):
-            #         ax1.bar3d(xpos[i * 4:i * 4 + 4], ypos[i * 4:i * 4 + 4], zpos[i * 4:i * 4 + 4], dx[i * 4:i * 4 + 4],
-            #                   dy[i * 4:i * 4 + 4], dz[i * 4:i * 4 + 4], edgecolor="black", alpha=.65, color=colors[i])
-            #
-            #     ax1.axes.set_xticklabels(["|HH>", "|HV>", "|VH>", "|VV>"])
-            #     ax1.axes.set_yticklabels(["<HH|", "<HV|", "<VH|", "<VV|"])
-            #     ax1.axes.set_xticks([1, 2, 3, 4])
-            #     ax1.axes.set_yticks([1, 2, 3, 4])
-            #     ax1.axes.set_zticks([-1.0, -.8, -.6, -.4, -.2, 0, .2, .4, .6, .8, 1.0])
-            #     ax1.axes.set_zlim3d(-1, 1)
-            #     plt.title("Rho Imaginary")
-            #     plt.savefig(outPutfilePath + 'TomoOutPut/rhobarRimag.png')
-            # else:
-            #     # 1 Qubit
-            #     fig = plt.figure()
-            #     ax1 = fig.add_subplot(111, projection='3d')
-            #     xpos = [.5, .5,
-            #             1.5, 1.5]
-            #     ypos = [.5, 1.5,
-            #             .5, 1.5]
-            #     zpos = np.zeros(4)
-            #     dx = [.9, .9,
-            #           .9, .9]
-            #     dy = [.9, .9,
-            #           .9, .9]
-            #     dz = [.5, 1.5,
-            #           .5, 1.5]
-            #     dz = rho.flatten().astype(float)
-            #
-            #     colors = ['r', 'g', 'b', 'purple']
-            #
-            #     # ax1.bar3d(xpos, ypos, zpos, dx, dy, dz, color='#00ceaa')
-            #     for i in range(4):
-            #         ax1.bar3d(xpos[i], ypos[i], zpos[i], dx[i], dy[i], dz[i], edgecolor="black", alpha=.65,
-            #                   color=colors[i])
-            #     ax1.axes.set_xticklabels(["|H>", "|V>"])
-            #     ax1.axes.set_yticklabels(["<H|", "<V|"])
-            #     ax1.axes.set_xticks([1, 2])
-            #     ax1.axes.set_yticks([1, 2])
-            #     ax1.axes.set_zticks([-1.0, -.8, -.6, -.4, -.2, 0, .2, .4, .6, .8, 1.0])
-            #     ax1.axes.set_zlim3d(-1, 1)
-            #     plt.title("Rho Real")
-            #     plt.savefig(outPutfilePath + 'TomoOutPut/rhobarRreal.png')
-            #     # plt.show()
-            #
-            #     fig = plt.figure()
-            #     ax1 = fig.add_subplot(111, projection='3d')
-            #     xpos = [.5, .5,
-            #             1.5, 1.5]
-            #     ypos = [.5, 1.5,
-            #             .5, 1.5]
-            #     zpos = np.zeros(4)
-            #     dx = [.9, .9,
-            #           .9, .9]
-            #     dy = [.9, .9,
-            #           .9, .9]
-            #     dz = [.5, 1.5,
-            #           .5, 1.5]
-            #     dz = rho.flatten().imag.astype(float)
-            #
-            #     colors = ['r', 'g', 'b', 'purple']
-            #
-            #     # ax1.bar3d(xpos, ypos, zpos, dx, dy, dz, color='#00ceaa')
-            #     for i in range(4):
-            #         ax1.bar3d(xpos[i], ypos[i], zpos[i], dx[i], dy[i], dz[i], edgecolor="black", alpha=.65,
-            #                   color=colors[i])
-            #     ax1.axes.set_xticklabels(["|H>", "|V>"])
-            #     ax1.axes.set_yticklabels(["<H|", "<V|"])
-            #     ax1.axes.set_xticks([1, 2])
-            #     ax1.axes.set_yticks([1, 2])
-            #     ax1.axes.set_zticks([-1.0, -.8, -.6, -.4, -.2, 0, .2, .4, .6, .8, 1.0])
-            #     ax1.axes.set_zlim3d(-1, 1)
-            #     plt.title("Rho Imaginary")
-            #     plt.savefig(outPutfilePath + 'TomoOutPut/rhobarRimag.png')
 
         FORREPLACE = FORREPLACE + qKLib.matrixToHTML(rho)
-        # FORREPLACE = FORREPLACE + createtable(rho)
 
-        vals = t.getProperties(rho)
-        f = '<h3 >Properties of Rho</h3><table style=\"width:60%;margin-top:10px;font-size: 15px;padding-bottom:5px;float:none;\"><tr><td style="font-size: 20;font-weight: 1000;color: rebeccapurple;">Property</td><td  style="font-size: 20;font-weight: 1000;color: rebeccapurple;padding-bottom:5px;">Value</td><td  style="font-size: 20;font-weight: 1000;color: rebeccapurple;padding-bottom:5px;">   Error</td></tr>'
-        for v in vals:
-            f += '<tr><td><div onmouseover="Tip( ' + v[0].replace(" ", "") + 'Tip)" onmouseout="hideTip()">' + v[
-                0] + '</td><td name= "' + v[0].replace(" ", "") + '_value">' + str(round(v[1], 5)) + '</td>'
-            if (len(v) > 2):
-                f += '<td> +/- ' + str(round(v[2], 5)) + '</td></tr>'
-            else:
-                f += "<td></td></tr>"
-        f += "</table>"
-
-        FORREPLACE = str(FORREPLACE) + str(f)
+        vals = tomo.getProperties(rho)
+        FORREPLACE = str(FORREPLACE) + qLib.propertiesToHTML(vals)
 
         # Print out properties of bellSettings
         bs = ''
@@ -279,34 +121,9 @@ def main():
     else:
         if(pictures):
             import matplotlib.pyplot as plt
-            import warnings
-            warnings.filterwarnings('ignore')
+
             qKLib.makeRhoImages(rho,plt)
             plt.show()
-#
-# def createtable(M):
-#     s = np.shape(M)
-#     res = '<table style=\"border: 1px solid black;border-collapse: collapse;font-size: 15px; table-layout:fixed;width:100%;\">'
-#     for i in range(s[0]):
-#         res = res+' <tr>'
-#         for j in range(s[1]):
-#             res = res + '<td style = "border: 1px solid black;">' + str(np.real(M[i,j])) + "<div style=\"color:rebeccapurple;font-weight: bold;display:inline;\">+</div><BR>"+ str(np.imag(M[i,j]))
-#             res = res + '<div style=\"color:rebeccapurple;font-weight: bold;display:inline;\">j</div></td>'
-#         res = res +'</tr>'
-#     res = res+'</table>'
-#     d, v = np.linalg.eig(M)
-#     eigenVals = "<h5>Eigen Values: "
-#     for x in range(0,len(d)):
-#         eigenVals = eigenVals+str(round(d[x].real, 5))
-#         if(abs(d[x].imag)>.00001):
-#             eigenVals = eigenVals+"< div style =\"color:rebeccapurple;font-weight: bold;display:inline;\">+</div>"
-#             eigenVals = eigenVals+str(round(d[x].imag, 5))
-#             eigenVals = eigenVals+"<div style=\"color:rebeccapurple;font-weight: bold;display:inline;\">j</div>"
-#         eigenVals = eigenVals+" , "
-#     eigenVals = str(eigenVals)[0:len(str(eigenVals))-2]
-#     eigenVals = eigenVals+"</h5>"
-#     res = res+eigenVals
-#     return res
 
 if __name__ == "__main__":
     main()
