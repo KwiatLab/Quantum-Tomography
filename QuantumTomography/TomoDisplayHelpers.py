@@ -33,7 +33,7 @@ def floatToString(x,html=False):
         if (abs(x.real) <= 10 ** -8):
             return "0"
 
-        s = "{:e}".format(x.real)
+        s = "{:e}".format(float(x.real))
         [num,power] = s.split("e")
         num = num[:4]
 
