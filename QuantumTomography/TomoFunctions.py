@@ -371,7 +371,7 @@ def tangle(rhog):
 
 """
     entropy(rhog)
-    Desc: Calculates the entropy of the input state.
+    Desc: Calculates the Von Neumann Entropy of the input state.
 
     Parameters
     ----------
@@ -460,14 +460,14 @@ def purity(rhog):
 """
     partial_transpose(rhog)
     Desc: Returns the partial transpose of the input density matrix.
-    
+
     DISCLAIMER : In Progress, not checked.
-    
+
     Parameters
     ----------
     rhog : ndarray
         Input arrays find the partial transpose of.
-        
+
     Returns
     -------
     rv : ndarray
@@ -529,14 +529,14 @@ def partial_transpose(rhog, n = 0, d=np.nan):
 """
     performOperation(psi, g)
     Desc: Performs the operations on the input State.
-    
+
     Parameters
     ----------
     psi : ndarray
         The input state to do the operation on. Can be a pure state or a density matrix.
-    g : ndarray with shape = (num operations,2^numQubits,2^numQubits) 
-        The operations you would like to be done. Can be one operation or an array of operations.    
-        
+    g : ndarray with shape = (num operations,2^numQubits,2^numQubits)
+        The operations you would like to be done. Can be one operation or an array of operations.
+
     Returns
     -------
     p : ndarray
@@ -563,4 +563,3 @@ def performOperation(psi, g):
             # density matrix form
             p = densityOperation(p, g)
     return p
-

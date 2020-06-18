@@ -236,7 +236,7 @@ def printLastOutput(tomo,bounds = -1):
 
     Parameters
     ----------
-    M : ndarray
+    M : 2d numpy array with shape = (2^numQubits,2^numQubits)
         Matrix you would like to display on your html page.
     printEigenVals : boolean
         Specify if you want eigen values to be calculated and displayed at the bottom of the table.
