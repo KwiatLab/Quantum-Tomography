@@ -14,6 +14,8 @@ import numpy as np
 
 #This function rounds and converts floats to strings. It handles complex numbers and uses scientific notation
 def floatToString(x,html=False):
+    if(x == "NA"):
+        return x
     if(abs(x.imag) > 10**-8):
         if(abs(x.real) > 10**-8):
             if(html):

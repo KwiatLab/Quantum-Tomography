@@ -9,7 +9,7 @@ __author__ = 'Quoleon/Turro'
 import numpy as np
 
 import matplotlib.pyplot as plt
-import src as qKLib
+import QuantumTomography as qKLib
 
 
 # Step 1. Initialize Tomography Object
