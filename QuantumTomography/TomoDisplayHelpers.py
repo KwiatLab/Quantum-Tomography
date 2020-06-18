@@ -33,9 +33,9 @@ def floatToString(x,html=False):
         if (abs(x.real) <= 10 ** -8):
             return "0"
 
-        s = np.format_float_scientific(x.real,2,True,"0")
-
+        s = "{:e}".format(x.real)
         [num,power] = s.split("e")
+        num = num[:4]
 
         if(abs(float(power)) > 2):
             return s
