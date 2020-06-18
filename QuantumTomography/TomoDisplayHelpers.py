@@ -38,7 +38,7 @@ def floatToString(x,html=False):
         num = num[:4]
 
         if(abs(float(power)) > 2):
-            return s
+            return num+"e"+power
         else:
             s = float(num)*10**float(power)
             return str(s)
