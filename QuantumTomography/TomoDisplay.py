@@ -254,7 +254,7 @@ def matrixToHTML(M,printEigenVals = False):
         for j in range(s[1]):
             # res = res + '<td style = "border: 1px solid black;">' + str(np.real(M[i,j])) + "<div style=\"color:rebeccapurple;font-weight: bold;display:inline;\">+</div><BR>"+ str(np.imag(M[i,j]))
             # res = res + '<div style=\"color:rebeccapurple;font-weight: bold;display:inline;\">j</div></td>'
-            res = res + '<td style = "border: 1px solid black;">' + floatToString(M[i,j])+ '</td>'
+            res = res + '<td style = "border: 1px solid black;">' + floatToString(M[i,j],True)+ '</td>'
         res = res +'</tr>'
     res = res+'</table>'
     if(printEigenVals):
@@ -300,9 +300,9 @@ def propertiesToHTML(vals):
         if(v[1] != "NA"):
             f += '<tr>'
             f += '<td><div onmouseover="Tip( ' + v[0].replace(" ", "") + 'Tip)" onmouseout="hideTip()">'+v[0] + '</td>'
-            f += '<td name= "' + v[0].replace(" ", "") + '_value">' + floatToString(v[1]) + '</td>'
+            f += '<td name= "' + v[0].replace(" ", "") + '_value">' + floatToString(v[1],True) + '</td>'
             if (len(v) > 2 and v[2] != ""):
-                f += '<td> +/- ' + floatToString(v[2]) + '</td>'
+                f += '<td> +/- ' + floatToString(v[2],True) + '</td>'
             else:
                 f += "<td></td>"
             f += '</tr>'

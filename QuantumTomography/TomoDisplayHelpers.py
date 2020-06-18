@@ -19,11 +19,11 @@ def floatToString(x,html=False):
     if(abs(x.imag) > 10**-8):
         if(abs(x.real) > 10**-8):
             if(html):
-                return floatToString(x.real) + "<div style=\"color:rebeccapurple;font-weight: bold;display:inline;\">+<BR>j</div>" + floatToString(x.imag)
+                return floatToString(x.real) + "<div style=\"color:rebeccapurple;font-weight: bold;display:inline;\">+ i</div>" + floatToString(x.imag)
             return floatToString(x.real) + " + i" + floatToString(x.imag)
         else:
             if (html):
-                return "<div style=\"color:rebeccapurple;font-weight: bold;display:inline;\">+<BR>j</div>" + floatToString(x.imag)
+                return "<div style=\"color:rebeccapurple;font-weight: bold;display:inline;\">i</div>" + floatToString(x.imag)
             return "i" + floatToString(x.imag)
     else:
         if(x==float("inf")):
