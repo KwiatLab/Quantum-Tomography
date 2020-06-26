@@ -3,6 +3,7 @@ Copyright 2020 University of Illinois Board of Trustees.
 Licensed under the terms of an MIT license
 """
 
+from __future__ import print_function
 __author__ = 'Quoleon/Turro'
 """CHECK OUT THE REFERENCE PAGE ON OUR WEBSITE : http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
 
@@ -292,10 +293,10 @@ def matrixToHTML(M,printEigenVals = False):
     Parameters
     ----------
     vals : ndarray with shape = (length of self.err_functions,2)
-        The first col is the name of the property. 
+        The first col is the name of the property.
         The second col is the value of the property.
         The third col is the error bound on the property.
-    
+
     Returns
     -------
     res : string

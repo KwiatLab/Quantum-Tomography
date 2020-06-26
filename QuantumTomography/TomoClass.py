@@ -3,6 +3,7 @@ Copyright 2020 University of Illinois Board of Trustees.
 Licensed under the terms of an MIT license
 """
 
+from __future__ import print_function
 __author__ = 'Quoleon/Turro'
 """CHECK OUT THE REFERENCE PAGE ON OUR WEBSITE : http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
 
@@ -14,7 +15,7 @@ from scipy.optimize import leastsq
 
 """
     class Tomography()
-    Desc: This is the main tomography object that the library is built around. The goal is to only have one tomography object and edit the 
+    Desc: This is the main tomography object that the library is built around. The goal is to only have one tomography object and edit the
     configuration settings as you go.
     """
 class Tomography():
@@ -86,7 +87,7 @@ class Tomography():
     Parameters
     ----------
     setting : string
-        The setting you want to update. 
+        The setting you want to update.
         Possible values are ['NQubits','NDetectors','Crosstalk','Bellstate','DoDriftCorrection','DoAccidentalCorrection','DoErrorEstimation','Window','Efficiency','RhoStart','IntensityMap','Beta']
     val: ndarray, int, or string
             The new value you want to the setting to be.
@@ -105,7 +106,7 @@ class Tomography():
 
     """
     importConf(conftxt)
-    Desc: Import a text file containing the configuration settings. 
+    Desc: Import a text file containing the configuration settings.
 
     Parameters
     ----------
@@ -163,7 +164,7 @@ class Tomography():
     """
     state_tomography(raw_counts, intensities)
     Desc: Main function that runs tomography.
-    
+
     Parameters
     ----------
     raw_counts : ndarray
@@ -172,7 +173,7 @@ class Tomography():
         Relative pump power (arb. units) during measurement; used for drift correction.
     Returns
     -------
-    rhog : ndarray with shape = (2^numQubits,2^numQubits) 
+    rhog : ndarray with shape = (2^numQubits,2^numQubits)
         The predicted density matrix.
     intensity : float
         The predicted overall intensity used to normalize the state.
@@ -204,17 +205,17 @@ class Tomography():
 
     Parameters
     ----------
-    rho0 : ndarray with shape = (2^numQubits,2^numQubits) 
+    rho0 : ndarray with shape = (2^numQubits,2^numQubits)
         The starting predicted state found with linear tomography.
     data : ndarray with length = number of measurements or shape =(number of measurements,2^numQubits) for 2 det/qubit
         The counts of the tomography.
-    m : ndarray with shape = (2^numQubits,2^numQubits,number of measurements) 
+    m : ndarray with shape = (2^numQubits,2^numQubits,number of measurements)
         The measurements of the tomography in density matrix form.
     acc : ndarray with length = number of measurements or shape =(number of measurements,2^numQubits) for 2 det/qubit
         The singles values of the tomography. Used for accidental correction.
     Returns
     -------
-    rhog : ndarray with shape = (2^numQubits,2^numQubits) 
+    rhog : ndarray with shape = (2^numQubits,2^numQubits)
         The predicted density matrix.
     intensity : float
         The predicted overall intensity used to normalize the state.
@@ -268,12 +269,12 @@ class Tomography():
     data : ndarray with length = number of measurements or shape =(number of measurements,2^numQubits) for 2 det/qubit
         The counts of the tomography.
     accidentals : ndarray with length = number of measurements or shape =(number of measurements,2^numQubits) for 2 det/qubit
-        The singles values of the tomography. Used for accidental correction.   
-    m : ndarray with shape = (2^numQubits,2^numQubits,number of measurements) 
+        The singles values of the tomography. Used for accidental correction.
+    m : ndarray with shape = (2^numQubits,2^numQubits,number of measurements)
         The measurements of the tomography in density matrix form.
     prediction : ndarray
         Predicted counts from the predicted state.
-    
+
     Returns
     -------
     val : float
@@ -307,14 +308,14 @@ class Tomography():
     data : ndarray with length = number of measurements or shape =(number of measurements,2^numQubits) for 2 det/qubit
         The counts of the tomography.
     accidentals : ndarray with length = number of measurements or shape =(number of measurements,2^numQubits) for 2 det/qubit
-        The singles values of the tomography. Used for accidental correction.   
-    m : ndarray with shape = (2^numQubits,2^numQubits,number of measurements) 
+        The singles values of the tomography. Used for accidental correction.
+    m : ndarray with shape = (2^numQubits,2^numQubits,number of measurements)
         The measurements of the tomography in density matrix form .
     prediction : ndarray
         Predicted counts from the predicted state.
     bet : float 0 to .5
         The beta value used.
-    
+
     Returns
     -------
     val : float
@@ -346,12 +347,12 @@ class Tomography():
     ----------
     data : ndarray with length = number of measurements or shape =(number of measurements,2^numQubits) for 2 det/qubit
         The counts of the tomography.
-    measurements : ndarray with shape = (number of measurements,2*numQubits) 
+    measurements : ndarray with shape = (number of measurements,2*numQubits)
         The measurements of the tomography in pure state form .
-        
+
     Returns
     -------
-    rhog : ndarray with shape = (2^numQubits,2^numQubits) 
+    rhog : ndarray with shape = (2^numQubits,2^numQubits)
         The starting predicted state.
     intensity : float
         The predicted overall intensity used to normalize the state.
@@ -394,14 +395,14 @@ class Tomography():
         The input data for the current tomography.
     intensities : ndarray with length = number of measurements
         Relative pump power (arb. units) during measurement; used for drift correction.
-        
+
     Returns
     -------
     data : ndarray with length = number of measurements or shape =(number of measurements,2^numQubits) for 2 det/qubit
         The counts of the tomography.
-    m : ndarray with shape = (2^numQubits,2^numQubits,number of measurements) 
+    m : ndarray with shape = (2^numQubits,2^numQubits,number of measurements)
         The measurements of the tomography in density matrix form.
-    m2 : ndarray with shape = (number of measurements,2*numQubits) 
+    m2 : ndarray with shape = (number of measurements,2*numQubits)
         The measurements of the tomography in pure state form.
     acc : ndarray with length = number of measurements or shape =(number of measurements,2^numQubits) for 2 det/qubit
         The singles values of the tomography. Used for accidental correction.
@@ -596,7 +597,7 @@ class Tomography():
     """
     getBasisMeas(numBits)
     Desc: Returns an array of standard measurments in pure state form for the given number of qubits.
-    
+
     Parameters
     ----------
     numBits : int
@@ -633,7 +634,7 @@ class Tomography():
     """
     getTomoInputTemplate()
     Desc: returns a standard template for tomo_input for the given number of qubits.
-    
+
     Parameters
     ----------
     numBits : int
@@ -681,16 +682,16 @@ class Tomography():
 
     Parameters
     ----------
-    rho : ndarray with shape = (2^numQubits,2^numQubits) 
+    rho : ndarray with shape = (2^numQubits,2^numQubits)
         The density matrix you would like to know the properties of.
     bounds : boolean
         Set this to true if you want error bounds on your estimated property values. Default is False.
         These are determined with monte carlo simulation and the states are saved under self.mont_carl_states
-        
+
     Returns
     -------
     vals : ndarray with shape = (length of self.err_functions,2)
-        The first col is the name of the property. 
+        The first col is the name of the property.
         The second col is the value of the property.
         The third col is the error bound on the property.
     """
@@ -736,11 +737,11 @@ class Tomography():
     Parameters
     ----------
     n : int
-        Number of approximate states you want to create. 
+        Number of approximate states you want to create.
         If no value is given it will use the conf settings.
     Returns
     -------
-    rhop : ndarray with shape = (n,2^numQubits,2^numQubits) 
+    rhop : ndarray with shape = (n,2^numQubits,2^numQubits)
         The approximate density matrices.
     intenp : ndarray with length = n
         The intensity of each approximate density matrices.
@@ -801,17 +802,17 @@ class Tomography():
         getBellSettings(rho,bounds = -1)
         Desc: Returns the optimal measurment settings for the CHSH bell inequality.
               Using bounds will not change the conf settings.
-        
+
         DISCLAIMER : In Progress, have not checked.
-        
+
         Parameters
         ----------
-        rho : ndarray with shape = (2^numQubits,2^numQubits) 
+        rho : ndarray with shape = (2^numQubits,2^numQubits)
             The density matrix you would like to know the optimal bell measurment settings of.
         bounds : boolean
             Set this to true if you want error bounds on your estimated measurment settings. Default will use the conf settings.
             These are determined with monte carlo simulation and the states are saved under self.mont_carl_states
-            
+
         Returns
         -------
         vals : ndarray with shape = (length of self.err_functions,2 or 3)
