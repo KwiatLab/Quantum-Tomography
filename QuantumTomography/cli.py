@@ -70,6 +70,8 @@ def main():
     qKLib.printLastOutput(t)
 
     if(save and save != "False"):
+        if not os.path.exists(outPutfilePath + '/TomoOutPut'):
+            os.makedirs(outPutfilePath + '/TomoOutPut')
         #Prints the data to a html file
         FORREPLACE = '<h1 style="text-align: center;"> Tomography Results</h1>'
         if(pictures):
@@ -80,8 +82,8 @@ def main():
 
         FORREPLACE = FORREPLACE + qKLib.matrixToHTML(rho)
 
-        vals = tomo.getProperties(rho)
-        FORREPLACE = str(FORREPLACE) + qLib.propertiesToHTML(vals)
+        vals = t.getProperties(rho)
+        FORREPLACE = str(FORREPLACE) + qKLib.propertiesToHTML(vals)
 
         # Print out properties of bellSettings
         bs = ''
@@ -89,15 +91,18 @@ def main():
             vals = t.getBellSettings(rho)
             resolution = (np.pi / 2) / (9 * (5 ** 3))
             bs += '<h3>Bell inequality (S_local_realism <= 2)</h3>'
-            bs += '<table style=\"width:60%;margin-top:10px;font-size: 15px;padding-bottom:5px;float:none;\"><tr><td style="font-size: 20;font-weight: 1000;color: rebeccapurple;">Property</td><td  style="font-size: 20;font-weight: 1000;color: rebeccapurple;padding-bottom:5px;">Value</td><td  style="font-size: 20;font-weight: 1000;color: rebeccapurple;padding-bottom:5px;">   Error</td></tr>'
-
+            bs += '<table style=\"width:60%;margin-top:10px;font-size: 15px;padding-bottom:5px;float:none;\"><tr><td style="font-size: 20;font-weight: 1000;color: rebeccapurple;">Property</td><td  style="font-size: 20;font-weight: 1000;color: rebeccapurple;padding-bottom:5px;">Value</td>'
+            if (vals.shape[1] > 2):
+                bs += '<td  style="font-size: 20;font-weight: 1000;color: rebeccapurple;padding-bottom:5px;">   Error</td></tr>'
+            else:
+                bs += '<td  style="font-size: 20;font-weight: 1000;color: rebeccapurple;padding-bottom:5px;"></td></tr>'
             for v in vals:
-                bs += '<tr><td>' + v[0] + '</td><td>' + str(round(v[1], 5)) + ' &deg;</td>'
+                bs += '<tr><td>' + v[0] + '</td><td>' + qKLib.floatToString(v[1]) + ' &deg;</td>'
                 if (len(v) > 2):
-                    bs += '<td>+/- ' + str(round(v[2], 5)) + '&deg;</td></tr> \n'
+                    bs += '<td>+/- ' + qKLib.floatToString(v[2]) + '&deg;</td></tr> \n'
                 else:
                     bs += "<td></td></tr>"
-            bs += '<tr><td>resolution</td><td>' + str(resolution * 180 / np.pi) + '&deg;</td><td></tr></tr> \n'
+            bs += '<tr><td>resolution</td><td>' + qKLib.floatToString(resolution * 180 / np.pi) + '&deg;</td><td></tr></tr> \n'
             bs += '</td></tr></table>'
         bs = bs.replace('+/- nan&deg;', 'Error')
         bs = bs.replace('nan &deg;', 'Error')
@@ -111,17 +116,20 @@ def main():
         fff = "<html><head></head><body>TOREPLACE</body></html>"
 
         fff = fff.replace('TOREPLACE', str(FORREPLACE))
-        if not os.path.exists(outPutfilePath + '/TomoOutPut'):
-            os.makedirs(outPutfilePath + '/TomoOutPut')
 
         with open(outPutfilePath + '/TomoOutPut/outPut.html', 'w') as ff:
             ff.write(fff)
             ff.close()
-        print("Output saved to "+outPutfilePath + '\\TomoOutPut')
+        if(outPutfilePath[-1] =="\\" or outPutfilePath[-1] =="/"):
+            print("Output saved to "+outPutfilePath + 'TomoOutPut')
+        else:
+            if (outPutfilePath.find("\\") == -1):
+                print("Output saved to " + outPutfilePath + '/TomoOutPut')
+            else:
+                print("Output saved to " + outPutfilePath + '\\TomoOutPut')
     else:
         if(pictures):
             import matplotlib.pyplot as plt
-
             qKLib.makeRhoImages(rho,plt)
             plt.show()
 

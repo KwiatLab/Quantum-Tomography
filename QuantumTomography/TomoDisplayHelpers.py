@@ -59,7 +59,9 @@ def floatToString(x,html=False):
             return num+"e"+power
         else:
             s = float(num)*10**float(power)
-            return str(s)
+            s = np.around(s,2-int(power))
+            s= str(s)
+            return s
 #checks if a number is nan
 def isNaN(num):
     return num != num

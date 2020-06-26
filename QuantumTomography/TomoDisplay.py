@@ -220,10 +220,22 @@ def saveRhoImages(p,pathToDirectory,customColor = True):
         These are determined with monte carlo simulation and the states are saved under self.mont_carl_states
     """
 def printLastOutput(tomo,bounds = -1):
-    p = tomo.last_rho
+    p = np.array(tomo.last_rho.copy(),dtype="O")
     print("State: ")
-    print(p)
-    properties = tomo.getProperties(p, bounds)
+    mx = 0
+    for i in range(p.shape[0]):
+        for j in range(p.shape[1]):
+            p[i,j] = floatToString(p[i,j]).replace(" ","") + "  "
+            if(len(p[i,j])>mx):
+                mx = len(p[i,j])
+
+    for i in range(p.shape[0]):
+        for j in range(p.shape[1]):
+            print(p[i,j] + " "*(mx-len(p[i,j])),end="")
+        print("")
+
+    # print(p)
+    properties = tomo.getProperties(tomo.last_rho, bounds)
     for prop in properties:
         if(len(prop) >3):
             print(prop[0] + " : " + floatToString(prop[1]) + " +/- " + floatToString(prop[2]))
