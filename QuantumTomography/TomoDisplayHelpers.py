@@ -17,14 +17,29 @@ def floatToString(x,html=False):
     if(x == "NA"):
         return x
     if(abs(x.imag) > 10**-8):
+        tempIMAG = floatToString(x.imag)
         if(abs(x.real) > 10**-8):
             if(html):
-                return floatToString(x.real) + "<div style=\"color:rebeccapurple;font-weight: bold;display:inline;\">+ i</div>" + floatToString(x.imag)
-            return floatToString(x.real) + " + i" + floatToString(x.imag)
+                if(tempIMAG[0] !="-"):
+                    return floatToString(x.real) + "<div style=\"color:rebeccapurple;font-weight: bold;display:inline;\"> + i</div>" + tempIMAG
+                else:
+                    return floatToString(x.real) + "<div style=\"color:rebeccapurple;font-weight: bold;display:inline;\"> - i</div>" + tempIMAG[1:]
+            else:
+                if (tempIMAG[0] !="-"):
+                    return floatToString(x.real) + " + i" + tempIMAG
+                else:
+                    return floatToString(x.real) + " - i" + tempIMAG[1:]
         else:
             if (html):
-                return "<div style=\"color:rebeccapurple;font-weight: bold;display:inline;\">i</div>" + floatToString(x.imag)
-            return "i" + floatToString(x.imag)
+                if (tempIMAG[0] !="-"):
+                    return "<div style=\"color:rebeccapurple;font-weight: bold;display:inline;\">i</div>" + tempIMAG
+                else:
+                    return "<div style=\"color:rebeccapurple;font-weight: bold;display:inline;\">-i</div>" + tempIMAG[1:]
+            else:
+                if (tempIMAG[0] !="-"):
+                    return "i" + tempIMAG
+                else:
+                    return "-i" + tempIMAG[1:]
     else:
         if(x==float("inf")):
             return "inf"
@@ -35,7 +50,10 @@ def floatToString(x,html=False):
 
         s = "{:e}".format(float(x.real))
         [num,power] = s.split("e")
-        num = num[:4]
+        if(num[0] == "-"):
+            num = num[:5]
+        else:
+            num = num[:4]
 
         if(abs(float(power)) > 2):
             return num+"e"+power
