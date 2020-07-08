@@ -68,16 +68,16 @@ def m_matrix(mu, projectors, b_inv):
 
     return m
 
-# Helper function for looping through a multi indexed array
-def multiloop_index(j, lengths):
-    ind = np.zeros(len(lengths))
-    for k in range(len(lengths)-1):
-        sz = np.prod(lengths[np.arange(k+1, len(lengths))])
-        ind[k] = np.fix(j/sz)+1
-        j %= sz
-    ind[len(ind)-1] = j+1
-
-    return ind
+# # Helper function for looping through a multi indexed array
+# def multiloop_index(j, lengths):
+#     ind = np.zeros(len(lengths))
+#     for k in range(len(lengths)-1):
+#         sz = np.prod(lengths[np.arange(k+1, len(lengths))])
+#         ind[k] = np.fix(j/sz)+1
+#         j %= sz
+#     ind[len(ind)-1] = j+1
+#
+#     return ind
 
 
 #helper function for re formatting matrices

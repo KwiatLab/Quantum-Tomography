@@ -272,6 +272,7 @@ def matrixToHTML(M,printEigenVals = False):
     res = res+'</table>'
     if(printEigenVals):
         d, v = np.linalg.eig(M)
+        sum = 0
         eigenVals = "<h5>Eigen Values: "
         for x in range(0,len(d)):
             eigenVals = eigenVals+str(round(d[x].real, 5))
@@ -280,8 +281,9 @@ def matrixToHTML(M,printEigenVals = False):
                 eigenVals = eigenVals+str(round(d[x].imag, 5))
                 eigenVals = eigenVals+"<div style=\"color:rebeccapurple;font-weight: bold;display:inline;\">j</div>"
             eigenVals = eigenVals+" , "
+            sum+=d[x]
         eigenVals = str(eigenVals)[0:len(str(eigenVals))-2]
-        eigenVals = eigenVals+"</h5>"
+        eigenVals = eigenVals+" = "+floatToString(sum,True)+"</h5>"
         res = res+eigenVals
     return res
 

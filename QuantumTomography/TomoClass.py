@@ -445,18 +445,25 @@ class Tomography():
 
         # Accidental Correction
         acc = np.zeros_like(coinc)
-        if (len(coinc.shape) == 1):
-            acc = acc[:, np.newaxis]
-        window = self.conf['Window']
-        if np.isscalar(window):
-            window = np.array([window])
-        if any(window) > 0:
+        if(self.conf['DoAccidentalCorrection'] == 1):
+            window = self.conf['Window']
+            if np.isscalar(window):
+                window = window*np.ones(n_coinc)
+            scalerIndex = np.concatenate((np.ones(nbits - 2), [2, 2]))
+            additiveIndex = np.array([0,1])
+            for j in range(2,nbits):
+                additiveIndex = np.concatenate(([2*j], additiveIndex))
+            if (len(coinc.shape) == 1):
+                acc = acc[:, np.newaxis]
             for j in range(n_coinc):
-                idx = (multiloop_index(j, 2 * np.ones(nbits)) - 1) * nbits + range(nbits)
-                idx = idx.astype(int)
-                acc[:, j] = np.prod(np.real(sings[:, idx]), axis=1) * (window[j] * 1e-9 / np.real(t)) ** (nbits - 1)
-        if (acc.shape != coinc.shape):
-            acc = acc[:, 0]
+                index = bin(j).split("b")[1]
+                index = "0" * (nbits - len(index)) + index
+                index = [int(char) for char in index]
+                index = index*scalerIndex + additiveIndex
+                index = np.array(index, dtype=int)
+                acc[:, j] = np.prod(np.real(sings[:, tuple(index)]), axis=1) * (window[j] * 1e-9 / np.real(t)) ** (nbits - 1)
+            if (acc.shape != coinc.shape):
+                acc = acc[:, 0]
 
         # Drift Correction
         self.conf['IntensityMap'] = np.kron(intensities, np.ones(n_coinc))
