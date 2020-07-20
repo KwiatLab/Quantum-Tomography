@@ -2,8 +2,7 @@ from __future__ import print_function
 import numpy as np
 import sys
 import matplotlib.pyplot as plt
-sys.path.append("../")
-import QuantumTomography as qLib
+from .TomoClass import Tomography, toDensity, fidelity
 from TestResultsClass import TestResult
 import os
 import traceback
@@ -23,7 +22,7 @@ def runTest(args):
     success = False
     try:
         # set up the test
-        tomo = qLib.Tomography()
+        tomo = Tomography()
         allTests = np.zeros(nStates, dtype="O")
         AtotalCounts = np.zeros(nStates)
         myFidels = np.zeros(nStates)
@@ -136,7 +135,7 @@ def runTest(args):
         state = np.random.beta(.5, .5, 2 ** numQubits) + 1j * np.random.beta(.5, .5, 2 ** numQubits)
         state = state / np.sqrt(np.dot(state, state.conj()))
 
-        startingRho = qLib.toDensity(state)
+        startingRho = toDensity(state)
         # Testing setting
         for i in range(len(tomo_input)):
             # state goes through wave plates
@@ -224,7 +223,7 @@ def runTest(args):
         try:
             myDensitie, inten, myfVal = tomo.state_tomography(tomo_input, intensity)
 
-            myFidel = qLib.fidelity(startingRho, myDensitie)
+            myFidel = fidelity(startingRho, myDensitie)
             if (testBell):
                 tomo.getBellSettings(myDensitie)
                 tomo.getProperties(myDensitie)
