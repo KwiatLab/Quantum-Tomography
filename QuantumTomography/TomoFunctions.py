@@ -13,19 +13,19 @@ import numpy as np
 from .TomoFunctionsHelpers import *
 
 
-########################
-# TOMOGRAPHY CALCULATE #
-########################
+# # # # # # # # # # # # #
+# TOMOGRAPHY CALCULATE  #
+# # # # # # # # # # # # #
 
-#
+# 
 # def i2array(i, ii, n):
 #     nn = np.int(np.ceil((np.log(ii)/np.log(n))))
 #     rv = np.zeros(nn)
 #     for j in range(nn):
 #         rv[j] = i/(n**(nn-j-1))
-#         i %= n**(nn-j-1)
+#         i % = n**(nn-j-1)
 #     return rv
-#
+# 
 # # returns the tensor product of the two states
 # def tensor_product(A, B):
 #     a = np.ndim(A)
@@ -66,16 +66,16 @@ from .TomoFunctionsHelpers import *
 #             rv[j] = A[int(np.floor(j / n21))] * B[j % n21]
 #     elif (a == 0) | (b == 0):
 #         rv = A * B
-#
+# 
 #     return rv
-#
+# 
 # def trace_dist(rho1, rho2):
-#     #didn't checked, and would not be called in this version.
+#     # didn't checked, and would not be called in this version.
 #     s1 = rho2stokes(rho1)
 #     s2 = rho2stokes(rho2)
 #     s = s1 - s2
 #     val = np.sqrt(np.dot(s.conj().transpose(), s))/2
-#
+# 
 #     return val
 
 
@@ -129,7 +129,7 @@ def density2tm(rhog):
     if last_element > -.00000001:
         temp = rhog[d-1][0:(d-1)]
         tm[d-1][0:(d-1)] = temp/np.sqrt(last_element)
-        #switched order of temp and temp.conj and transpose()
+        # switched order of temp and temp.conj and transpose()
         recurse = np.hsplit(rhog[0:(d-1)], [d-1, d])[0] - np.outer(temp.conj().transpose(), temp)/last_element
     else:
         tm[d-1][0:(d-1)] = np.zeros(d)
@@ -167,7 +167,7 @@ def density2t(rhog):
         if j > 0:
             t[np.arange(idx, idx+cur_length)] = np.imag(np.diag(tm, -j))
             idx = idx + cur_length
-        cur_length -= 1
+        cur_length - = 1
 
     return t
 
@@ -188,11 +188,11 @@ def density2t(rhog):
 def toDensity(psiMat):
     return np.outer(psiMat.conj(), psiMat)
 
-#
+# 
 # def one_in(idx, length):
 #     val = np.zeros(length)
 #     val[idx] = 1
-#
+# 
 #     return val
 
 
@@ -225,7 +225,7 @@ def t_matrix(t):
             tm = tm + 1j*np.diag(t[np.arange(idx, idx+cur_length)], -j)
             idx = idx + cur_length
 
-        cur_length -= 1
+        cur_length - = 1
 
     return tm
 
@@ -246,14 +246,14 @@ def t_matrix(t):
 def t_to_density(t):
     tm = t_matrix(t)
     tm = tm.conj()
-    rhog = np.dot(tm.conj().transpose(),tm)
+    rhog = np.dot(tm.conj().transpose(), tm)
 
     return rhog
 
 
-##################
-# ERROR ESTIMATE #
-##################
+# # # # # # # # # #
+# ERROR ESTIMATE  #
+# # # # # # # # # #
 
 
 """
@@ -303,7 +303,7 @@ def fidelity(state1, state2):
         val = (np.trace(sp.linalg.sqrtm(a)))**2
     val = np.real(val)
 
-    # when comparing 2 identical pure state, it will get a value larger than 1,
+    # when comparing 2 identical pure state, it will get a value larger than 1, 
     if val > 1:
         if val - 1 < 0.000001:
             val = 1.0
@@ -335,7 +335,7 @@ def concurrence(rhog):
         zz = np.array([[0, 0, 0, -1], [0, 0, 1, 0], [0, 1, 0, 0], [-1, 0, 0, 0]])
         rr = np.dot(rhog, np.dot(zz, np.dot(rhog.conj(), zz)))
         r = np.linalg.eig(rr)[0]
-        #left = np.linalg.inv(right)
+        # left = np.linalg.inv(right)
         r = np.real(r)
 
         tmp = np.sort(np.sqrt(r+0j))
@@ -474,7 +474,7 @@ def purity(rhog):
     rv : ndarray
         Partial transpose of rhog.
     """
-def partial_transpose(rhog, n = 0, d=np.nan):
+def partial_transpose(rhog, n = 0, d = np.nan):
     if min(rhog.shape) == 1:
             rhog = np.dot(rhog, rhog.conj().transpose())
 
@@ -535,7 +535,7 @@ def partial_transpose(rhog, n = 0, d=np.nan):
     ----------
     psi : ndarray
         The input state to do the operation on. Can be a pure state or a density matrix.
-    g : ndarray with shape = (num operations,2^numQubits,2^numQubits)
+    g : ndarray with shape = (num operations, 2^numQubits, 2^numQubits)
         The operations you would like to be done. Can be one operation or an array of operations.
 
     Returns
