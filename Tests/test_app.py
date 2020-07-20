@@ -1,5 +1,5 @@
 from __future__ import print_function
-from TestRunF import runTest
+from TestRun import runTest
 
 """
 Copyright 2020 University of Illinois Board of Trustees.
