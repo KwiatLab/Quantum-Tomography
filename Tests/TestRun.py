@@ -2,7 +2,7 @@ from __future__ import print_function
 import numpy as np
 import sys
 import matplotlib.pyplot as plt
-from .TomoClass import Tomography, toDensity, fidelity
+from TomoClass import Tomography, toDensity, fidelity
 from TestResultsClass import TestResult
 import os
 import traceback
