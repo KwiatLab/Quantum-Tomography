@@ -1,12 +1,4 @@
-"""
-Copyright 2020 University of Illinois Board of Trustees.
-Licensed under the terms of an MIT license
-"""
-
 from __future__ import print_function
-__author__ = 'Quoleon/Turro'
-"""CHECK OUT THE REFERENCE PAGE ON OUR WEBSITE : http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
-
 import argparse
 import os
 import sys
@@ -14,8 +6,16 @@ import warnings
 warnings.filterwarnings('ignore')
 import numpy as np
 from numpy.core.defchararray import add
-
 import QuantumTomography as qKLib
+
+"""
+Copyright 2020 University of Illinois Board of Trustees.
+Licensed under the terms of an MIT license
+"""
+
+__author__ = 'Quoleon/Turro'
+"""CHECK OUT THE REFERENCE PAGE ON OUR WEBSITE :
+http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
 
 # This script is used to run quantum tomography from the command line.
 #
@@ -38,16 +38,16 @@ def dir_path(string):
 
 def main():
     # create argument parser object
-    parser = argparse.ArgumentParser(description="Quantum Tomography")
+    parser = argparse.ArgumentParser(description = "Quantum Tomography")
 
-    parser.add_argument("-i", "--eval", type=file_path, nargs=1,
-                        metavar="evalFile", default= None, help="The full path to the file that contains the data and configuration for the tomography.")
+    parser.add_argument("-i", "--eval", type = file_path, nargs = 1,
+                        metavar = "evalFile", default = None, help = "The full path to the file that contains the data and configuration for the tomography.")
 
-    parser.add_argument("-s", "--save", type=dir_path, nargs=1,
-                        metavar="outPutFolder", default= None, help="The full path to the folder where you want the output to be saved. If not included it will not save your data.")
+    parser.add_argument("-s", "--save", type = dir_path, nargs = 1,
+                        metavar = "outPutFolder", default = None, help = "The full path to the folder where you want the output to be saved. If not included it will not save your data.")
 
-    parser.add_argument("-p", "--pic", action='store_true',default=False,
-                        help="Including this will show images of real and imaginary values of the density matrix. If save is also included pictures will be saved and not shown.")
+    parser.add_argument("-p", "--pic", action = 'store_true',default = False,
+                        help = "Including this will show images of real and imaginary values of the density matrix. If save is also included pictures will be saved and not shown.")
 
 
     # parse the arguments from standard input
@@ -73,12 +73,12 @@ def main():
     if(save and save != "False"):
         if not os.path.exists(outPutfilePath + '/TomoOutPut'):
             os.makedirs(outPutfilePath + '/TomoOutPut')
-        #Prints the data to a html file
-        FORREPLACE = '<h1 style="text-align: center;"> Tomography Results</h1>'
+        # Prints the data to a html file
+        FORREPLACE = '<h1 style = "text-align: center;"> Tomography Results</h1>'
         if(pictures):
             import matplotlib.pyplot as plt
-            FORREPLACE = FORREPLACE + '<img src="rhobarReal.png" style="float: left;" width="550" height="auto">'
-            FORREPLACE = FORREPLACE + '<img src="rhobarImag.png" width="550" height="auto"><br>'
+            FORREPLACE = FORREPLACE + '<img src = "rhobarReal.png" style = "float: left;" width = "550" height = "auto">'
+            FORREPLACE = FORREPLACE + '<img src = "rhobarImag.png" width = "550" height = "auto"><br>'
             qKLib.saveRhoImages(rho,outPutfilePath + '/TomoOutPut')
 
         FORREPLACE = FORREPLACE + qKLib.matrixToHTML(rho)
@@ -92,11 +92,11 @@ def main():
             vals = t.getBellSettings(rho)
             resolution = (np.pi / 2) / (9 * (5 ** 3))
             bs += '<h3>Bell inequality (S_local_realism <= 2)</h3>'
-            bs += '<table style=\"width:60%;margin-top:10px;font-size: 15px;padding-bottom:5px;float:none;\"><tr><td style="font-size: 20;font-weight: 1000;color: rebeccapurple;">Property</td><td  style="font-size: 20;font-weight: 1000;color: rebeccapurple;padding-bottom:5px;">Value</td>'
+            bs += '<table style = \"width:60%;margin-top:10px;font-size: 15px;padding-bottom:5px;float:none;\"><tr><td style = "font-size: 20;font-weight: 1000;color: rebeccapurple;">Property</td><td  style = "font-size: 20;font-weight: 1000;color: rebeccapurple;padding-bottom:5px;">Value</td>'
             if (vals.shape[1] > 2):
-                bs += '<td  style="font-size: 20;font-weight: 1000;color: rebeccapurple;padding-bottom:5px;">   Error</td></tr>'
+                bs += '<td  style = "font-size: 20;font-weight: 1000;color: rebeccapurple;padding-bottom:5px;">   Error</td></tr>'
             else:
-                bs += '<td  style="font-size: 20;font-weight: 1000;color: rebeccapurple;padding-bottom:5px;"></td></tr>'
+                bs += '<td  style = "font-size: 20;font-weight: 1000;color: rebeccapurple;padding-bottom:5px;"></td></tr>'
             for v in vals:
                 bs += '<tr><td>' + v[0] + '</td><td>' + qKLib.floatToString(v[1]) + ' &deg;</td>'
                 if (len(v) > 2):
@@ -121,7 +121,7 @@ def main():
         with open(outPutfilePath + '/TomoOutPut/outPut.html', 'w') as ff:
             ff.write(fff)
             ff.close()
-        if(outPutfilePath[-1] =="\\" or outPutfilePath[-1] =="/"):
+        if(outPutfilePath[-1] == "\\" or outPutfilePath[-1] == "/"):
             print("Output saved to "+outPutfilePath + 'TomoOutPut')
         else:
             if (outPutfilePath.find("\\") == -1):

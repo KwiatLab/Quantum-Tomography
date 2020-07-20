@@ -1,16 +1,18 @@
+from __future__ import print_function
+import numpy as np
+
 """
 Copyright 2020 University of Illinois Board of Trustees.
 Licensed under the terms of an MIT license
 """
 
-from __future__ import print_function
 __author__ = 'Quoleon/Turro'
-"""CHECK OUT THE REFERENCE PAGE ON OUR WEBSITE : http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
+"""CHECK OUT THE REFERENCE PAGE ON OUR WEBSITE :
+http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
 
-import numpy as np
 
 
-#These are various helper functions used in other main functions in the TomoFunction file
+# These are various helper functions used in other main functions in the TomoFunction file
 
 
 # Helper function for partial Transpose in TomoFunctions

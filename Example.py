@@ -1,32 +1,33 @@
+from __future__ import print_function
+import numpy as np
+import matplotlib.pyplot as plt
+import QuantumTomography as qKLib
+
 """
 Copyright 2020 University of Illinois Board of Trustees.
 Licensed under the terms of an MIT license
 """
 
 __author__ = 'Quoleon/Turro'
-"""CHECK OUT THE REFERENCE PAGE ON OUR WEBSITE : http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
-
-import numpy as np
-
-import matplotlib.pyplot as plt
-import QuantumTomography as qKLib
+"""CHECK OUT THE REFERENCE PAGE ON OUR WEBSITE :
+http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
 
 
 # Step 1. Initialize Tomography Object
 t = qKLib.Tomography()
 
-#Step 2. Set up Configurations
+# Step 2. Set up Configurations
 # import conf file
 t.importConf('ExampleFiles/conf.txt')
-#or set the conf settings directly or with the helper
-t.setConfSetting('DoAccidentalCorrection',1)
+# or set the conf settings directly or with the helper
+t.setConfSetting('DoAccidentalCorrection', 1)
 
 # Step 3. Run Tomography on The data
 # import data file
 [rho, intensity, fval] = t.importData('ExampleFiles/data.txt')
 # or call the object's tomography function
-tomo_input=np.array([[1,0,500,1,0],[1,0,0,0,1],[1,0,250,0.7071,0.7071],[1,0,250,0.7071,-0.7071],[1,0,250,0.7071,0.7071j],[1,0,250,0.7071,-0.7071j]])
-intensity=np.array([1,1,1,1,1,1])
+tomo_input = np.array([[1, 0, 500, 1, 0], [1, 0, 0, 0, 1], [1, 0, 250, 0.7071, 0.7071], [1, 0, 250, 0.7071, -0.7071], [1, 0, 250, 0.7071, 0.7071j], [1, 0, 250, 0.7071, -0.7071j]])
+intensity = np.array([1, 1, 1, 1, 1, 1])
 [rho, intens, fval] = t.state_tomography(tomo_input, intensity)
 # or import the eval file to import both the config and data
 [rho, intensity, fval] = t.importEval('ExampleFiles/pythoneval.txt')
@@ -36,8 +37,8 @@ intensity=np.array([1,1,1,1,1,1])
 # See http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/ for a full reference guide of all the functions.
 qKLib.printLastOutput(t)
 
-expectedState = np.array([[1.0,0.0],[0.0,0.0]])
-print("Fidelity: " + str(qKLib.fidelity(rho,expectedState)))
-rho = np.kron(rho,rho)
-qKLib.makeRhoImages(rho,plt,True)
+expectedState = np.array([[1.0, 0.0], [0.0, 0.0]])
+print("Fidelity: " + str(qKLib.fidelity(rho, expectedState)))
+rho = np.kron(rho, rho)
+qKLib.makeRhoImages(rho, plt, True)
 plt.show()

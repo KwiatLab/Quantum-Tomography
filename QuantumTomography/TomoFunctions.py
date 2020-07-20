@@ -1,21 +1,20 @@
+from __future__ import print_functionimport scipy as sp
+import numpy as np
+from .TomoFunctionsHelpers import *
+
 """
 Copyright 2020 University of Illinois Board of Trustees.
 Licensed under the terms of an MIT license
 """
 
-from __future__ import print_function
 __author__ = 'Quoleon/Turro'
-"""CHECK OUT THE REFERENCE PAGE ON OUR WEBSITE : http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
-
-import scipy as sp
-# from numpy.core.defchararray import add
-import numpy as np
-from .TomoFunctionsHelpers import *
+"""CHECK OUT THE REFERENCE PAGE ON OUR WEBSITE :
+http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
 
 
-########################
-# TOMOGRAPHY CALCULATE #
-########################
+# # # # # # # # # # # # #
+# TOMOGRAPHY CALCULATE  #
+# # # # # # # # # # # # #
 
 #
 # def i2array(i, ii, n):
@@ -23,7 +22,7 @@ from .TomoFunctionsHelpers import *
 #     rv = np.zeros(nn)
 #     for j in range(nn):
 #         rv[j] = i/(n**(nn-j-1))
-#         i %= n**(nn-j-1)
+#         i % = n**(nn-j-1)
 #     return rv
 #
 # # returns the tensor product of the two states
@@ -70,7 +69,7 @@ from .TomoFunctionsHelpers import *
 #     return rv
 #
 # def trace_dist(rho1, rho2):
-#     #didn't checked, and would not be called in this version.
+#     # didn't checked, and would not be called in this version.
 #     s1 = rho2stokes(rho1)
 #     s2 = rho2stokes(rho2)
 #     s = s1 - s2
@@ -129,7 +128,7 @@ def density2tm(rhog):
     if last_element > -.00000001:
         temp = rhog[d-1][0:(d-1)]
         tm[d-1][0:(d-1)] = temp/np.sqrt(last_element)
-        #switched order of temp and temp.conj and transpose()
+        # switched order of temp and temp.conj and transpose()
         recurse = np.hsplit(rhog[0:(d-1)], [d-1, d])[0] - np.outer(temp.conj().transpose(), temp)/last_element
     else:
         tm[d-1][0:(d-1)] = np.zeros(d)
@@ -246,14 +245,14 @@ def t_matrix(t):
 def t_to_density(t):
     tm = t_matrix(t)
     tm = tm.conj()
-    rhog = np.dot(tm.conj().transpose(),tm)
+    rhog = np.dot(tm.conj().transpose(), tm)
 
     return rhog
 
 
-##################
-# ERROR ESTIMATE #
-##################
+# # # # # # # # # #
+# ERROR ESTIMATE  #
+# # # # # # # # # #
 
 
 """
@@ -335,7 +334,7 @@ def concurrence(rhog):
         zz = np.array([[0, 0, 0, -1], [0, 0, 1, 0], [0, 1, 0, 0], [-1, 0, 0, 0]])
         rr = np.dot(rhog, np.dot(zz, np.dot(rhog.conj(), zz)))
         r = np.linalg.eig(rr)[0]
-        #left = np.linalg.inv(right)
+        # left = np.linalg.inv(right)
         r = np.real(r)
 
         tmp = np.sort(np.sqrt(r+0j))
@@ -474,7 +473,7 @@ def purity(rhog):
     rv : ndarray
         Partial transpose of rhog.
     """
-def partial_transpose(rhog, n = 0, d=np.nan):
+def partial_transpose(rhog, n = 0, d = np.nan):
     if min(rhog.shape) == 1:
             rhog = np.dot(rhog, rhog.conj().transpose())
 
@@ -535,7 +534,7 @@ def partial_transpose(rhog, n = 0, d=np.nan):
     ----------
     psi : ndarray
         The input state to do the operation on. Can be a pure state or a density matrix.
-    g : ndarray with shape = (num operations,2^numQubits,2^numQubits)
+    g : ndarray with shape = (num operations, 2^numQubits, 2^numQubits)
         The operations you would like to be done. Can be one operation or an array of operations.
 
     Returns
