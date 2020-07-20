@@ -1,4 +1,5 @@
-from __future__ import print_functionimport scipy as sp
+from __future__ import print_function
+import scipy as sp
 import numpy as np
 from .TomoFunctionsHelpers import *
 
