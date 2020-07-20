@@ -37,4 +37,5 @@ jobs:
     - name: Test with pytest
       run: |
         export PYTHONPATH=src
+        export PYTHONPATH=Tests/ErrorLogs
         pytest

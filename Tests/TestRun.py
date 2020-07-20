@@ -114,7 +114,7 @@ def runTest(args):
                 measurements[i] = temp
     except:
         FAIL = '\033[91m'
-        print(f"{FAIL}Failed to set up Test: "+uniqueID(args))
+        print(f"{FAIL}Failed to set up Test: "+ uniqueID(args))
         raise SetUpError()
 
     numErrors = 0
