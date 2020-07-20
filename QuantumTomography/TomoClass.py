@@ -126,6 +126,15 @@ class Tomography():
    ----------
    datatxt : string
        path to data file
+   Returns
+    -------
+    rhog : ndarray with shape = (2^numQubits,2^numQubits) 
+        The predicted density matrix.
+    intensity : float
+        The predicted overall intensity used to normalize the state.
+    fvalp : float
+        Final value of the internal optimization function. Values greater than the number
+        of measurements indicate poor agreement with a quantum state.
    """
     def importData(self,datatxt):
         exec(compile(open(datatxt, "rb").read(), datatxt, 'exec'))
@@ -139,6 +148,15 @@ class Tomography():
     ----------
     evaltxt : string
         path to eval file
+    Returns
+    -------
+    rhog : ndarray with shape = (2^numQubits,2^numQubits) 
+        The predicted density matrix.
+    intensity : float
+        The predicted overall intensity used to normalize the state.
+    fvalp : float
+        Final value of the internal optimization function. Values greater than the number
+        of measurements indicate poor agreement with a quantum state.
     """
     def importEval(self,evaltxt):
         conf = self.conf
@@ -225,7 +243,7 @@ class Tomography():
     """
     def maximum_likelihood_tomography(self,rho0, data, m, acc):
         rho0 = make_positive(rho0)
-        rho0 /= np.trace(rho0)
+        rho0 = rho0 /np.trace(rho0)
         init_intensity = np.mean(np.multiply(data,1/self.conf["IntensityMap"])) * (rho0.shape[0])
         t0 = density2t(rho0)
         n_t = len(t0)
@@ -414,6 +432,8 @@ class Tomography():
         #     self.conf['DoDriftCorrection'] = 0
         nbits = self.conf['NQubits']
         ndet = self.conf['NDetectors']
+        if(isinstance(self.conf['Efficiency'], int)):
+            self.conf['Efficiency'] = np.ones(2**nbits)
         eff = self.conf['Efficiency'][0:2 ** nbits]
 
         # time values
@@ -646,6 +666,11 @@ class Tomography():
     ----------
     numBits : int
         number of qubits you want for each measurement. Default will use the number of qubits in the current configurations.
+    
+    Returns
+    ----------
+    raw_counts : ndarray
+        The input data for the current tomography. This is what tomo_input will be set to.
     """
     def getTomoInputTemplate(self,numBits = -1):
 
