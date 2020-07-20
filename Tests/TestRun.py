@@ -272,11 +272,11 @@ def runTest(args):
             FORREPLACE += str(i)
         FORREPLACE += '</table>'
 
-        with open('ErrorLogs/Template.html', 'r') as f:
+        with open('../Tests/ErrorLogs/Template.html', 'r') as f:
             fff = '\n'.join(f.readlines())
             f.close()
         fff = fff.replace('TOREPLACE', str(FORREPLACE))
-        with open('ErrorLogs/' + uniqueID(args) + '.html', 'w') as ff:
+        with open('../Tests/ErrorLogs/' + uniqueID(args) + '.html', 'w') as ff:
             ff.write(fff)
             ff.close()
 
