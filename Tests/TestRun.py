@@ -15,7 +15,7 @@ __author__ = 'Quoleon/Turro'
 """CHECK OUT THE REFERENCE PAGE ON OUR WEBSITE :
 http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
 
-
+# Returns 1 if success
 def runTest(args):
     [numQubits, errBounds, testAccCorr, test2Det, testCrossTalk, testBell, testDrift, nStates] = args
     success = False
@@ -113,7 +113,7 @@ def runTest(args):
     except:
         FAIL = '\033[91m'
         print(f'{FAIL}Failed to set up Test: ' + uniqueID(args))
-        raise SetUpError()
+        return 0
 
     numErrors = 0
     # create states and do tomo
@@ -238,8 +238,9 @@ def runTest(args):
     if(numErrors>0):
         FAIL = '\033[91m'
         print(f'{FAIL}At least 1 tomography failed with settings:' + uniqueID(args))
-
-        raise TomographyError()
+        return 0
+    else:
+        return 1
 
 
 def uniqueID(args):
