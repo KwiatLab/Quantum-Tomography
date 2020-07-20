@@ -27,14 +27,14 @@ def file_path(string):
         return string
     else:
 
-        raise FileNotFoundError(string)
+        raise OSError(string)
 
 def dir_path(string):
     if os.path.isdir(string) or string == "../../" :
         return string
     else:
 
-        raise FileNotFoundError(string)
+        raise OSError(string)
 
 def main():
     # create argument parser object
