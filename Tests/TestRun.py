@@ -5,6 +5,8 @@ import matplotlib.pyplot as plt
 import QuantumTomography as qLib
 import os
 import traceback
+import warnings
+warnings.filterwarnings("ignore")
 
 """
 Copyright 2020 University of Illinois Board of Trustees.
@@ -113,9 +115,11 @@ def runTest(args):
     except:
         FAIL = '\033[91m'
         print(f'{FAIL}Failed to set up Test: ' + uniqueID(args))
+        print(traceback.format_exc())
         return 0
 
     numErrors = 0
+    tracebackError = ""
     # create states and do tomo
     for x in range(nStates):
         # crostalk
@@ -229,17 +233,22 @@ def runTest(args):
             inten = 0
             myfVal = -1
             myFidel = -1
+            tracebackError = traceback.format_exc()
 
         AtotalCounts[x] = numCounts
         myFidels[x] = myFidel
-        if (myFidel < .8):
-            numErrors += 1
+        if (myFidel < .8 and not testCrossTalk):
+            numErrors -= 1
+            tracebackError = "Low Fidelity of " + str(myFidel)
 
     if(numErrors>0):
         FAIL = '\033[91m'
         print(f'{FAIL}At least 1 tomography failed with settings:' + uniqueID(args))
+        print(tracebackError)
         return 0
     else:
+        OKGREEN = '\033[92m'
+        print(f'{OKGREEN}Test ran with no issues: ' + uniqueID(args))
         return 1
 
 
