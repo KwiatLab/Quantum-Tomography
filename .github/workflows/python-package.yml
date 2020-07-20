@@ -5,9 +5,9 @@ name: Python package
 
 on:
   push:
-    branches: [ master ]
+    branches: [ CI-workflow ]
   pull_request:
-    branches: [ master ]
+    branches: [ CI-workflow ]
 
 jobs:
   build:
