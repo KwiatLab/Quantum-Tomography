@@ -112,7 +112,7 @@ def runTest(args):
                 measurements[i] = temp
     except:
         FAIL = '\033[91m'
-        print(f"{FAIL}Failed to set up Test: " + uniqueID(args))
+        print(f'{FAIL}Failed to set up Test: ' + uniqueID(args))
         raise SetUpError()
 
     numErrors = 0
@@ -216,7 +216,6 @@ def runTest(args):
                 # tomo_input[:, n_qubit+ 1]: coincidences
                 for k in range(tomo_input.shape[0]):
                     tomo_input[k, numQubits + 1] = int((intensity[k]) * tomo_input[k, numQubits + 1])
-        errorMessage = ""
         # Do tomography with settings
         try:
             myDensitie, inten, myfVal = tomo.state_tomography(tomo_input, intensity)
@@ -238,7 +237,7 @@ def runTest(args):
 
     if(numErrors>0):
         FAIL = '\033[91m'
-        print(f"{FAIL}At least 1 tomography failed with settings:" + uniqueID(args))
+        print(f'{FAIL}At least 1 tomography failed with settings:' + uniqueID(args))
 
         raise TomographyError()
 
