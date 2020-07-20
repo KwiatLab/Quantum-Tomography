@@ -2,7 +2,7 @@ from __future__ import print_function
 import numpy as np
 import sys
 import matplotlib.pyplot as plt
-sys.path.append("../Quantum-Tomography_Git")
+sys.path.append("../")
 import QuantumTomography as qLib
 from TestResultsClass import TestResult
 import os
