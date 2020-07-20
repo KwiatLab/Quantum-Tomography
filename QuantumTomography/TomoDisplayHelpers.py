@@ -47,7 +47,7 @@ def floatToString(x, html = False):
             return "inf"
         if isNaN(x):
             return "nan"
-        if (abs(x.real) < = 10 ** -8):
+        if (abs(x.real) <= 10 ** -8):
             return "0"
 
         s = "{:e}".format(float(x.real))

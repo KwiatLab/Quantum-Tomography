@@ -91,7 +91,7 @@ def main():
         if (t.conf['Bellstate'] != 0):
             vals = t.getBellSettings(rho)
             resolution = (np.pi / 2) / (9 * (5 ** 3))
-            bs += '<h3>Bell inequality (S_local_realism < = 2)</h3>'
+            bs += '<h3>Bell inequality (S_local_realism <= 2)</h3>'
             bs += '<table style = \"width:60%;margin-top:10px;font-size: 15px;padding-bottom:5px;float:none;\"><tr><td style = "font-size: 20;font-weight: 1000;color: rebeccapurple;">Property</td><td  style = "font-size: 20;font-weight: 1000;color: rebeccapurple;padding-bottom:5px;">Value</td>'
             if (vals.shape[1] > 2):
                 bs += '<td  style = "font-size: 20;font-weight: 1000;color: rebeccapurple;padding-bottom:5px;">   Error</td></tr>'

@@ -25,13 +25,13 @@ class Tomography():
     '''Public Variables'''
     # # # # # # # # # # # #
 
-    # conf['NQubits']: > = 1, it will take a much longer time for more qubits.
+    # conf['NQubits']: >= 1, it will take a much longer time for more qubits.
     # conf['NDetectors']: 1 or 2
     # conf['ctalk']: [[C0->0, C0->1], [C1->0, C1->1]]
     # conf['Bellstate']: 'no' or 'yes'
     # conf['DoDriftCorrection'] = 'no' or 'yes'
     # conf['DoAccidentalCorrection'] = 'no' or 'yes'
-    # conf['DoErrorEstimation']: > = 0
+    # conf['DoErrorEstimation']: >= 0
     # conf['Window']: 0 or array like, dimension = 1
     # conf['Efficiency']: 0 or array like, dimension = 1
     # conf['Beta']: 0 to 0.5, depending on purity of state and total number of measurements.
@@ -492,7 +492,7 @@ class Tomography():
         # crosstalk
         ctalk = np.array(self.conf['Crosstalk'])[0:2 ** nbits, 0:2 ** nbits]
         crosstalk = ctalk
-        if np.ndim(ctalk) > = 3:
+        if np.ndim(ctalk) >= 3:
             for j in range(ctalk.shape[2]):
                 crosstalk[j] = ctalk[:, :, j]
 
@@ -738,7 +738,7 @@ class Tomography():
                 raise ValueError("Input data needed. You can only calculate bounds on the state used in the tomography.")
             err_n = self.conf['DoErrorEstimation']
             # increase err_n if needed
-            if(err_n< = 1):
+            if(err_n<= 1):
                 err_n = 2
             # generate states if needed
             if(self.mont_carl_states == 0):
@@ -782,7 +782,7 @@ class Tomography():
         The fval of the regression associated with each approximate density matrices.
     """
     def tomography_states_generator(self, n = -1):
-        if(n < = 1):
+        if(n <= 1):
             n = max(self.conf['DoErrorEstimation'], 2)
         last_outPut = [self.last_rho, self.last_intensity, self.last_fval]
 
@@ -863,7 +863,7 @@ class Tomography():
                 raise ValueError("Input data needed. You can only calculate bounds on the state used in the tomography.")
             err_n = self.conf['DoErrorEstimation']
             # increase err_n if needed
-            if (err_n < = 1):
+            if (err_n <= 1):
                 err_n = 2
             # generate states if needed
             if (self.mont_carl_states == 0):

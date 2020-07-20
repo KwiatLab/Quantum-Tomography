@@ -1,23 +1,22 @@
+from __future__ import print_functionimport scipy as sp
+import numpy as np
+from .TomoFunctionsHelpers import *
+
 """
 Copyright 2020 University of Illinois Board of Trustees.
 Licensed under the terms of an MIT license
 """
 
-from __future__ import print_function
 __author__ = 'Quoleon/Turro'
-"""CHECK OUT THE REFERENCE PAGE ON OUR WEBSITE : http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
-
-import scipy as sp
-# from numpy.core.defchararray import add
-import numpy as np
-from .TomoFunctionsHelpers import *
+"""CHECK OUT THE REFERENCE PAGE ON OUR WEBSITE :
+http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
 
 
 # # # # # # # # # # # # #
 # TOMOGRAPHY CALCULATE  #
 # # # # # # # # # # # # #
 
-# 
+#
 # def i2array(i, ii, n):
 #     nn = np.int(np.ceil((np.log(ii)/np.log(n))))
 #     rv = np.zeros(nn)
@@ -25,7 +24,7 @@ from .TomoFunctionsHelpers import *
 #         rv[j] = i/(n**(nn-j-1))
 #         i % = n**(nn-j-1)
 #     return rv
-# 
+#
 # # returns the tensor product of the two states
 # def tensor_product(A, B):
 #     a = np.ndim(A)
@@ -66,16 +65,16 @@ from .TomoFunctionsHelpers import *
 #             rv[j] = A[int(np.floor(j / n21))] * B[j % n21]
 #     elif (a == 0) | (b == 0):
 #         rv = A * B
-# 
+#
 #     return rv
-# 
+#
 # def trace_dist(rho1, rho2):
 #     # didn't checked, and would not be called in this version.
 #     s1 = rho2stokes(rho1)
 #     s2 = rho2stokes(rho2)
 #     s = s1 - s2
 #     val = np.sqrt(np.dot(s.conj().transpose(), s))/2
-# 
+#
 #     return val
 
 
@@ -167,7 +166,7 @@ def density2t(rhog):
         if j > 0:
             t[np.arange(idx, idx+cur_length)] = np.imag(np.diag(tm, -j))
             idx = idx + cur_length
-        cur_length - = 1
+        cur_length -= 1
 
     return t
 
@@ -188,11 +187,11 @@ def density2t(rhog):
 def toDensity(psiMat):
     return np.outer(psiMat.conj(), psiMat)
 
-# 
+#
 # def one_in(idx, length):
 #     val = np.zeros(length)
 #     val[idx] = 1
-# 
+#
 #     return val
 
 
@@ -225,7 +224,7 @@ def t_matrix(t):
             tm = tm + 1j*np.diag(t[np.arange(idx, idx+cur_length)], -j)
             idx = idx + cur_length
 
-        cur_length - = 1
+        cur_length -= 1
 
     return tm
 
@@ -303,7 +302,7 @@ def fidelity(state1, state2):
         val = (np.trace(sp.linalg.sqrtm(a)))**2
     val = np.real(val)
 
-    # when comparing 2 identical pure state, it will get a value larger than 1, 
+    # when comparing 2 identical pure state, it will get a value larger than 1,
     if val > 1:
         if val - 1 < 0.000001:
             val = 1.0
