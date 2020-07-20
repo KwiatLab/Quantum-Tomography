@@ -290,8 +290,8 @@ def fidelity(state1, state2):
     else:
         print("State2 is not a vector or density matrix")
 
-    rho1 /= np.trace(rho1)
-    rho2 /= np.trace(rho2)
+    rho1 = rho1 /np.trace(rho1)
+    rho2 = rho2 / np.trace(rho2)
 
     rho1 = (rho1+rho1.conj().transpose())/2
 
