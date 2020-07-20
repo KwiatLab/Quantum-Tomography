@@ -322,7 +322,7 @@ class TomographyError(Exception):
     def __init__(self):
         pass
     def __str__(self):
-        return "Error Running tomography on a data set"
+        return "Error running tomography on a data set"
 
 def getOppositeState(psi):
     # Horizontal
