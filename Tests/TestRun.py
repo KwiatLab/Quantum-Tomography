@@ -114,7 +114,10 @@ def runTest(args):
                 measurements[i] = temp
     except:
         FAIL = '\033[91m'
-        print(f'{FAIL}Failed to set up Test: ' + uniqueID(args))
+        try:
+            print(f'{FAIL}Failed to set up Test: ' + uniqueID(args))
+        except:
+            print('Failed to set up Test: ' + uniqueID(args))
         print(traceback.format_exc())
         return 0
 
@@ -243,12 +246,18 @@ def runTest(args):
 
     if(numErrors>0):
         FAIL = '\033[91m'
-        print(f'{FAIL}At least 1 tomography failed with settings:' + uniqueID(args))
+        try:
+            print(f'{FAIL}At least 1 tomography failed with settings:' + uniqueID(args))
+        except:
+            print('At least 1 tomography failed with settings:' + uniqueID(args))
         print(tracebackError)
         return 0
     else:
         OKGREEN = '\033[92m'
-        print(f'{OKGREEN}Test ran with no issues: ' + uniqueID(args))
+        try:
+            print(f'{OKGREEN}Test ran with no issues: ' + uniqueID(args))
+        except:
+            print('Test ran with no issues: ' + uniqueID(args))
         return 1
 
 
