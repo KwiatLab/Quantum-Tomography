@@ -3,7 +3,6 @@ import numpy as np
 import sys
 import matplotlib.pyplot as plt
 import QuantumTomography as qLib
-from TestResultsClass import TestResult
 import os
 import traceback
 
@@ -23,7 +22,6 @@ def runTest(args):
     try:
         # set up the test
         tomo = qLib.Tomography()
-        allTests = np.zeros(nStates, dtype="O")
         AtotalCounts = np.zeros(nStates)
         myFidels = np.zeros(nStates)
 
@@ -60,10 +58,10 @@ def runTest(args):
         else:
             measurements = np.zeros((len(tomo_input), 2 ** numQubits), dtype=complex)
         if (tomo.getNumDetPerQubit() == 1):
-            # input[:, np.arange(n_qubit+2, 3*n_qubit+2)]: measurements
+            # input[:, np.arange(n_qubit+ 2, 3*n_qubit+ 2)]: measurements
             mStates = tomo_input[:, np.arange(numQubits + 2, 3 * numQubits + 2)]
         else:
-            # input[:, np.arange(2**n_qubit+2*n_qubit+1, 2**n_qubit+4*n_qubit+1)]: measurements
+            # input[:, np.arange(2**n_qubit+ 2*n_qubit+ 1, 2**n_qubit+ 4*n_qubit+ 1)]: measurements
             mStates = tomo_input[:, np.arange(2 ** numQubits + 2 * numQubits + 1,
                                               2 ** numQubits + 4 * numQubits + 1)]
         mStates = np.reshape(mStates, (mStates.shape[0], int(mStates.shape[1] / 2), 2))
@@ -114,7 +112,7 @@ def runTest(args):
                 measurements[i] = temp
     except:
         FAIL = '\033[91m'
-        print(f"{FAIL}Failed to set up Test: "+ uniqueID(args))
+        print(f"{FAIL}Failed to set up Test: " + uniqueID(args))
         raise SetUpError()
 
     numErrors = 0
@@ -160,7 +158,7 @@ def runTest(args):
                 prob = np.dot(hBasis, newState)
                 prob = prob * prob.conj()
                 tomo_input[i, numQubits + 1] = np.random.binomial(numCounts, min(prob, .99999999))
-            # input[:, np.arange(2*n_qubit+1, 2**n_qubit+2*n_qubit+1)]: coincidences
+            # input[:, np.arange(2*n_qubit+ 1, 2**n_qubit+ 2*n_qubit+ 1)]: coincidences
 
         if (testAccCorr):
             # acc[:, j] = np.prod(np.real(sings[:, idx]), axis=1) * (window[j] * 1e-9 / np.real(t)) ** (nbits - 1)
@@ -208,14 +206,14 @@ def runTest(args):
         if (testDrift):
             intensity = np.random.random(intensity.shape) ** 2 * 10
             if (test2Det):
-                # tomo_input[:, np.arange(2*n_qubit+1, 2**n_qubit+2*n_qubit+1)]: coincidences
+                # tomo_input[:, np.arange(2*n_qubit+ 1, 2**n_qubit+ 2*n_qubit+ 1)]: coincidences
                 for k in range(tomo_input.shape[0]):
                     tomo_input[
                         k, np.arange(2 * numQubits + 1, 2 ** numQubits + 2 * numQubits + 1)] = int(
                         (intensity[k]) * tomo_input[
                             k, np.arange(2 * numQubits + 1, 2 ** numQubits + 2 * numQubits + 1)])
             else:
-                # tomo_input[:, n_qubit+1]: coincidences
+                # tomo_input[:, n_qubit+ 1]: coincidences
                 for k in range(tomo_input.shape[0]):
                     tomo_input[k, numQubits + 1] = int((intensity[k]) * tomo_input[k, numQubits + 1])
         errorMessage = ""
@@ -232,9 +230,6 @@ def runTest(args):
             inten = 0
             myfVal = -1
             myFidel = -1
-            errorMessage = "<pre>\n" + traceback.format_exc() + "\n</pre>"
-
-        allTests[x] = TestResult(startingRho, myDensitie, myfVal, myFidel, inten, numCounts, cTalkMat, errorMessage)
 
         AtotalCounts[x] = numCounts
         myFidels[x] = myFidel
@@ -243,42 +238,7 @@ def runTest(args):
 
     if(numErrors>0):
         FAIL = '\033[91m'
-        print(f"{FAIL}At least 1 tomography failed with settings:"+uniqueID(args))
-        print(f"{FAIL}View at: ErrorLogs/" + uniqueID(args) + '.html')
-
-        # Print settings used
-        FORREPLACE = '<table>'
-        FORREPLACE += '<tr><th>Settings used:</th><th></th></tr>'
-        FORREPLACE += '<tr><td><ul>'
-        settingsArray = [testAccCorr, test2Det, testCrossTalk, testDrift]
-        settingsArrayName = ['testAccCorr', 'test2Det', 'testCrossTalk', 'testDrift']
-        for x in range(len(settingsArray)):
-            if settingsArray[x]:
-                FORREPLACE += '<li>'
-                FORREPLACE += settingsArrayName[x]
-                FORREPLACE += '</li>'
-        FORREPLACE += '</ul></td></tr></table>'
-
-        # Print Data
-        FORREPLACE += '<table class="data">'
-        # HEADERS
-        FORREPLACE += '<tr>'
-        FORREPLACE += '<th colspan="2">Actual Densities</th><th>Counts</th>'  # Actual
-        FORREPLACE += '<th colspan="3">Caclulated Densities</th>'  # Calculated
-        if (testCrossTalk):  # Ctalk
-            FORREPLACE += '<th colspan="2">CrossTalk</th>'
-        FORREPLACE += '</tr>'
-        for i in allTests:
-            FORREPLACE += str(i)
-        FORREPLACE += '</table>'
-
-        with open('../Tests/ErrorLogs/Template.html', 'r') as f:
-            fff = '\n'.join(f.readlines())
-            f.close()
-        fff = fff.replace('TOREPLACE', str(FORREPLACE))
-        with open('../Tests/ErrorLogs/' + uniqueID(args) + '.html', 'w') as ff:
-            ff.write(fff)
-            ff.close()
+        print(f"{FAIL}At least 1 tomography failed with settings:" + uniqueID(args))
 
         raise TomographyError()
 
@@ -286,8 +246,8 @@ def runTest(args):
 def uniqueID(args):
     [numQubits, errBounds, testAccCorr, test2Det, testCrossTalk, testBell, testDrift, nStates] = args
 
-    s = "N"+str(numQubits) +"-"
-    s +="e"+str(errBounds) +"-"
+    s = "N" + str(numQubits) + "-"
+    s +="e" + str(errBounds) + "-"
     if (testAccCorr):
         s+="a1-"
     else:
