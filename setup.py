@@ -30,7 +30,7 @@ setup(
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
     ],
-    packages = ["QuantumTomography"],
+    packages = ["src/QuantumTomography"],
     include_package_data = True,
     install_requires = ["scipy", "numpy", "matplotlib"],
     entry_points = {
