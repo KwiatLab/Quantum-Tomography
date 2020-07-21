@@ -1,0 +1,58 @@
+table.data {
+    width: 100%;
+}
+
+img {
+    display: block;
+    margin-left: auto;
+    margin-right: auto;
+    height: 55%;
+    width: auto;
+}
+
+table.data td {
+    /* width: 100%; */
+    padding: 15px 0px;
+    border-bottom: 2px solid rgb(150, 214, 242);
+    border-collapse: collapse;
+}
+
+table.densityMat {
+    border: 1px solid black;
+    border-collapse: collapse;
+    font-size: 15px;
+    table-layout: fixed;
+}
+
+table.densityMat td {
+    padding: 0px 5px;
+    border: 1px solid black;
+}
+
+div.purp {
+    color: rebeccapurple;
+    font-weight: bold;
+    display: inline;
+}
+
+div.title {
+    font-weight: bold;
+    display: inline;
+}
+
+h5.eigVals {
+    display: inline;
+    padding: 2px 0px;
+}
+
+p.eigVals {
+    display: inline;
+}
+
+ul.fVals {
+    list-style-type: none;
+    padding: 0px 15px;
+}
+div#errEstContainer {
+    padding:2px;
+}
