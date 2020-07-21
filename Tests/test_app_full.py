@@ -15,5 +15,3 @@ http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
 def full_general_test():
 
     assert(0 == 1 )
-
-simple_general_test()
