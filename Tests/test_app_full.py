@@ -1,5 +1,8 @@
 from __future__ import print_function
 from TestRun import runTest
+import unittest
+import warnings
+warnings.filterwarnings("ignore")
 
 
 """
@@ -12,8 +15,12 @@ __author__ = 'Quoleon/Turro'
 http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
 
 
-def full_general_test():
+class TestSum(unittest.TestCase):
+    def test_N1_e0_a0_d0_c0_b0_dr0(self):
+        self.assertEqual(runTest([1, 0, 0, 0, 0, 0, 0, 20]), 1)
 
-    assert(1 == 1 )
+    def test_N1_e3_a0_d0_c0_b0_dr0(self):
+        self.assertEqual(runTest([1, 3, 0, 0, 0, 0, 0, 20]), 1)
 
-full_general_test()
+if __name__ == '__main__':
+    unittest.main()
