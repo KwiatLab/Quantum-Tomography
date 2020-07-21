@@ -14,6 +14,8 @@ http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
 
 def simple_general_test():
 
+
+    assert(1 == 1 )
     assert(runTest([1, 0, 0, 0, 0, 0, 0, 50]) == 1 )
     assert(runTest([1, 3, 0, 0, 0, 0, 0, 50]) == 1 )
     assert(runTest([1, 0, 0, 1, 0, 0, 0, 50]) == 1 )
@@ -29,5 +31,5 @@ def simple_general_test():
     # assert(runTest([2, 0, 0, 0, 0, 0, 1, 50]) == 1 )
     #
     # assert(runTest([3, 0, 0, 0, 0, 0, 0, 50]) == 1 )
-    
+
 simple_general_test()
