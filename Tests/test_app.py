@@ -29,3 +29,5 @@ def simple_general_test():
     # assert(runTest([2, 0, 0, 0, 0, 0, 1, 50]) == 1 )
     #
     # assert(runTest([3, 0, 0, 0, 0, 0, 0, 50]) == 1 )
+    
+simple_general_test()
