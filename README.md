@@ -1,5 +1,5 @@
 # Quantum Tomography
-
+![Python package](https://github.com/KwiatQIM/Quantum-Tomography/workflows/Python%20package/badge.svg?branch=master)
 A python library to help perform tomography on a quantum state.
 
 ## Usage
