@@ -63,7 +63,7 @@ class TestSum(unittest.TestCase):
         pureStates[4] = np.array([.7071, .7071j], dtype=complex)
         pureStates[5] = np.array([.7071, -.7071j], dtype=complex)
         for x in pureStates:
-            state = np.outer(x, x.conj().transpose())
+            state = qLib.toDensity(x)
             self.assertGreater(qLib.purity(state), .95)
             self.assertAlmostEquals(qLib.purity(state)+qLib.linear_entropy(state), 1)
 
@@ -73,7 +73,7 @@ class TestSum(unittest.TestCase):
         mixedStates.append(np.array([0, 0, 0, 0]))
         mixedStates.append(np.array([0, 0, 0, 0, 0, 0, 0, 0]))
         for x in mixedStates:
-            state = np.outer(x, x.conj().transpose())
+            state = qLib.toDensity(x)
             self.assertLess(qLib.purity(state), .05)
             self.assertAlmostEquals(qLib.purity(state) + qLib.linear_entropy(state), 1)
 
@@ -84,7 +84,7 @@ class TestSum(unittest.TestCase):
         bellStates[2] = np.array([0, .7071, .7071, 0], dtype=complex)
         bellStates[3] = np.array([0, .7071, -.7071, 0], dtype=complex)
         for x in bellStates:
-            state = np.outer(x, x.conj().transpose())
+            state = qLib.toDensity(x)
             self.assertGreater(qLib.concurrence(state), .95)
             self.assertGreater(qLib.tangle(state), .95)
 import numpy as np

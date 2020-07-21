@@ -275,6 +275,7 @@ def fidelity(state1, state2):
     rho1 = state1
     rho2 = state2
     if np.ndim(state1) == 1:
+        state1 = toDensity(state1)
         rho1 = np.dot(state1, state1.conj().transpose())
         pure = 1
     elif state1.shape[1] == state1.shape[0]:
@@ -283,6 +284,7 @@ def fidelity(state1, state2):
         print("State1 is not a vector or density matrix")
 
     if np.ndim(state2) == 1:
+        state2 = toDensity(state2)
         rho2 = np.dot(state2, state2.conj().transpose())
         pure = 1
     elif state2.shape[1] == state2.shape[0]:
