@@ -33,7 +33,7 @@ package directly for a more hands free process.
 ## Usage
 ##### Step 1. Initialize Tomography Object
 ```
-import KwiatQuantumLib as qKLib
+import QuantumTomography as qKLib
 
 t = qKLib.Tomography()
 ```
