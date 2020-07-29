@@ -271,43 +271,34 @@ class TestRun():
             if(myFidel < .8):
                 numErrors += 1
         dataSaver.saveData()
-        # returns the results of these tests
-        class bcolors:
-            OKGREEN = '\033[92m'
-            FAIL = '\033[91m'
-            WARNING = '\033[93m'
 
-        if(numErrors == 0):
-            color = bcolors.OKGREEN
-        else:
-            color = bcolors.FAIL
-        print(f"{color}-----------------------")
-        print(f"{color}Test  "+str(TestRun.counter)+": "+self.uniqueID())
-        print(f"{color}Number of Qubits Bits: "+ str(self.numQubits))
-        print(f"{color}Number of errCorr: " + str(self.errBounds))
+        print("-----------------------")
+        print("Test  "+str(TestRun.counter)+": "+self.uniqueID())
+        print("Number of Qubits Bits: "+ str(self.numQubits))
+        print("Number of errCorr: " + str(self.errBounds))
         if (self.test2Det):
-            print(f"{color}test2Det:True")
+            print("test2Det:True")
         else:
-            print(f"{color}test2Det:False")
+            print("test2Det:False")
         if (self.testCrossTalk):
-            print(f"{color}testCrossTalk:True")
+            print("testCrossTalk:True")
         else:
-            print(f"{color}testCrossTalk:False")
+            print("testCrossTalk:False")
         if (self.testBell):
-            print(f"{color}testBell:True")
+            print("testBell:True")
         else:
-            print(f"{color}testBell:False")
+            print("testBell:False")
         if (self.testAccCorr):
-            print(f"{color}testAccCorr:True")
+            print("testAccCorr:True")
         else:
-            print(f"{color}testAccCorr:False")
+            print("testAccCorr:False")
         if (self.testDrift):
-            print(f"{color}testDrift:True")
+            print("testDrift:True")
         else:
-            print(f"{color}testDrift:False")
+            print("testDrift:False")
 
-        print(f"{color}Result : COMPLETED " + "[" + str(numErrors) + "/" + str(self.nStates) + "] Errors")
-        print(f"{color}-----------------------\n")
+        print("Result : COMPLETED " + "[" + str(numErrors) + "/" + str(self.nStates) + "] Errors")
+        print("-----------------------\n")
         return 1
     def uniqueID(self):
         s = "N"+str(self.numQubits) +"-"
@@ -349,13 +340,6 @@ def selectionSort(results):
             for x in sortedResults:
                 x[min_idx], x[i] = swap(x[min_idx], x[i])
         return sortedResults
-
-
-def findM(meas):
-    for x in range(0, len(data['projOps'])):
-        if ((np.linalg.norm(data['projOps'][x] - meas) < .0001)):
-            return x;
-    return -1;
 
 
 
