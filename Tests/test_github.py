@@ -16,6 +16,9 @@ __author__ = 'Quoleon/Turro'
 """CHECK OUT THE REFERENCE PAGE ON OUR WEBSITE :
 http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
 
+"""This test script is the one used by github when there is a pull request or push. This will automatically
+run and the results can be see in the actions tab"""
+
 class TestSum(unittest.TestCase):
     #    1 Qubit
     def test_N1_e0_a0_d0_c0_b0_dr0(self):

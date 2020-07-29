@@ -9,3 +9,5 @@ dist
 .idea
 __pycache__
 Debugger.py
+/Tests/Results/
+!*/Tests/Results/Graph.py
