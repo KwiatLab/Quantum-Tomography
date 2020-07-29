@@ -178,10 +178,10 @@ class TestRun():
             #Testing setting
             for i in range(len(tomo_input)):
                 # state goes through wave plates
-                newState = wavePlateArray[i] @ state
+                newState = np.matmul(wavePlateArray[i], state)
                 # state goes through beam splitter and we measure the H counts
                 if (self.testCrossTalk):
-                    newState = cTalkMat @ newState
+                    newState = np.matmul(cTalkMat, newState)
                 hBasis = np.zeros(2 ** self.numQubits, dtype=complex)
                 hBasis[0] = 1
                 if (self.test2Det):

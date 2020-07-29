@@ -45,26 +45,3 @@ class csvSaver():
             if(self.count>= self.nStates):
                 self.saveData()
                 self.count = 0
-
-    def graphData(self):
-        fig = plt.figure()
-        fig.clf()
-        plt.plot(np.log10(self.previousData[0]), self.previousData[1], '.b', label="Our Group's Tomography")
-        #
-        # # Other Source
-        # plt.plot(np.log10(AtotalCounts), perfectFidels, '.g')
-        plt.legend(loc='lower left')
-        plt.title('Fidelities')
-        plt.xlabel("Log(Counts) base 10")
-        plt.ylabel("Fidelity")
-        plt.savefig("fidelGraph" + str(x) + ".png")
-
-        '''### TIME Table ###'''
-        fig = plt.figure()
-        fig.clf()
-        plt.plot(np.log10(self.previousData[0]), self.previousData[2], '.b', label="Our Group's Tomography")
-        plt.legend(loc='upper left')
-        plt.title('Time')
-        plt.xlabel("Log(Counts) base 10")
-        plt.ylabel("Time (sec)")
-        plt.savefig("timeGraph" + str(x) + ".png")
