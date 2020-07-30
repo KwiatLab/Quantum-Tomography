@@ -37,4 +37,4 @@ jobs:
     - name: Test with pytest
       run: |
         export PYTHONPATH=src
-        pytest Tests/test_github.py
+        pytest Tests/test_github_publish.py

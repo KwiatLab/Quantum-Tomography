@@ -27,7 +27,7 @@ jobs:
     - name: Test with pytest
       run: |
         export PYTHONPATH=src
-        pytest Tests/test_app_full.py
+        pytest Tests/test_github_publish.py
     - name: Build and publish
       env:
         TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
