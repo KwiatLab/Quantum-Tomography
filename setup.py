@@ -39,4 +39,8 @@ setup(
             "Quantum-Tomography = QuantumTomography.cli:main",
         ]
     },
+    project_urls = {
+      'Documentation': 'http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/',
+      'Video Tutorial': 'https://www.youtube.com/watch?v=I-214P0LOfQ&list=PLJLHMKtk5Pqy9w9aCuyowUF1p7pl2JCI9&index=3'
+    }
 )

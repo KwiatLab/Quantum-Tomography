@@ -3,6 +3,12 @@
 
 A python library to help perform tomography on a quantum state.
 
+Links
+ - [Documentation](http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/)
+ - [Video Tutorial](https://www.youtube.com/watch?v=I-214P0LOfQ&list=PLJLHMKtk5Pqy9w9aCuyowUF1p7pl2JCI9&index=3)
+ - [Pypi Package](https://pypi.org/project/Quantum-Tomography/)
+
+
 ## Usage
 ### Terminal
 For those who do not want to write python code to perform tomography 
