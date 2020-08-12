@@ -31,7 +31,7 @@ class TestRun():
         [nBits, bounds, acc, det2, cross, bell, drift, web] = args
         """-------Settings---------"""
         self.numQubits = nBits
-        self.nStates = 50
+        self.nStates = 600
         self.test2Det = det2
         self.testCrossTalk = cross
         self.errBounds = bounds
@@ -64,13 +64,8 @@ class TestRun():
 
         # what arrays we need
         # startingRhos,myfVals,myFidels,myDensities,totalCounts
-        allTests = np.zeros(self.nStates,dtype="O")
-        AtotalCounts = np.zeros(self.nStates)
-        myFidels = np.zeros(self.nStates)
-        myTimes = np.zeros(self.nStates)
 
         #set up settings for tomo class
-        intensity = np.ones(6 ** self.numQubits)
         tomo.conf['NQubits'] = self.numQubits
         tomo.conf['Properties'] = ['concurrence', 'tangle', 'entanglement', 'entropy', 'linear_entropy', 'negativity']
         if(self.testAccCorr):
@@ -168,11 +163,13 @@ class TestRun():
                 tomo.conf['Crosstalk'] = cTalkMat
 
             # counts
-            numCounts = max(25,int(np.random.random()*10**np.random.randint(1,5)))
+            numCounts = np.zeros(tomo_input.shape[0],dtype=int)
+            exponentForCounts = np.random.randint(1, 8)
+            for c in range(tomo_input.shape[0]):
+                numCounts[c] = (1+np.random.random())*10**exponentForCounts
 
             # create random state
-            state = np.random.beta(.5,.5,2**self.numQubits)+1j*np.random.beta(.5,.5,2**self.numQubits)
-            state = state / np.sqrt(np.dot(state,state.conj()))
+            state = randomState(self.numQubits)
 
             startingRho = qLib.toDensity(state)
             #Testing setting
@@ -192,12 +189,11 @@ class TestRun():
                         prob[j] = np.dot(hBasis, newState)
                         prob[j] = min(prob[j] * prob[j].conj(), .99999999)
                     prob = np.array(prob, dtype=float)
-                    tomo_input[i, 2 * self.numQubits + 1: 2 ** self.numQubits + 2 * self.numQubits + 1] = np.random.multinomial(
-                        numCounts, prob)
+                    tomo_input[i, 2 * self.numQubits + 1: 2 ** self.numQubits + 2 * self.numQubits + 1] = np.random.multinomial(numCounts[i], prob)
                 else:
                     prob = np.dot(hBasis, newState)
                     prob = prob * prob.conj()
-                    tomo_input[i, self.numQubits + 1] = np.random.binomial(numCounts,min(prob,.99999999))
+                    tomo_input[i, self.numQubits + 1] = np.random.binomial(numCounts[i],min(prob,.99999999))
                 # input[:, np.arange(2*n_qubit+1, 2**n_qubit+2*n_qubit+1)]: coincidences
 
 
@@ -242,7 +238,7 @@ class TestRun():
                 tomo_input[:, 0] = t
 
             if (self.testDrift):
-                intensity = np.random.random(intensity.shape) ** 2 * 10
+                intensity = numCounts
                 if (self.test2Det):
                     # tomo_input[:, np.arange(2*n_qubit+1, 2**n_qubit+2*n_qubit+1)]: coincidences
                     for k in range(tomo_input.shape[0]):
@@ -255,7 +251,7 @@ class TestRun():
             # Do tomography with settings
             try:
                 start_time = time.time()
-                myDensitie, inten, myfVal = tomo.state_tomography(tomo_input, intensity)
+                myDensitie, inten, myfVal = tomo.state_tomography(tomo_input, numCounts)
                 tomographyTime = (time.time() - start_time)
                 myFidel = qLib.fidelity(startingRho,myDensitie)
                 if(self.testBell):
@@ -267,7 +263,7 @@ class TestRun():
                 myfVal = -1
                 myFidel = -1
                 errorMessage = "<pre>\n"+traceback.format_exc()+"\n</pre>"
-            dataSaver.addData(numCounts,myFidel,tomographyTime)
+            dataSaver.addData(sum(numCounts),myFidel,tomographyTime)
             if(myFidel < .8):
                 numErrors += 1
         dataSaver.saveData()
@@ -366,3 +362,7 @@ def getOppositeState(psi):
         return np.array([(2 ** (-1 / 2)), (2 ** (-1 / 2)) * 1j], dtype=complex)
     else:
         raise Exception('State Not Found getOppositeState')
+def randomState(n = 1):
+    state = np.random.random(2 ** n) + 1j * np.random.random(2 ** n)
+    state = state / np.sqrt(np.dot(state, state.conj()))
+    return state

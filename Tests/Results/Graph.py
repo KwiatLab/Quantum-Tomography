@@ -3,7 +3,7 @@ import numpy as np
 from QuantumTomography import floatToString
 
 
-maxNumberOfQubits = 3
+maxNumberOfQubits = 1
 timeVsCounts_xVals = []
 timeVsCounts_yVals = []
 # For descriptive stats at bottom of image
