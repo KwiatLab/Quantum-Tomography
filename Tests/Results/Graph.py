@@ -7,7 +7,7 @@ maxNumberOfQubits = 1
 timeVsCounts_xVals = []
 timeVsCounts_yVals = []
 # For descriptive stats at bottom of image
-p = np.array([['nBits',"nStates",'Mean',"std"],['nQ',"nStates",'Mean',"std"],['nQ',"nStates",'Mean',"std"],['nQ',"nStates",'Mean',"std"]],dtype="O")
+p = np.array([['nBits',"nStates",'Mean(s)',"std(s)"],['nQ',"nStates",'Mean',"std"],['nQ',"nStates",'Mean',"std"],['nQ',"nStates",'Mean',"std"]],dtype="O")
 
 for x in range(1,maxNumberOfQubits+1):
 
