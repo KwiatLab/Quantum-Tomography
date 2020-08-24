@@ -13,6 +13,8 @@ http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
 """This script is used to save data to the results folder. Create an instance of the class and use addData.
 This class will automatically save the data after a certain amount of new entires are given"""
 
+"WARNING! These tests run on the published library installed in your pip version, not the code in the local directory."
+
 class csvSaver():
     def __init__(self,numQubits):
         self.n = numQubits

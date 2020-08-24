@@ -186,7 +186,7 @@ def density2t(rhog):
         Density Matrix of the input state.
     """
 def toDensity(psiMat):
-    return np.outer(psiMat.conj(), psiMat)
+    return np.outer(psiMat, psiMat.conj())
 
 #
 # def one_in(idx, length):
@@ -245,7 +245,6 @@ def t_matrix(t):
     """
 def t_to_density(t):
     tm = t_matrix(t)
-    tm = tm.conj()
     rhog = np.dot(tm.conj().transpose(), tm)
 
     return rhog

@@ -66,13 +66,13 @@ class Tomography():
     Default Constructor
     Desc: This initializes a default tomography object
     """
-    def __init__(self):
-        self.conf = {'NQubits': 2,
+    def __init__(self,nQ = 2):
+        self.conf = {'NQubits': nQ,
             'NDetectors': 1,
             'Crosstalk': np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]),
             'Bellstate': 0,
             'DoDriftCorrection': 0,
-            'DoAccidentalCorrection' : 1,
+            'DoAccidentalCorrection' : 0,
             'DoErrorEstimation': 0,
             'Window': 0,
             'Efficiency': 0,
@@ -187,27 +187,34 @@ class Tomography():
     Parameters
     ----------
     raw_counts : ndarray
-        The input data for the current tomography. This is what tomo_input will be set to.
-    intensities : ndarray with length = number of measurements
-        Relative pump power (arb. units) during measurement; used for drift correction.
+        The input data for the current tomography. This is what tomo_input will be set to. Example can be seen at top of page. 
+        See getTomoInputTemplate() to get a template for this input.
+    intensities : 1darray with length = number of measurements
+        Relative pump power (arb. units) during measurement; used for drift correction. Default will be an array of ones
     Returns
     -------
     rhog : ndarray with shape = (2^numQubits, 2^numQubits)
         The predicted density matrix.
-    intensity : float
-        The predicted overall intensity used to normalize the state.
+    intensity : The predicted overall intensity used to normalize the state.
+        The predicted overall intensity used to normalize the state. 
     fvalp : float
         Final value of the internal optimization function. Values greater than the number
         of measurements indicate poor agreement with a quantum state.
     """
-    def state_tomography(self, raw_counts, intensities):
+    def state_tomography(self, raw_counts, intensities = -1):
         rho0 = self.conf['RhoStart']
         self.tomo_input = raw_counts
-        self.intensity = intensities
+        if(isinstance(intensities,int)):
+            self.intensities = np.ones(raw_counts.shape[0])
+        else:
+            self.intensity = intensities
         [data, m1, m2, acc] = self.filter_data(raw_counts, intensities)
 
         if not rho0:
             rho0 = self.linear_tomography(data, m2)[0]
+
+        # Currently linear tomography gets the phase wrong. So a temporary fix is to just transpose it.
+        rho0 = rho0.transpose()
 
         [rhog, intensity, fvalp] = self.maximum_likelihood_tomography(rho0, data, m1, acc)
         self.last_rho = rhog.copy()
@@ -301,9 +308,7 @@ class Tomography():
     """
     def maxlike_fitness(self, t, data, accidentals, m, prediction):
 
-        tm = t_matrix(t)
-        # do not change
-        rhog = np.dot(tm.conj().transpose(), tm)
+        rhog = t_to_density(t)
 
 
         for j in range(len(prediction)):
@@ -342,8 +347,7 @@ class Tomography():
     """
     def maxlike_fitness_hedged(self, t, data, accidentals, m, prediction, bet):
 
-        tm = t_matrix(t)
-        rhog = np.dot(tm.conj().transpose(), tm)
+        rhog = t_to_density(t)
 
 
         for j in range(len(prediction)):
@@ -411,8 +415,9 @@ class Tomography():
     Parameters
     ----------
     raw_counts : ndarray
-        The input data for the current tomography.
-    intensities : ndarray with length = number of measurements
+        The input data for the current tomography. This is what tomo_input will be set to. Example can be seen at top of page. 
+        See getTomoInputTemplate() to get a template for this input.
+    intensities : 1darray with length = number of measurements
         Relative pump power (arb. units) during measurement; used for drift correction.
 
     Returns
@@ -671,7 +676,8 @@ class Tomography():
     Returns
     ----------
     raw_counts : ndarray
-        The input data for the current tomography. This is what tomo_input will be set to.
+        The input data for the current tomography. This is what tomo_input will be set to. Example can be seen at top of page. 
+        See getTomoInputTemplate() to get a template for this input.
     """
     def getTomoInputTemplate(self, numBits = -1):
 

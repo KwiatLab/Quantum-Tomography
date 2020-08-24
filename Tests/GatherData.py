@@ -13,6 +13,8 @@ http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
 """This script is used to run tomography and save the results to the Results Folder.
 This uses the SaveTestRun.py script which saves the data."""
 
+"WARNING! These tests run on the published library installed in your pip version, not the code in the local directory."
+
 
 for x in range(1,2):
     q = TestRun([x, 0, False, False, False, False, False, False])
