@@ -53,7 +53,15 @@ class TestRun():
 
     def run(self):
 
-        dataSaver = csvSaver(self.numQubits)
+        # dataSaver = csvSaver(self.numQubits)
+        # Declare Arrays to store the tomo data
+        startingRhos = np.zeros((self.nStates, 2 ** self.numQubits, 2 ** self.numQubits), dtype=complex)
+        myDensities = np.zeros((self.nStates, 2 ** self.numQubits, 2 ** self.numQubits), dtype=complex)
+        myfVals = np.zeros((self.nStates), dtype=complex)
+        myFidels = np.zeros((self.nStates))
+        totalCounts = np.zeros((self.nStates))
+        if (self.testCrossTalk):
+            myCTalks = np.zeros((self.nStates, 2 ** self.numQubits, 2 ** self.numQubits), dtype=complex)
 
         # Check if the setting configuration is valid
         # Used to ignore settings that arent compatable
@@ -155,19 +163,22 @@ class TestRun():
                 # measurements is an array of all the measurements for both classes mStates is only to help calculate Measurements
         ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
         numErrors = 0
+
+
         #create states and do tomo
         for x in range(self.nStates):
-            #crostalk
+            #crosstalk
             cTalkMat = 0
             if(self.testCrossTalk):
                 cTalkMat = np.random.rand(2**self.numQubits,2**self.numQubits)
                 for i in range(2**self.numQubits):
                     cTalkMat[:,i] = cTalkMat[:,i]/(sum(cTalkMat[:,i]+0*np.random.random()))
                 tomo.conf['Crosstalk'] = cTalkMat
+                myCTalks[x] = cTalkMat
 
             # counts
             numCounts = np.zeros(tomo_input.shape[0],dtype=int)
-            exponentForCounts = np.random.randint(1, 8)
+            exponentForCounts = np.random.randint(1, 6)
             for c in range(tomo_input.shape[0]):
                 numCounts[c] = (1+np.random.random())*10**exponentForCounts
 
@@ -266,13 +277,130 @@ class TestRun():
                 myfVal = -1
                 myFidel = -1
                 errorMessage = "<pre>\n"+traceback.format_exc()+"\n</pre>"
-            dataSaver.addData(sum(numCounts),myFidel,tomographyTime)
+
+
+
+            # dataSaver.addData(sum(numCounts),myFidel,tomographyTime)
+            # Save data from the last tomography
+            startingRhos[x] = startingRho
+            myDensities[x] = myDensitie
+            myfVals[x] = myfVal
+            myFidels[x] = myFidel
+            totalCounts[x] = sum(numCounts)
+
             if(myFidel < .8):
                 numErrors += 1
 
+        # dataSaver.saveData()
+        # Create Graph of Fidelities
+        fig = plt.figure()
+        fig.clf()
+        plt.plot(np.log10(totalCounts), myFidels, '.b')
+        plt.title('Fidelities')
+        plt.xlabel("Log(Counts) base 10")
+        plt.ylabel("Fidelity")
 
+        plt.savefig("Results/Fidel_Graph_"+self.uniqueID()+".png")
 
-        dataSaver.saveData()
+        # Create HTML Page
+        # ----------------
+        # Generate html text
+
+        FORREPLACE = '<table style="margin: auto;width: 70%;">'
+        FORREPLACE += '<tr><th>Settings used</th><th></th></tr>'
+        FORREPLACE += '<tr><td><ul>'
+
+        # Print settings used in top left
+
+        # Test ID
+        FORREPLACE += '<li>'
+        FORREPLACE += '<b>Test ID : </b>'
+        FORREPLACE += self.uniqueID()
+        FORREPLACE += '</li>'
+
+        # num qubits
+        FORREPLACE += '<li>'
+        FORREPLACE += '<b>Number of Qubits : </b>'
+        FORREPLACE += str(self.nStates)
+        FORREPLACE += '</li>'
+
+        # num States
+        FORREPLACE += '<li>'
+        FORREPLACE += '<b>Number of States : </b>'
+        FORREPLACE += str(self.numQubits)
+        FORREPLACE += '</li>'
+
+        #err correction
+        FORREPLACE += '<li>'
+        FORREPLACE += '<b>Number of errCorr : </b>'
+        FORREPLACE += str(self.errBounds)
+        FORREPLACE += '</li>'
+
+        if (self.test2Det):
+            FORREPLACE += '<li>'
+            FORREPLACE += '<b>test2Det : </b> True'
+            FORREPLACE += '</li>'
+
+        if (self.testCrossTalk):
+            FORREPLACE += '<li>'
+            FORREPLACE += '<b>testCrossTalk : </b> True'
+            FORREPLACE += '</li>'
+
+        if (self.testBell):
+            FORREPLACE += '<li>'
+            FORREPLACE += '<b>testBell : </b> True'
+            FORREPLACE += '</li>'
+
+        if (self.testAccCorr):
+            FORREPLACE += '<li>'
+            FORREPLACE += '<b>testAccCorr : </b> True'
+            FORREPLACE += '</li>'
+
+        if (self.testDrift):
+            FORREPLACE += '<li>'
+            FORREPLACE += '<b>testDrift : </b> True'
+            FORREPLACE += '</li>'
+
+        FORREPLACE += '</ul></td><td><img src="Fidel_Graph_'+self.uniqueID()+'.png" style="width:80%;height:auto;"></td></tr></table>'
+
+        for j in range(self.nStates):
+
+            '''Real State'''
+            FORREPLACE += '<table class="data">'
+            FORREPLACE += '<tr><th colspan="2">Actual Densities</th><th>Details</th>'
+
+            FORREPLACE += '<th colspan="2">Caclulated Densities</th>'
+            if (self.testCrossTalk):
+                FORREPLACE += '<th colspan="2">CrossTalk</th>'
+            FORREPLACE += '</tr>'
+            FORREPLACE += '<tr>'
+            FORREPLACE += '<td colspan="2">'
+            FORREPLACE += qLib.matrixToHTML(startingRhos[j])
+            FORREPLACE += '</td>'
+
+            '''My tomography'''
+            FORREPLACE += '<td>'
+            FORREPLACE += printfValsFidelity(myfVals[j], myFidels[j],totalCounts[j])
+            FORREPLACE += '</td>'
+            FORREPLACE += '<td colspan="2">'
+            FORREPLACE += qLib.matrixToHTML(myDensities[j])
+            FORREPLACE += '</td>'
+
+            # Print crosstalk matrix
+            if (self.testCrossTalk):
+                FORREPLACE += '<td colspan="2">'
+                FORREPLACE += qLib.matrixToHTML(myCTalks[j])
+                FORREPLACE += '</td>'
+
+            FORREPLACE += '</tr>'
+        FORREPLACE += '</table>'
+        # Edit and Save HTML file
+        fff = '<html><head><title>Data</title><link href="styleSheet.css" rel="stylesheet" type="text/css"></head><body>TOREPLACE</body></html>'
+        fff = fff.replace('TOREPLACE', str(FORREPLACE))
+
+        with open('Results/RandomDataOutPut_'+self.uniqueID()+'.html', 'w') as ff:
+            ff.write(fff)
+            ff.close()
 
         print("-----------------------")
         print("Test  "+str(TestRun.counter)+": "+self.uniqueID())
@@ -302,6 +430,8 @@ class TestRun():
         print("Result : COMPLETED " + "[" + str(numErrors) + "/" + str(self.nStates) + "] Errors")
         print("-----------------------\n")
         return 1
+
+    # Returns a string based on the current args
     def uniqueID(self):
         s = "N"+str(self.numQubits) +"-"
         s +="e"+str(self.errBounds) +"-"
@@ -326,30 +456,54 @@ class TestRun():
         else:
             s += "dr0"
         return s
+#
+# def selectionSort(results):
+#     # Traverse through all array elements
+#     sortedResults = results.copy()
+#     for i in range(0, len(results)):
+#         # Find the minimum element in remaining unsorted array
+#         min_idx = i
+#         for j in range(i + 1, len(sortedResults)):
+#             if sortedResults[min_idx] > sortedResults[j]:
+#                 min_idx = j
+#         # Swap the found minimum element with the first element
+#         if (i != min_idx):
+#             sortedResults[min_idx], sortedResults[i] = swap(sortedResults[min_idx], sortedResults[i])
+#             for x in sortedResults:
+#                 x[min_idx], x[i] = swap(x[min_idx], x[i])
+#         return sortedResults
 
-def selectionSort(results):
-    # Traverse through all array elements
-    sortedResults = results.copy()
-    for i in range(0, len(results)):
-        # Find the minimum element in remaining unsorted array
-        min_idx = i
-        for j in range(i + 1, len(sortedResults)):
-            if sortedResults[min_idx] > sortedResults[j]:
-                min_idx = j
-        # Swap the found minimum element with the first element
-        if (i != min_idx):
-            sortedResults[min_idx], sortedResults[i] = swap(sortedResults[min_idx], sortedResults[i])
-            for x in sortedResults:
-                x[min_idx], x[i] = swap(x[min_idx], x[i])
-        return sortedResults
+def printfValsFidelity(fVal,fid,Counts):
+    lowerBoundOfFidelity = .8
+    colorR = mapVal(fid,1,lowerBoundOfFidelity,0,255) #red
+    res = '<ul class="Details" style="color:rgb(' + str(colorR) + ',0,0);">'
+    if (fVal == -1):
+        res += "<li><b>ERROR OCCURED<b></li>"
+    else:
+        # Counts
+        res += '<li>'
+        res += '<b>Counts : </b>' + str(int(Counts))
+        res += '</li>'
 
+        # fVal
+        res += '<li>'
+        res += '<b>fVal : </b>' + str(round(np.real(fVal), 6))
+        res += '</li>'
 
+        # Fidelity
+        res += '<li>'
+        res += '<b>Fidelity : </b>' + str(round(fid, 6))
+        res += '</li>'
 
-def swap(ele1, ele2):
-    temp = ele1.copy()
-    ele1 = ele2.copy()
-    ele2 = temp.copy()
-    return ele1, ele2
+    res += str('</ul>')
+    return res
+
+#
+# def swap(ele1, ele2):
+#     temp = ele1.copy()
+#     ele1 = ele2.copy()
+#     ele2 = temp.copy()
+#     return ele1, ele2
 def getOppositeState(psi):
     # Horizontal
     if (all(psi == np.array([1, 0], dtype=complex))):
@@ -369,35 +523,41 @@ def getOppositeState(psi):
     else:
         raise Exception('State Not Found getOppositeState')
 
-class csvSaver():
-    def __init__(self,numQubits):
-        self.n = numQubits
-        self.previousData = self.loadData()
-        self.count = 0
+# class csvSaver():
+#     def __init__(self,numQubits):
+#         self.n = numQubits
+#         self.previousData = self.loadData()
+#         self.count = 0
+#
+#         # determines how many states it should hold before saving it to the csv file.
+#         saveNumber = ["Error",500,100,5]
+#         self.nStates = 1
+#         try:
+#             self.nStates = saveNumber[self.n]
+#         except :
+#             self.nStates = 1
+#         self.newData = np.zeros((3,self.nStates))
+#
+#     def loadData(self):
+#         try:
+#             return np.loadtxt('Results/myLibrary'+str(self.n)+'.csv', delimiter=',')
+#         except:
+#             return np.zeros((3,0))
+#     def saveData(self):
+#         finalData = np.concatenate((self.previousData,self.newData[:, ~np.all(self.newData == 0, axis=0)]), axis=1)
+#         np.savetxt('Results/myLibrary'+str(self.n)+'.csv',finalData, delimiter=',')
+#         self.previousData = finalData
+#         self.newData = np.zeros((3, self.nStates))
+#     def addData(self,count,fidel,time):
+#         if(fidel!=-1):
+#             self.newData[:,self.count] = [count,fidel,time]
+#             self.count +=1
+#             if(self.count>= self.nStates):
+#                 self.saveData()
+#                 self.count = 0
+def mapVal(value,x1,x2,y1,y2,f = 1):
+    newVal = value-x1
 
-        # determines how many states it should hold before saving it to the csv file.
-        saveNumber = ["Error",500,100,5]
-        self.nStates = 1
-        try:
-            self.nStates = saveNumber[self.n]
-        except :
-            self.nStates = 1
-        self.newData = np.zeros((3,self.nStates))
-
-    def loadData(self):
-        try:
-            return np.loadtxt('Results/myLibrary'+str(self.n)+'.csv', delimiter=',')
-        except:
-            return np.zeros((3,0))
-    def saveData(self):
-        finalData = np.concatenate((self.previousData,self.newData[:, ~np.all(self.newData == 0, axis=0)]), axis=1)
-        np.savetxt('Results/myLibrary'+str(self.n)+'.csv',finalData, delimiter=',')
-        self.previousData = finalData
-        self.newData = np.zeros((3, self.nStates))
-    def addData(self,count,fidel,time):
-        if(fidel!=-1):
-            self.newData[:,self.count] = [count,fidel,time]
-            self.count +=1
-            if(self.count>= self.nStates):
-                self.saveData()
-                self.count = 0
+    newVal = (y2-y1)/(x2-x1) * newVal
+    newVal += y1
+    return newVal

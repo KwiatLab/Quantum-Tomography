@@ -262,7 +262,7 @@ def printLastOutput(tomo, bounds = -1):
 
 def matrixToHTML(M, printEigenVals = False):
     s = np.shape(M)
-    res = '<table style = \"border: 1px solid black;border-collapse: collapse;font-size: 15px; table-layout:fixed;width:100%;margin-top: 25px;\">'
+    res = '<table class="KwiatDataMatrix" style = \"border: 1px solid black;border-collapse: collapse;font-size: 15px; table-layout:fixed;width:100%;margin-top: 25px;\">'
     for i in range(s[0]):
         res = res+' <tr>'
         for j in range(s[1]):
