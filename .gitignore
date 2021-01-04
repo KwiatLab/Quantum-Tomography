@@ -2,6 +2,7 @@
 *.dist-info
 *.pyc
 build
+venv
 dist
 .coverage
 .pytest_cache
@@ -11,3 +12,4 @@ __pycache__
 Debugger.py
 /Tests/Results/
 !*/Tests/Results/Graph.py
+!*/Tests/Results/styleSheet.css

@@ -1,11 +1,8 @@
 import numpy as np
-import sys
 import matplotlib.pyplot as plt
-sys.path.append("../Quantum-Tomography_Git")
 import QuantumTomography as qLib
 import traceback
 import time
-from DataManager import csvSaver
 
 """
 Copyright 2020 University of Illinois Board of Trustees.
@@ -16,7 +13,13 @@ __author__ = 'Quoleon/Turro'
 """CHECK OUT THE REFERENCE PAGE ON OUR WEBSITE :
 http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
 
-"""This script is runs multiple tomographies and saves the results of each tomography using the DataManager script."""
+"""This class runs multiple tomographies with given settings. Create an instance of the TestRun class 
+and give it the args(or settings) to use. You can then use the run function and it will run  the tomographies
+This class will automatically save the data after a certain amount of new entires are given"""
+"""Data will not be deleted unless its by the user"""
+"""Currently not being used by any of the save_ scripts"""
+
+"WARNING! These tests run on the published library installed in your pipw version, not the code in the local directory."
 
 class TestRun():
 
@@ -28,10 +31,11 @@ class TestRun():
     allTimes = np.zeros(0,dtype=float)
 
     def __init__(self,args):
-        [nBits, bounds, acc, det2, cross, bell, drift, web] = args
+
+        [nBits, bounds, acc, det2, cross, bell, drift, nStates] = args
         """-------Settings---------"""
         self.numQubits = nBits
-        self.nStates = 600
+        self.nStates = nStates
         self.test2Det = det2
         self.testCrossTalk = cross
         self.errBounds = bounds
@@ -40,7 +44,6 @@ class TestRun():
 
         # not implemented
         self.testAccCorr = acc
-        self.testWebsite = web
 
     def isValid(self):
         if(self.numQubits ==1 and (self.testAccCorr or self.testBell)):
@@ -52,20 +55,18 @@ class TestRun():
 
         dataSaver = csvSaver(self.numQubits)
 
+        # Check if the setting configuration is valid
+        # Used to ignore settings that arent compatable
         success = False
         if not (self.isValid()):
-            # Used to ignore settings that arent compatable
             return 0
         tomo = qLib.Tomography()
 
-        if(self.testWebsite):
-            """IMPLENENT TEST WEBSITE -"""
-            pass
 
         # what arrays we need
         # startingRhos,myfVals,myFidels,myDensities,totalCounts
 
-        #set up settings for tomo class
+        #set up Conf Settings
         tomo.conf['NQubits'] = self.numQubits
         tomo.conf['Properties'] = ['concurrence', 'tangle', 'entanglement', 'entropy', 'linear_entropy', 'negativity']
         if(self.testAccCorr):
@@ -88,9 +89,11 @@ class TestRun():
         tomo.conf['Window'] = 1
         tomo.conf['Efficiency'] = np.ones(2**self.numQubits)
 
+
         tomo_input = tomo.getTomoInputTemplate()
 
         #set up measurements
+        tomo_input = tomo.getTomoInputTemplate()
         if(self.test2Det):
             measurements = np.zeros((len(tomo_input),2**self.numQubits,2**(self.numQubits)),dtype=complex)
         else:
@@ -169,7 +172,7 @@ class TestRun():
                 numCounts[c] = (1+np.random.random())*10**exponentForCounts
 
             # create random state
-            state = randomState(self.numQubits)
+            state = qLib.random_pure_state(self.numQubits)
 
             startingRho = qLib.toDensity(state)
             #Testing setting
@@ -266,6 +269,9 @@ class TestRun():
             dataSaver.addData(sum(numCounts),myFidel,tomographyTime)
             if(myFidel < .8):
                 numErrors += 1
+
+
+
         dataSaver.saveData()
 
         print("-----------------------")
@@ -362,7 +368,36 @@ def getOppositeState(psi):
         return np.array([(2 ** (-1 / 2)), (2 ** (-1 / 2)) * 1j], dtype=complex)
     else:
         raise Exception('State Not Found getOppositeState')
-def randomState(n = 1):
-    state = np.random.random(2 ** n) + 1j * np.random.random(2 ** n)
-    state = state / np.sqrt(np.dot(state, state.conj()))
-    return state
+
+class csvSaver():
+    def __init__(self,numQubits):
+        self.n = numQubits
+        self.previousData = self.loadData()
+        self.count = 0
+
+        # determines how many states it should hold before saving it to the csv file.
+        saveNumber = ["Error",500,100,5]
+        self.nStates = 1
+        try:
+            self.nStates = saveNumber[self.n]
+        except :
+            self.nStates = 1
+        self.newData = np.zeros((3,self.nStates))
+
+    def loadData(self):
+        try:
+            return np.loadtxt('Results/myLibrary'+str(self.n)+'.csv', delimiter=',')
+        except:
+            return np.zeros((3,0))
+    def saveData(self):
+        finalData = np.concatenate((self.previousData,self.newData[:, ~np.all(self.newData == 0, axis=0)]), axis=1)
+        np.savetxt('Results/myLibrary'+str(self.n)+'.csv',finalData, delimiter=',')
+        self.previousData = finalData
+        self.newData = np.zeros((3, self.nStates))
+    def addData(self,count,fidel,time):
+        if(fidel!=-1):
+            self.newData[:,self.count] = [count,fidel,time]
+            self.count +=1
+            if(self.count>= self.nStates):
+                self.saveData()
+                self.count = 0
