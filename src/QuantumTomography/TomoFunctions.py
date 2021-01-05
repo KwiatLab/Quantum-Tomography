@@ -565,3 +565,27 @@ def performOperation(psi, g):
             # density matrix form
             p = densityOperation(p, g)
     return p
+
+
+"""
+    random_pure_state(N)
+    Desc: Returns a random quantum state from a uniform distribution across the space.
+
+    Parameters
+    ----------
+    N : int
+        The dimension of the quantum state
+
+    Returns
+    -------
+    pure_state : ndarray with shape = (2^numQubits, 2^numQubits)
+        The random quantum state.
+    """
+def random_pure_state(N = 1):
+    pure_state = np.zeros(2**N,dtype=complex)
+    for x in range(len(pure_state)):
+        pure_state[x] = np.random.normal(0, 1)+np.random.normal(0, 1)*1j
+    length = np.inner(pure_state.conj(),pure_state)
+    pure_state = pure_state/np.sqrt(length)
+    length = np.inner(pure_state.conj(), pure_state)
+    return pure_state

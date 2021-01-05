@@ -16,7 +16,7 @@ http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
 
 """This script is intended to be a full test that is larger than the test_github.py. 
 Currently does not run tests and returns true.
-test_github.py should be the main testing script. Until that becomes too big (or some other reason that you want some tests not on github)
+test_github_*.py should be the main testing script. Until that becomes too big (or some other reason that you want some tests not on github)
 this script should remain unedited."""
 
 class TestSum(unittest.TestCase):
