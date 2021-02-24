@@ -12,3 +12,4 @@ __pycache__
 Debugger.py
 /Tests/Results/*
 !/Tests/Results/styleSheet.css
+/Tests/save_IGNORE.py
