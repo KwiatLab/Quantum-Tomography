@@ -12,14 +12,14 @@ __author__ = 'Quoleon/Turro'
 """CHECK OUT THE REFERENCE PAGE ON OUR WEBSITE :
 http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
 
-"""This script is used to run tomo against the standard_test_data, and save the Results"""
+"""This script is used to run tomo against the data in Test_States, and save the Results"""
 
 "WARNING! These tests run on the published library installed in your pip version, not the code in the local directory."
 
 # Generate Fidelity Graph for the set standard testing data.
 # Get a Chris's Data
-mat = scipy.io.loadmat('Standard_Test_Data_1Q.mat')
-mat2 = scipy.io.loadmat('Standard_Test_Data_2Q.mat')
+mat = scipy.io.loadmat('Test_States/Standard_Test_Data_1Q.mat')
+mat2 = scipy.io.loadmat('Test_States/Standard_Test_Data_2Q.mat')
 
 # Set MLE Tomography
 t1 = qk.Tomography()

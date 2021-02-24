@@ -13,7 +13,7 @@ __author__ = 'Quoleon/Turro'
 """CHECK OUT THE REFERENCE PAGE ON OUR WEBSITE :
 http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
 
-"""This class runs multiple tomographies with given settings. Create an instance of the TestRun class 
+"""This class runs multiple tomographies with given settings. Create an instance of the SaveRun class 
 and give it the args(or settings) to use. You can then use the run function and it will run  the tomographies
 This class will automatically save the data after a certain amount of new entires are given"""
 """Data will not be deleted unless its by the user"""
@@ -21,10 +21,11 @@ This class will automatically save the data after a certain amount of new entire
 
 "WARNING! These tests run on the published library installed in your pipw version, not the code in the local directory."
 
-class TestRun():
+class SaveRun():
 
-    # to implement
-    # testAcc
+    # todo:
+    #   implement testAcc. Generate tomography with accidentals.
+    #
     counter = 0
     allCounts = np.zeros(0,dtype=int)
     allFidels = np.zeros(0,dtype=float)
@@ -34,8 +35,8 @@ class TestRun():
 
         [nBits, bounds, acc, det2, cross, bell, drift, nStates] = args
         """-------Settings---------"""
-        self.numQubits = nBits
-        self.nStates = nStates
+        self.numQubits = nBits # numeric >= 1
+        self.nStates = nStates # numeric >=
         self.test2Det = det2
         self.testCrossTalk = cross
         self.errBounds = bounds
@@ -48,7 +49,7 @@ class TestRun():
     def isValid(self):
         if(self.numQubits ==1 and (self.testAccCorr or self.testBell)):
             return False
-        TestRun.counter +=1
+        SaveRun.counter +=1
         return True
 
     def run(self):
@@ -70,9 +71,6 @@ class TestRun():
             return 0
         tomo = qLib.Tomography()
 
-
-        # what arrays we need
-        # startingRhos,myfVals,myFidels,myDensities,totalCounts
 
         #set up Conf Settings
         tomo.conf['NQubits'] = self.numQubits
@@ -403,7 +401,7 @@ class TestRun():
             ff.close()
 
         print("-----------------------")
-        print("Test  "+str(TestRun.counter)+": "+self.uniqueID())
+        print("Test  "+str(SaveRun.counter)+": "+self.uniqueID())
         print("Number of Qubits Bits: "+ str(self.numQubits))
         print("Number of errCorr: " + str(self.errBounds))
         if (self.test2Det):
