@@ -20,6 +20,8 @@ http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
 """This script runs a multiple tomographies and does not saves the results"""
 """This script is used by test_github_publish and _update."""
 
+"Attention! These tests run on the version that your environment uses. see readme for details"
+
 # Returns 1 if success
 def runTest(args):
     [numQubits, errBounds, testAccCorr, test2Det, testCrossTalk, testBell, testDrift, nStates] = args

@@ -14,7 +14,7 @@ http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
 
 """This script is used to run tomo against the data in Test_States, and save the Results"""
 
-"WARNING! These tests run on the published library installed in your pip version, not the code in the local directory."
+"Attention! These tests run on the version that your environment uses. see readme for details"
 
 # Generate Fidelity Graph for the set standard testing data.
 # Get a Chris's Data

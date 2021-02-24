@@ -1,6 +1,7 @@
 from __future__ import print_function
 from SaveRun import SaveRun
 import unittest
+import QuantumTomography as qLib
 import warnings
 warnings.filterwarnings("ignore")
 
@@ -20,6 +21,10 @@ By default it returns true. Most likely if you are running tests you'll want to 
 
 class TestSum(unittest.TestCase):
     def test_main(self):
+        t = qLib.Tomography()
+        t.setConfSetting("NQubits",3)
+        dataMatrix = t.getTomoInputTemplate()
+        print(dataMatrix.shape)
         self.assertEqual(1, 1)
 
 if __name__ == '__main__':
