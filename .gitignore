@@ -3,6 +3,7 @@
 *.pyc
 build
 venv
+env
 dist
 .coverage
 .pytest_cache
