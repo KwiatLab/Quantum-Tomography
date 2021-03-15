@@ -22,7 +22,7 @@ By default it returns true. Most likely if you are running tests you'll want to 
 class TestSum(unittest.TestCase):
     def test_main(self):
         t = qLib.Tomography()
-        t.setConfSetting("NQubits",3)
+        t.setConfSetting("NQubits",1)
         dataMatrix = t.getTomoInputTemplate()
         print(dataMatrix.shape)
         self.assertEqual(1, 1)
