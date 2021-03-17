@@ -19,6 +19,8 @@ http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
 """This test script is the one used by github when a new version is created. This will automatically
 run and the results can be see in the actions tab"""
 
+"Attention! These tests run on the version that your environment uses. see readme for details"
+
 class TestSum(unittest.TestCase):
 
     # Testing random states

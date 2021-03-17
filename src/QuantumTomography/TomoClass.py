@@ -462,20 +462,9 @@ class Tomography():
         # sings = tomo_input[:, np.arange(n_singles) + 1]
         sings = self.getSingles()
 
-        # state dimension @ qudit size
-        # qudit_sizes = self.conf['QuditSizes']
-        # if (ndet == 1 and nbits == 1):
-        #    qudit_sizes = 2
-        # if (ndet == 2):
-        #    self.conf['StateDimension'] = 2 ** nbits
-        # else:
-        #    self.conf['StateDimension'] = np.prod(qudit_sizes)
 
         # coincidences
         n_coinc = self.getNumCoinc()
-        # coinc = tomo_input[:, np.arange(n_singles + 1, n_singles + n_coinc + 1)]
-        # if (ndet == 1):
-        #    coinc = tomo_input[:, n_singles + 1]
         coinc = self.getCoincidences()
 
         # settings
@@ -504,7 +493,7 @@ class Tomography():
                 acc = acc[:, 0]
 
         # Drift Correction
-        self.conf['IntensityMap'] = np.kron(intensities, np.ones(n_coinc))
+        self.conf['IntensityMap'] = intensities
 
         # crosstalk
         ctalk = np.array(self.conf['Crosstalk'])[0:2 ** nbits, 0:2 ** nbits]
@@ -517,11 +506,11 @@ class Tomography():
             big_crosstalk = np.eye(2 ** nbits)
         else:
             big_crosstalk = crosstalk[:]
-
         big_crosstalk = big_crosstalk * np.outer(eff, np.ones(n_coinc))
 
-        measurements_densities = np.zeros([2 ** nbits, 2 ** nbits, np.prod(coinc.shape)]) + 0j
-        measurements_pures = np.zeros([np.prod(coinc.shape), 2 ** nbits]) + 0j
+        # Get measurements
+        measurements_densities = np.zeros_like(coinc,dtype="O")
+        measurements_pures = np.zeros_like(coinc,dtype="O")
         for j in range(coinc.shape[0]):
             m_twiddle = np.zeros([2 ** nbits, 2 ** nbits, 2 ** nbits]) + 0j
             u = 1
@@ -648,33 +637,43 @@ class Tomography():
     numBits : int
         number of qubits you want for each measurement. Default will use the number of qubits in the current configurations.
     """
-    def getBasisMeas(self, numBits = -1):
+    def getBasisMeas(self, numBits = -1,withDrift =-1):
+
+        # if not specified then use the current settings
         if(numBits == -1):
-            numBits = self.getNumDetPerQubit()
-        if(numBits == 1):
-            basis = np.array([[1, 0], [0, 1], [(2 ** (-1 / 2)), (2 ** (-1 / 2))], [(2 ** (-1 / 2)), -(2 ** (-1 / 2))],
-                              [(2 ** (-1 / 2)), (2 ** (-1 / 2)) * 1j], [(2 ** (-1 / 2)), -(2 ** (-1 / 2)) * 1j]],
-                             dtype = complex)
-            m = np.zeros((6 ** self.getNumBits(), 2 * self.getNumBits()), dtype = complex)
+            numBits = self.getNumBits()
+        if(withDrift == -1):
+            withDrift = bool(self.getNumDetPerQubit()-1)
+
+
+        # Declare 1D pure states
+        basis = np.array([[1, 0],
+                          [0, 1],
+                          [1, 1],
+                          [1, -1],
+                          [1, 1j],
+                          [1, -1j]], dtype=complex)
+        # normalize
+        basis[2:] = (2 ** (-1 / 2)) * basis[2:]
+
+        # Build up m basis which is kronecker product combinations of the 1d basis
+        if not withDrift:
+            m = np.zeros((6 ** numBits, 2 * numBits), dtype=complex)
             for i in range(m.shape[0]):
                 for j in range(0, m.shape[1], 2):
                     bitNumber = np.floor((m.shape[1] - j - 1) / 2)
                     index = int(((i) / 6 ** (bitNumber)) % 6)
 
-                    m[i, j] = basis[index][0]
-                    m[i, j + 1] = basis[index][1]
+                    m[i, j:j + 2] = basis[index]
         else:
-            basis = np.array([[1, 0], [(2 ** (-1 / 2)), (2 ** (-1 / 2))], [(2 ** (-1 / 2)), (2 ** (-1 / 2)) * 1j]], dtype = complex)
-            m = np.zeros((3 ** self.getNumBits(), 2 * self.getNumBits()), dtype = complex)
+            m = np.zeros((3 ** numBits, 2 * numBits), dtype=complex)
             for i in range(m.shape[0]):
                 for j in range(0, m.shape[1], 2):
                     bitNumber = np.floor((m.shape[1] - j - 1) / 2)
                     index = int(((i) / 3 ** (bitNumber)) % 3)
 
-                    m[i, j] = basis[index][0]
-                    m[i, j + 1] = basis[index][1]
+                    m[i, j:j + 2] = basis[index*2]
         return m
-
 
     """
     getTomoInputTemplate()
@@ -693,27 +692,30 @@ class Tomography():
     """
     def getTomoInputTemplate(self, numBits = -1):
 
-        measurements = self.getBasisMeas(numBits)
+        # if numBits not specified then use the number of bits in the current settings
+        if(numBits == -1):
+            numBits = self.getNumBits()
 
+        measurements = self.getBasisMeas(numBits)
         if(self.getNumDetPerQubit() == 1):
             # For n detectors:
-            Tomoinput = np.zeros((6**self.getNumBits(), 3*self.getNumBits()+2), dtype = complex)
+            Tomoinput = np.zeros((6**numBits, 3*numBits+2), dtype = complex)
 
             # input[:, n_qubit+1]: coincidences
             # coincidences left zeros
 
             # input[:, np.arange(n_qubit+2, 3*n_qubit+2)]: measurements
-            Tomoinput[:, np.arange(self.getNumBits() + 2, 3 * self.getNumBits() + 2)] = measurements
+            Tomoinput[:, np.arange(numBits + 2, 3 * numBits + 2)] = measurements
 
         else:
             # For 2n detectors:
-            Tomoinput = np.zeros((3**self.getNumBits(), 2**self.getNumBits()+4*self.getNumBits()+1), dtype = complex)
+            Tomoinput = np.zeros((3**numBits, 2**numBits+4*numBits+1), dtype = complex)
 
             # input[:, np.arange(2*n_qubit+1, 2**n_qubit+2*n_qubit+1)]: coincidences
             # coincidences left zeros
 
             # input[:, np.arange(2**n_qubit+2*n_qubit+1, 2**n_qubit+4*n_qubit+1)]: measurements
-            Tomoinput[:, np.arange(2**self.getNumBits()+2*self.getNumBits()+1, 2**self.getNumBits()+4*self.getNumBits()+1)] = measurements
+            Tomoinput[:, np.arange(2**numBits+2*numBits+1, 2**numBits+4*numBits+1)] = measurements
 
         # tomo_input[:, 0]: times
         Tomoinput[:, 0] = np.ones_like(Tomoinput[:, 0])
