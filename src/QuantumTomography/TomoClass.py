@@ -595,7 +595,7 @@ class Tomography():
     Desc: Returns an array of times for all the measurments.
     """
     def getTimes(self):
-        return self.tomo_input[:, 0]
+        return self.input[:, 0]
 
     """
         getMeasurements()
