@@ -476,7 +476,7 @@ class Tomography():
 
         for j in range(coincidences.shape[0]):
             # Averages[j] = inten0*np.float64(np.real(self.intensities[j] * np.real(np.trace(np.dot(measurments[:, :, j], givenState))) + accidentals[j]))
-            Averages[j] =  intensities[j]*np.trace(measurments[:, :, j] @ givenState)
+            Averages[j] =  intensities[j]*np.trace(np.matmul(measurments[:, :, j],givenState))
             if(Averages[j]==0):
                 Averages[j] = np.max([Averages[j], 0.0000001])
 
