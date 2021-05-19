@@ -2,7 +2,7 @@ import numpy as np
 import sys
 sys.path.append("../Quantum-Tomography_Git")
 import QuantumTomography as qLib
-from SaveRun import TestRun
+from SaveRun import SaveRun
 
 """
 Copyright 2020 University of Illinois Board of Trustees.
@@ -13,12 +13,10 @@ __author__ = 'Quoleon/Turro'
 """CHECK OUT THE REFERENCE PAGE ON OUR WEBSITE :
 http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
 
-"""This script is used to run tomo against the standard_test_data, and save the Results"""
+"""This script is used to run tomography against the a specific set of states. The measurements and couts 
+(aka the data) used for the tomographies are in the Test_States Foulder. standard_test_data, and save the Results"""
 
-"WARNING! These tests run on the published library installed in your pip version, not the code in the local directory."
-#
-# test1 = TestRun([1, 0, 0, 0, 0, 0, 0, 100],False)
-# test1.run()
+"Attention! These tests run on the version that your environment uses. see readme for details"
 
-test2 = TestRun([2, 0, 0, 0, 1, 0, 0, 1],Save_each_State=False,showErrors=False)
-test2.run()
+test1 = SaveRun([1, 0, 0, 1, 0, 0, 0, 25])
+test1.run()

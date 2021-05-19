@@ -13,19 +13,20 @@ __author__ = 'Quoleon/Turro'
 """CHECK OUT THE REFERENCE PAGE ON OUR WEBSITE :
 http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
 
-"""This class runs multiple tomographies with given settings. Create an instance of the TestRun class 
-and give it the args(or settings) to use. You can then use the run function and it will run  the tomographies
-This class will automatically save the data after a certain amount of new entires are given"""
+"""This class runs multiple tomographies with given settings. Create an instance of the SaveRun class 
+and give it the args(or settings) to use. You can then use the run function and it will run  the tomographies"""
 """Data will not be deleted unless its by the user"""
-"""Currently not being used by any of the save_ scripts"""
 
-"WARNING! These tests run on the published library installed in your pipw version, not the code in the local directory."
+"Attention! These tests run on the version that your environment uses. see readme for details"
 
-class TestRun():
+class SaveRun():
 
-    # to implement
-    # testAcc
+    # todo:
+    #   implement testAcc. Generate tomography with accidentals.
+
     counter = 0
+
+    # private variables to store the data of each tomography
     allCounts = np.zeros(0,dtype=int)
     allFidels = np.zeros(0,dtype=float)
     allTimes = np.zeros(0,dtype=float)
@@ -33,17 +34,18 @@ class TestRun():
     def __init__(self,args,Save_each_State=True,showErrors=True):
 
         [nBits, bounds, acc, det2, cross, bell, drift, nStates] = args
+
         """-------Settings---------"""
-        self.numQubits = nBits
-        self.nStates = nStates
-        self.test2Det = det2
-        self.testCrossTalk = cross
-        self.errBounds = bounds
-        self.testBell = bell
-        self.testDrift = drift
+        self.numQubits = nBits # numeric >= 1
+        self.nStates = nStates # numeric > 0
+        self.test2Det = det2 # 0 or 1
+        self.testCrossTalk = cross # 0 or 1
+        self.errBounds = bounds # numeric >= 0
+        self.testBell = bell # 0 or 1
+        self.testDrift = drift # 0 or 1
 
         # not implemented
-        self.testAccCorr = acc
+        self.testAccCorr = acc # 0 or 1
 
         # Turn this to false if you do not want an html output of each random test
         self.Save_each_State = Save_each_State
@@ -51,15 +53,22 @@ class TestRun():
         # Turn this to false if you do not want show plot points where errors occured
         self.showErrors = showErrors
 
+    # Handles cases where the settings are invalid. You can't do accidental correction with 1 qubit.
     def isValid(self):
         if(self.numQubits ==1 and (self.testAccCorr or self.testBell)):
             return False
-        TestRun.counter +=1
+        SaveRun.counter +=1
         return True
 
+    # MAIN FUNCTION
+    # ---------------
+    # When you initialize a class you give it the settings. You then use this function to generate random
+    # states, do tomography, and save the results
     def run(self):
 
+        # csvSaver was a script to save the tomographies to a csv. It has been commented out
         # dataSaver = csvSaver(self.numQubits)
+
         # Declare Arrays to store the tomo data
         startingRhos = np.zeros((self.nStates, 2 ** self.numQubits, 2 ** self.numQubits), dtype=complex)
         myDensities = np.zeros((self.nStates, 2 ** self.numQubits, 2 ** self.numQubits), dtype=complex)
@@ -74,13 +83,11 @@ class TestRun():
         success = False
         if not (self.isValid()):
             return 0
+
+        # Decalare tomography class
         tomo = qLib.Tomography()
 
-
-        # what arrays we need
-        # startingRhos,myfVals,myFidels,myDensities,totalCounts
-
-        #set up Conf Settings
+        # set up Conf Settings of the tomography class
         tomo.conf['NQubits'] = self.numQubits
         tomo.conf['Properties'] = ['concurrence', 'tangle', 'entanglement', 'entropy', 'linear_entropy', 'negativity']
         if(self.testAccCorr):
@@ -104,9 +111,15 @@ class TestRun():
         tomo.conf['Efficiency'] = np.ones(2**self.numQubits)
 
 
+        # Set up the tomo_input matrix
         tomo_input = tomo.getTomoInputTemplate()
 
-        #set up measurements
+        # Fill the tomo_input measurement columns
+        # The measurments are based on using wave plates.
+        #   WavePlate basis is a list of wavePlate matricies.
+        #   WavePlateArray is a list of the overall gate that is applied to the state.
+        #   The model is the random state goes through the wavePlateArray[i] gate, and then it is
+        #   projected onto 1. This is the same as the state being projected onto measurments[i]
         tomo_input = tomo.getTomoInputTemplate()
         if(self.test2Det):
             measurements = np.zeros((len(tomo_input),2**self.numQubits,2**(self.numQubits)),dtype=complex)
@@ -137,7 +150,14 @@ class TestRun():
         for i in range(self.numQubits):
             wavePlateArray = np.kron(wavePlateArray,wavePlateArraysBasis)
 
-        # I should put some of this code into the to Density function so that to puts multiple
+
+        # set up mState array. Contains all the measurements
+        #   mState[i] is a list of measurements on each qubit.
+        #   mState[i,0] is measurment on the first qubit
+        #   mState[i,1] is measurment on the second qubit
+        # also set up measurments array. List of overall measurent
+        #   measuremets[i] is the total quantum state the state is measured on. It
+        #   is the kronecker product of mState[i,0] x ... x mState[i,j] x ... x mState[i,n]
         for i in range(len(mStates)):
             if(self.test2Det):
                 for x in range(0,2**(self.numQubits)):
@@ -167,13 +187,19 @@ class TestRun():
                 measurements[i] = temp
 
                 # measurements is an array of all the measurements for both classes mStates is only to help calculate Measurements
-        ''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''''
+
+
+        '''###########'''
+        ''' Main Loop '''
+        '''###########'''
+        # This loop creates random states and runs tomography. It then stores the results in
+        # the matrices defined above.
+
+        # keep a running track of number of errors
         numErrors = 0
-
-
         #create states and do tomo
         for x in range(self.nStates):
-            #crosstalk
+            # if crosstalk is enabled then create a random crosstalk matrix
             cTalkMat = 0
             if(self.testCrossTalk):
                 cTalkMat = np.random.rand(2**self.numQubits,2**self.numQubits)
@@ -190,9 +216,10 @@ class TestRun():
 
             # create random state
             state = qLib.random_pure_state(self.numQubits)
-
             startingRho = qLib.toDensity(state)
-            #Testing setting
+
+            # Run the state through the waveplates and then project onto h basis which is the |0^n> state.
+            #   This loop genrates the counts probabalistically
             for i in range(len(tomo_input)):
                 # state goes through wave plates
                 newState = np.matmul(wavePlateArray[i], state)
@@ -216,7 +243,8 @@ class TestRun():
                     tomo_input[i, self.numQubits + 1] = np.random.binomial(numCounts[i],min(prob,.99999999))
                 # input[:, np.arange(2*n_qubit+1, 2**n_qubit+2*n_qubit+1)]: coincidences
 
-
+            # Generate Data for accidental corrections.
+            # TODO: double check this is correct
             if (self.testAccCorr):
                 # acc[:, j] = np.prod(np.real(sings[:, idx]), axis=1) * (window[j] * 1e-9 / np.real(t)) ** (nbits - 1)
                 if(self.test2Det):
@@ -257,6 +285,7 @@ class TestRun():
                 tomo.conf['Window'] = window
                 tomo_input[:, 0] = t
 
+            # Generate Data for drift corrections.
             if (self.testDrift):
                 intensity = numCounts
                 if (self.test2Det):
@@ -267,8 +296,13 @@ class TestRun():
                     # tomo_input[:, n_qubit+1]: coincidences
                     for k in range(tomo_input.shape[0]):
                         tomo_input[k, self.numQubits+1] = int((intensity[k])*tomo_input[k, self.numQubits+1])
+
+
+            # State_Tomography CALL
+            # This is calls the function state_Tomography and times how long it took.
+            # It can also handle cases where the tomography failed and encountered an error
             errorMessage = ""
-            # Do tomography with settings
+
             try:
                 start_time = time.time()
                 myDensitie, inten, myfVal = tomo.state_tomography(tomo_input, numCounts)
@@ -286,18 +320,24 @@ class TestRun():
 
 
 
+            # Save data from the last tomography and put it into our data matrices
             # dataSaver.addData(sum(numCounts),myFidel,tomographyTime)
-            # Save data from the last tomography
             startingRhos[x] = startingRho
             myDensities[x] = myDensitie
             myfVals[x] = myfVal
             myFidels[x] = myFidel
             totalCounts[x] = sum(numCounts)
 
+            # We will say we encountered an error if our fidelity is less than .8
             if(myFidel < .8):
                 numErrors += 1
 
-        # dataSaver.saveData()
+        '''##############'''
+        ''' Save Results '''
+        '''##############'''
+        # This code generates an html and pdf.
+        # dataSaver.saveData() was previously used but has been commented out
+
         # Create Graph of Fidelities
         fig = plt.figure()
         fig.clf()
@@ -317,68 +357,61 @@ class TestRun():
 
         plt.xlabel("Log(Counts) base 10")
         plt.ylabel("Fidelity")
-
         plt.savefig("Results/Fidel_Graph_"+self.uniqueID()+".png")
 
-        # Create HTML Page
-        # ----------------
-        # Generate html text
 
+        ''' CREATE HTML PAGE '''
+        # FOROREPLACE is a big string with most of the html code. Some stuff like the header is
+        # declared in the variable fff. The following code goes through the results and adds
+        # to this string. At the end the string is written to html file in the results folder
+
+
+        # This chunk shows what settings were used in the top right.
         FORREPLACE = '<table style="margin: auto;width: 70%;">'
         FORREPLACE += '<tr><th>Settings used</th><th></th></tr>'
         FORREPLACE += '<tr><td><ul>'
-
-        # Print settings used in top left
-
         # Test ID
         FORREPLACE += '<li>'
         FORREPLACE += '<b>Test ID : </b>'
         FORREPLACE += self.uniqueID()
         FORREPLACE += '</li>'
-
         # num qubits
         FORREPLACE += '<li>'
         FORREPLACE += '<b>Number of Qubits : </b>'
         FORREPLACE += str(self.nStates)
         FORREPLACE += '</li>'
-
         # num States
         FORREPLACE += '<li>'
         FORREPLACE += '<b>Number of States : </b>'
         FORREPLACE += str(self.numQubits)
         FORREPLACE += '</li>'
-
         #err correction
         FORREPLACE += '<li>'
         FORREPLACE += '<b>Number of errCorr : </b>'
         FORREPLACE += str(self.errBounds)
         FORREPLACE += '</li>'
-
         if (self.test2Det):
             FORREPLACE += '<li>'
             FORREPLACE += '<b>test2Det : </b> True'
             FORREPLACE += '</li>'
-
         if (self.testCrossTalk):
             FORREPLACE += '<li>'
             FORREPLACE += '<b>testCrossTalk : </b> True'
             FORREPLACE += '</li>'
-
         if (self.testBell):
             FORREPLACE += '<li>'
             FORREPLACE += '<b>testBell : </b> True'
             FORREPLACE += '</li>'
-
         if (self.testAccCorr):
             FORREPLACE += '<li>'
             FORREPLACE += '<b>testAccCorr : </b> True'
             FORREPLACE += '</li>'
-
         if (self.testDrift):
             FORREPLACE += '<li>'
             FORREPLACE += '<b>testDrift : </b> True'
             FORREPLACE += '</li>'
 
+        # adds the fidelity graph
         FORREPLACE += '</ul></td><td><img src="Fidel_Graph_'+self.uniqueID()+'.png" style="width:80%;height:auto;"></td></tr></table>'
 
         if(self.Save_each_State):
@@ -395,7 +428,7 @@ class TestRun():
                 FORREPLACE += '<td colspan="2">'
                 FORREPLACE += qLib.matrixToHTML(startingRhos[j])
                 FORREPLACE += '</td>'
-
+                
                 '''My tomography'''
                 FORREPLACE += '<td>'
                 FORREPLACE += printfValsFidelity(myfVals[j], myFidels[j],totalCounts[j])
@@ -412,16 +445,18 @@ class TestRun():
 
                 FORREPLACE += '</tr>'
             FORREPLACE += '</table>'
+
         # Edit and Save HTML file
         fff = '<html><head><title>Data</title><link href="styleSheet.css" rel="stylesheet" type="text/css"></head><body>TOREPLACE</body></html>'
         fff = fff.replace('TOREPLACE', str(FORREPLACE))
-
         with open('Results/RandomDataOutPut_'+self.uniqueID()+'.html', 'w') as ff:
             ff.write(fff)
             ff.close()
 
+
+        # Print out details of what was tested in the console
         print("-----------------------")
-        print("Test  "+str(TestRun.counter)+": "+self.uniqueID())
+        print("Test  "+str(SaveRun.counter)+": "+self.uniqueID())
         print("Number of Qubits Bits: "+ str(self.numQubits))
         print("Number of errCorr: " + str(self.errBounds))
         if (self.test2Det):
@@ -447,7 +482,13 @@ class TestRun():
 
         print("Result : COMPLETED " + "[" + str(numErrors) + "/" + str(self.nStates) + "] Errors")
         print("-----------------------\n")
+
+        # THIS IS THE END OF THE RUN FUNCTION
         return 1
+
+
+    # The following are helper functions used during run. Some of these may not be used.
+
 
     # Returns a string based on the current args
     def uniqueID(self):
@@ -522,6 +563,8 @@ def printfValsFidelity(fVal,fid,Counts):
 #     ele1 = ele2.copy()
 #     ele2 = temp.copy()
 #     return ele1, ele2
+
+# hard coded mapping of states. Get the other state in the specified pair
 def getOppositeState(psi):
     # Horizontal
     if (all(psi == np.array([1, 0], dtype=complex))):

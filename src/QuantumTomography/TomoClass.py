@@ -77,7 +77,6 @@ class Tomography():
             'Window': 0,
             'Efficiency': 0,
             'RhoStart': [],
-            'IntensityMap': [[1]],
             'Beta': 0}
         self.err_functions = ['concurrence', 'tangle', 'entropy', 'linear_entropy', 'negativity', 'purity']
 
@@ -89,7 +88,7 @@ class Tomography():
     ----------
     setting : string
         The setting you want to update.
-        Possible values are ['NQubits', 'NDetectors', 'Crosstalk', 'Bellstate', 'DoDriftCorrection', 'DoAccidentalCorrection', 'DoErrorEstimation', 'Window', 'Efficiency', 'RhoStart', 'IntensityMap', 'Beta']
+        Possible values are ['NQubits', 'NDetectors', 'Crosstalk', 'Bellstate', 'DoDriftCorrection', 'DoAccidentalCorrection', 'DoErrorEstimation', 'Window', 'Efficiency', 'RhoStart', 'Beta']
     val: ndarray, int, or string
             The new value you want to the setting to be.
     """
@@ -212,7 +211,6 @@ class Tomography():
             raise ValueError("Invalid intensities array")
 
         # filter the data
-        # TODO: the axis of the measuremennts_densities is kinda wonky. Not similar to measurements_pures
         [coincidences, measurements_densities, measurements_pures, accidentals] = self.filter_data(tomo_input)
 
         # get the starting state from linear_tomography if not defined
@@ -590,7 +588,6 @@ class Tomography():
             self.conf['Window'] = np.ones(n_coinc)
         eff = self.conf['Window'][0:n_coinc]
 
-
         # Accidental Correction
         acc = np.zeros_like(coinc)
         if(self.conf['DoAccidentalCorrection'] == 1):
@@ -613,9 +610,6 @@ class Tomography():
             if (acc.shape != coinc.shape):
                 acc = acc[:, 0]
 
-        # Drift Correction
-        self.conf['IntensityMap'] = np.kron(self.intensities, np.ones(n_coinc))
-
         # crosstalk
         ctalk = np.array(self.conf['Crosstalk'])[0:2 ** nbits, 0:2 ** nbits]
 
@@ -629,13 +623,13 @@ class Tomography():
             big_crosstalk = np.eye(2 ** nbits)
         else:
             big_crosstalk = crosstalk[:]
-
         big_crosstalk = big_crosstalk * np.outer(eff, np.ones(n_coinc))
 
-
-        # Todo: this is very messy but works. Maybe at some point it can be cleaned up
-        measurements_densities = np.zeros([2 ** nbits, 2 ** nbits, np.prod(coinc.shape)]) + 0j
-        measurements_pures = np.zeros([np.prod(coinc.shape), 2 ** nbits]) + 0j
+        # Get measurements
+        # Todo: this is very messy but works...? At some point it can be cleaned up, so that toDensity is used 
+        # and the shapes are similar. The axis of the measuremennts_densities is kinda wonky. Not similar to measurements_pures
+        measurements_densities = np.zeros([2 ** nbits, 2 ** nbits, np.prod(coinc.shape)],dtype=complex)
+        measurements_pures = np.zeros([np.prod(coinc.shape), 2 ** nbits],dtype=complex)
         for j in range(coinc.shape[0]):
             m_twiddle = np.zeros([2 ** nbits, 2 ** nbits, 2 ** nbits]) + 0j
             u = 1
@@ -918,9 +912,7 @@ class Tomography():
 
                 m[i, j] = basis[index][0]
                 m[i, j + 1] = basis[index][1]
-
         return m
-
 
     """
     getTomoInputTemplate()
@@ -949,7 +941,6 @@ class Tomography():
             raise ValueError("numDet must be an 1 or 2")
         if (numDet < 1):
             numDet = self.getNumDetPerQubit()
-
 
         measurements = self.getBasisMeas(numBits,numDet)
 
