@@ -16,6 +16,9 @@ http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
 """This script is used to run tomo against the standard_test_data, and save the Results"""
 
 "WARNING! These tests run on the published library installed in your pip version, not the code in the local directory."
+#
+# test1 = TestRun([1, 0, 0, 0, 0, 0, 0, 100],False)
+# test1.run()
 
-test1 = TestRun([2, 0, 0, 0, 0, 0, 0, 20])
-test1.run()
+test2 = TestRun([2, 0, 0, 0, 1, 0, 0, 1],Save_each_State=False,showErrors=False)
+test2.run()

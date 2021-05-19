@@ -30,7 +30,7 @@ class TestRun():
     allFidels = np.zeros(0,dtype=float)
     allTimes = np.zeros(0,dtype=float)
 
-    def __init__(self,args):
+    def __init__(self,args,Save_each_State=True,showErrors=True):
 
         [nBits, bounds, acc, det2, cross, bell, drift, nStates] = args
         """-------Settings---------"""
@@ -44,6 +44,12 @@ class TestRun():
 
         # not implemented
         self.testAccCorr = acc
+
+        # Turn this to false if you do not want an html output of each random test
+        self.Save_each_State = Save_each_State
+
+        # Turn this to false if you do not want show plot points where errors occured
+        self.showErrors = showErrors
 
     def isValid(self):
         if(self.numQubits ==1 and (self.testAccCorr or self.testBell)):
@@ -295,8 +301,20 @@ class TestRun():
         # Create Graph of Fidelities
         fig = plt.figure()
         fig.clf()
+
+        if not self.showErrors:
+            # Change zeros to nan so plt.plot won't plot them
+            numNANS = 0
+            for e in range(len(myFidels)):
+                if myFidels[e] == -1:
+                    myFidels[e] = float('nan')
+                    numNANS +=1
+            plt.text(-.04, -.085, "Showing " + str(len(myFidels) - numNANS) + " out of " + str(len(myFidels)) + " trials. Num Errors: " + str(numNANS))
+            plt.subplots_adjust(bottom=0.25)
+
         plt.plot(np.log10(totalCounts), myFidels, '.b')
         plt.title('Fidelities')
+
         plt.xlabel("Log(Counts) base 10")
         plt.ylabel("Fidelity")
 
@@ -363,37 +381,37 @@ class TestRun():
 
         FORREPLACE += '</ul></td><td><img src="Fidel_Graph_'+self.uniqueID()+'.png" style="width:80%;height:auto;"></td></tr></table>'
 
-        for j in range(self.nStates):
+        if(self.Save_each_State):
+            for j in range(self.nStates):
+                '''Real State'''
+                FORREPLACE += '<table class="data">'
+                FORREPLACE += '<tr><th colspan="2">Actual Densities</th><th>Details</th>'
 
-            '''Real State'''
-            FORREPLACE += '<table class="data">'
-            FORREPLACE += '<tr><th colspan="2">Actual Densities</th><th>Details</th>'
-
-            FORREPLACE += '<th colspan="2">Caclulated Densities</th>'
-            if (self.testCrossTalk):
-                FORREPLACE += '<th colspan="2">CrossTalk</th>'
-            FORREPLACE += '</tr>'
-            FORREPLACE += '<tr>'
-            FORREPLACE += '<td colspan="2">'
-            FORREPLACE += qLib.matrixToHTML(startingRhos[j])
-            FORREPLACE += '</td>'
-
-            '''My tomography'''
-            FORREPLACE += '<td>'
-            FORREPLACE += printfValsFidelity(myfVals[j], myFidels[j],totalCounts[j])
-            FORREPLACE += '</td>'
-            FORREPLACE += '<td colspan="2">'
-            FORREPLACE += qLib.matrixToHTML(myDensities[j])
-            FORREPLACE += '</td>'
-
-            # Print crosstalk matrix
-            if (self.testCrossTalk):
+                FORREPLACE += '<th colspan="2">Caclulated Densities</th>'
+                if (self.testCrossTalk):
+                    FORREPLACE += '<th colspan="2">CrossTalk</th>'
+                FORREPLACE += '</tr>'
+                FORREPLACE += '<tr>'
                 FORREPLACE += '<td colspan="2">'
-                FORREPLACE += qLib.matrixToHTML(myCTalks[j])
+                FORREPLACE += qLib.matrixToHTML(startingRhos[j])
                 FORREPLACE += '</td>'
 
-            FORREPLACE += '</tr>'
-        FORREPLACE += '</table>'
+                '''My tomography'''
+                FORREPLACE += '<td>'
+                FORREPLACE += printfValsFidelity(myfVals[j], myFidels[j],totalCounts[j])
+                FORREPLACE += '</td>'
+                FORREPLACE += '<td colspan="2">'
+                FORREPLACE += qLib.matrixToHTML(myDensities[j])
+                FORREPLACE += '</td>'
+
+                # Print crosstalk matrix
+                if (self.testCrossTalk):
+                    FORREPLACE += '<td colspan="2">'
+                    FORREPLACE += qLib.matrixToHTML(myCTalks[j])
+                    FORREPLACE += '</td>'
+
+                FORREPLACE += '</tr>'
+            FORREPLACE += '</table>'
         # Edit and Save HTML file
         fff = '<html><head><title>Data</title><link href="styleSheet.css" rel="stylesheet" type="text/css"></head><body>TOREPLACE</body></html>'
         fff = fff.replace('TOREPLACE', str(FORREPLACE))

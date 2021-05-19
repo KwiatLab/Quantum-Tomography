@@ -60,12 +60,16 @@ for i in range(0,6):
         # ----------------------
 
         # MLE 1 qubit
-        r1 = t1.state_tomography(tomoInput1)
-        myFidels1_MLE[i][j] = qk.fidelity(mat["pReal"][i][j],r1[0])
-        # MLE 2 qubit
-        r2 = t2.state_tomography(tomoInput2)
-        myFidels2_MLE[i][j] = qk.fidelity(mat2["pReal"][i][j], r2[0])
-
+        try:
+            r1 = t1.state_tomography(tomoInput1)
+            myFidels1_MLE[i][j] = qk.fidelity(mat["pReal"][i][j],r1[0])
+        except:
+            pass
+        try:
+            r2 = t2.state_tomography(tomoInput2)
+            myFidels2_MLE[i][j] = qk.fidelity(mat2["pReal"][i][j], r2[0])
+        except:
+            pass
 # Plot fidelities 1q
 plt.title("Fidelities 1q")
 

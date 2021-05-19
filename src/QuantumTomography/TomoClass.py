@@ -212,8 +212,8 @@ class Tomography():
             raise ValueError("Invalid intensities array")
 
         # filter the data
-        # TODO: the axis of the measuremennts_densities is kinda wonky. Not similar as measurements_pures
-        [coincidences, measurements_densities, measurements_pures, accidentals] = self.filter_data(tomo_input, intensities)
+        # TODO: the axis of the measuremennts_densities is kinda wonky. Not similar to measurements_pures
+        [coincidences, measurements_densities, measurements_pures, accidentals] = self.filter_data(tomo_input)
 
         # get the starting state from linear_tomography if not defined
         starting_matrix = self.conf['RhoStart']
@@ -240,7 +240,8 @@ class Tomography():
         return [rhog, intensity, fvalp]
 
     """
-        state_tomo(tomo_input, intensities)
+        state_tomo(measurements, counts)
+        todo:comment
         """
     def state_tomo(self,measurements,counts,crosstalk=-1,efficiency=0,time=-1,singles=-1,window=0,error=0, intensities=-1):
         tomo_input = self.buildTomoInput(measurements, counts, crosstalk, efficiency, time, singles,window,error)
@@ -335,7 +336,6 @@ class Tomography():
 
         rhog = t_to_density(t)
 
-
         for j in range(len(prediction)):
             prediction[j] = np.float64(np.real(self.intensities[j] * np.real(np.trace(np.dot(m[:, :, j], rhog))) + accidentals[j]))
             prediction[j] = np.max([prediction[j], 0.01])
@@ -374,7 +374,6 @@ class Tomography():
 
         rhog = t_to_density(t)
 
-
         for j in range(len(prediction)):
             prediction[j] = self.intensities[j] * np.real(np.trace(np.dot(m[:, :, j], rhog))) + accidentals[j]
             prediction[j] = np.max([prediction[j], 0.01])
@@ -386,30 +385,8 @@ class Tomography():
 
         return val
 
-    """
-        maximum_likelihood_tomography(starting_matrix, coincidences, m, acc)
-        Desc: Calculates the most likely state given the data.
 
-        Parameters
-        ----------
-        starting_matrix : ndarray with shape = (2^numQubits, 2^numQubits)
-            The starting predicted state found with linear tomography.
-        coincidences : ndarray with length = number of measurements or shape = (number of measurements, 2^numQubits) for 2 det/qubit
-            The counts of the tomography.
-        m : ndarray with shape = (2^numQubits, 2^numQubits, number of measurements)
-            The measurements of the tomography in density matrix form.
-        acc : ndarray with length = number of measurements or shape = (number of measurements, 2^numQubits) for 2 det/qubit
-            The singles values of the tomography. Used for accidental correction.
-        Returns
-        -------
-        rhog : ndarray with shape = (2^numQubits, 2^numQubits)
-            The predicted density matrix.
-        intensity : float
-            The predicted overall intensity used to normalize the state.
-        fvalp : float
-            Final value of the internal optimization function. Values greater than the number
-            of measurements indicate poor agreement with a quantum state.
-        """
+    # TODO add comments for bayesian tomography
     def bayesian_tomography(self, starting_matrix, coincidences, m, accidentals):
         starting_matrix = make_positive(starting_matrix)
         starting_matrix = starting_matrix / np.trace(starting_matrix)
@@ -484,6 +461,7 @@ class Tomography():
         fvalp = self.prob_D_given_P_gaussian(mean_density, coincidences,m,accidentals,init_intensity)
         return [mean_density, intensity, fvalp]
 
+    # todo: comment
     def prob_D_given_P_binomial(self,givenState,coincidences,measurments,accidentals):
         total_prob = 1
         for j in range(coincidences.shape[0]):
@@ -492,6 +470,8 @@ class Tomography():
 
             total_prob *= probMeas ** Counts[x] * (1 - probMeas) ** (nSamples - Counts[x])
         return 0
+
+    # todo: comment
     def prob_D_given_P_gaussian(self,givenState,coincidences,measurments,accidentals,intensities):
 
         Averages = np.zeros(measurments.shape[2]) + 0j
@@ -503,12 +483,8 @@ class Tomography():
                 Averages[j] = np.max([Averages[j], 0.0000001])
 
         val = (Averages - coincidences)**2 / (2*Averages)
-
         val = np.float64(np.real(val))
-
         prob = np.exp(-1*np.sum(val),dtype=np.longdouble)
-
-
         return prob
 
 
@@ -561,7 +537,8 @@ class Tomography():
     """
     filter_data(tomo_input, intensities)
     Desc: Filters the data into separate arrays.
-
+    TODO: edit intensities out of comment
+    
     Parameters
     ----------
     tomo_input : ndarray
@@ -581,7 +558,7 @@ class Tomography():
     acc : ndarray with length = number of measurements or shape = (number of measurements, 2^numQubits) for 2 det/qubit
         The singles values of the tomography. Used for accidental correction.
     """
-    def filter_data(self, tomo_input, intensities):
+    def filter_data(self, tomo_input):
         # getting variables
         self.input = tomo_input
 
@@ -637,7 +614,7 @@ class Tomography():
                 acc = acc[:, 0]
 
         # Drift Correction
-        self.conf['IntensityMap'] = np.kron(intensities, np.ones(n_coinc))
+        self.conf['IntensityMap'] = np.kron(self.intensities, np.ones(n_coinc))
 
         # crosstalk
         ctalk = np.array(self.conf['Crosstalk'])[0:2 ** nbits, 0:2 ** nbits]
