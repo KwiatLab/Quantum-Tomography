@@ -17,8 +17,8 @@ __author__ = 'Quoleon/Turro'
 """CHECK OUT THE REFERENCE PAGE ON OUR WEBSITE :
 http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
 
-"""This script is runs a multiple tomographies and does not saves the results"""
-"""This uses a single function unlike the SaveTestRun that uses a class"""
+"""This script runs a multiple tomographies and does not saves the results"""
+"""This script is used by test_github_publish and _update."""
 
 # Returns 1 if success
 def runTest(args):
