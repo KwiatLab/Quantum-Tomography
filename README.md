@@ -1,6 +1,9 @@
 # Quantum-Tomography
 ![Python package](https://github.com/KwiatQIM/Quantum-Tomography/workflows/Python%20package/badge.svg?branch=master)
-[![Downloads](https://pepy.tech/badge/quantum-tomography)](https://pepy.tech/project/quantum-tomography)
+[![Website tomography.web.engr.illinois.edu/TomographyDemo.php](https://img.shields.io/website-up-down-green-red/http/shields.io.svg)](http://tomography.web.engr.illinois.edu/TomographyDemo.php)
+[![Downloads](https://pepy.tech/badge/quantum-tomography)](https://pypi.org/project/Quantum-Tomography/)
+[![Generic badge](https://img.shields.io/badge/Python_versions-2_|_3-blue.svg)](https://pypi.org/project/Quantum-Tomography/)
+[![MIT license](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/KwiatQIM/Quantum-Tomography/blob/master/LICENSE)
 
 A python library to help perform tomography on a quantum state.
 
