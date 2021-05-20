@@ -1,13 +1,26 @@
 import unittest
 import QuantumTomography as qlib
 import numpy as np
-import numpy.linalg as la
+import warnings
+warnings.filterwarnings("ignore")
 
+"""
+Copyright 2020 University of Illinois Board of Trustees.
+Licensed under the terms of an MIT license
+"""
+
+__author__ = 'Shallat'
+"""CHECK OUT THE REFERENCE PAGE ON OUR WEBSITE :
+http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
+
+"Attention! These tests run on the version that your environment uses. see readme for details"
 
 class FunctionTesting(unittest.TestCase):
 
     def __init__(self, *args, **kwargs):
         super(FunctionTesting, self).__init__(*args, **kwargs)
+
+        # initializing the inputs to be used in the following test tomographies
         self.tomoinp1 = np.array([[1,0,500,1,0],[1,0,500,0,1],[1,0,500,0.7071,0.7071],[1,0,500,0.7071,-0.7071],[1,0,500,0.7071,0.7071j],[1,0,500,0.7071,-0.7071j]])
         self.tomoinp2 = np.array([[1, 0, 0, 500, 1, 0, 1, 0], [1, 0, 0, 500, 1, 0, 0, 1], [1, 0, 0, 500, 1, 0, 0.7071, 0.7071],
                              [1, 0, 0, 500, 1, 0, 0.7071, 0.7071j], [1, 0, 0, 500, 0, 1, 1, 0], [1, 0, 0, 500, 0, 1, 0, 1],
@@ -19,13 +32,14 @@ class FunctionTesting(unittest.TestCase):
 
 
     def test_getCoincidences(self):
+        # setting up tomography objects
         tomoObj1 = qlib.Tomography(1)
         tomoObj2 = qlib.Tomography(2)
-        #setting up new inputs to be changed
+        # setting up new inputs to be changed
         curinp1 = self.tomoinp1.copy()
         curinp2 = self.tomoinp2.copy()
 
-        #testing different random measurement values
+        # testing different random measurement values
         for i in range(500, 1500, 200):
             rand_coincidence1 = np.random.binomial(i, 0.5, 6)
             rand_coincidence2 = np.random.binomial(i, 0.5, 16)
@@ -38,19 +52,20 @@ class FunctionTesting(unittest.TestCase):
 
 
     def test_getSingles(self):
+        # setting up tomography objects
         tomoObj1 = qlib.Tomography(1)
         tomoObj2 = qlib.Tomography(2)
-        #setting up new inputs to be changed
+        # setting up new inputs to be changed
         curinp1 = self.tomoinp1.copy()
         curinp2 = self.tomoinp2.copy()
 
-        #test case with 0 everywhere
+        # test case with 0 everywhere
         tomo = tomoObj1.state_tomography(curinp1)
         tomo2 = tomoObj2.state_tomography(curinp2)
         self.assertTrue((tomoObj1.getSingles() == np.zeros(6)).all())
         self.assertTrue((tomoObj2.getSingles() == np.zeros((16,2))).all())
 
-        #test cases with different random singles values
+        # test cases with different random singles values
         for i in range(1, 20, 4):
             singles_onebit = np.random.binomial(i, 0.5, 6)
             singles_twobit = np.random.binomial(i, 0.5, (16,2))
@@ -63,19 +78,20 @@ class FunctionTesting(unittest.TestCase):
 
 
     def test_getTimes(self):
-        tomoObj1 = qlib.Tomography(2)
+        # setting up tomography objects
+        tomoObj1 = qlib.Tomography(1)
         tomoObj2 = qlib.Tomography(2)
-        #make copies of inputs to change
+        # make copies of inputs to change
         curinp1 = self.tomoinp1.copy()
         curinp2 = self.tomoinp2.copy()
 
-        #test case with all ones for time
+        # test case with all ones for time
         tomo  = tomoObj1.state_tomography(curinp1)
         tomo2 = tomoObj2.state_tomography(curinp2)
         self.assertTrue((tomoObj1.getTimes() == np.ones(6)).all())
         self.assertTrue((tomoObj2.getTimes() == np.ones(16)).all())
 
-        #testing some different cases:
+        # testing some different cases:
         for i in range(3):
             randTime1 = np.random.randint(1, 10, 6)
             randTime2 = np.random.randint(1, 10, 16)
@@ -84,8 +100,8 @@ class FunctionTesting(unittest.TestCase):
 
             tomo  = tomoObj1.state_tomography(curinp1)
             tomo2 = tomoObj2.state_tomography(curinp2)
-            self.assertEqual((tomoObj1.getTimes() == randTime1).all())
-            self.assertEqual((tomoObj2.getTime() == randTime2).all())
+            self.assertTrue((tomoObj1.getTimes() == randTime1).all())
+            self.assertTrue((tomoObj2.getTimes() == randTime2).all())
 
 
 if __name__ == '__main__':

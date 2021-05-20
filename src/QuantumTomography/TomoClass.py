@@ -513,7 +513,7 @@ class Tomography():
             linear_data = coincidences
 
         else:
-            n = np.int(np.sum(m_set))
+            n = int(np.sum(m_set))
             linear_measurements = measurements[(np.rot90(m_set == 1.0)[0])]
             linear_data = coincidences[(np.rot90(m_set == 1.0)[0])]
 

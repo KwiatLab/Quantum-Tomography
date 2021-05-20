@@ -211,13 +211,13 @@ def toDensity(psiMat):
         Lower t matrix.
     """
 def t_matrix(t):
-    d = np.int(np.sqrt(len(t)))
+    d = int(np.sqrt(len(t)))
 
     idx = 0
     cur_length = d
     tm = np.zeros([d, d])
 
-    for j in range(np.int(d)):
+    for j in range(int(d)):
         tm = tm + 1*np.diag(t[np.arange(idx, idx+cur_length)], -j)
         idx = idx + cur_length
 
