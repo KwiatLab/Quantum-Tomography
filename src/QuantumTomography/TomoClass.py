@@ -27,7 +27,7 @@ class Tomography():
 
     # conf['NQubits']: >= 1, it will take a much longer time for more qubits.
     # conf['NDetectors']: 1 or 2
-    # conf['ctalk']: [[C0->0, C0->1], [C1->0, C1->1]]
+    # conf['Crosstalk']: [[C0->0, C0->1], [C1->0, C1->1]]
     # conf['Bellstate']: 'no' or 'yes'
     # conf['DoDriftCorrection'] = 'no' or 'yes'
     # conf['DoAccidentalCorrection'] = 'no' or 'yes'
@@ -77,7 +77,6 @@ class Tomography():
             'Window': 0,
             'Efficiency': 0,
             'RhoStart': [],
-            'IntensityMap': [[1]],
             'Beta': 0}
         self.err_functions = ['concurrence', 'tangle', 'entropy', 'linear_entropy', 'negativity', 'purity']
 
@@ -89,7 +88,7 @@ class Tomography():
     ----------
     setting : string
         The setting you want to update.
-        Possible values are ['NQubits', 'NDetectors', 'Crosstalk', 'Bellstate', 'DoDriftCorrection', 'DoAccidentalCorrection', 'DoErrorEstimation', 'Window', 'Efficiency', 'RhoStart', 'IntensityMap', 'Beta']
+        Possible values are ['NQubits', 'NDetectors', 'Crosstalk', 'Bellstate', 'DoDriftCorrection', 'DoAccidentalCorrection', 'DoErrorEstimation', 'Window', 'Efficiency', 'RhoStart', 'Beta']
     val: ndarray, int, or string
             The new value you want to the setting to be.
     """
@@ -183,7 +182,7 @@ class Tomography():
     """
     state_tomography(tomo_input, intensities)
     Desc: Main function that runs tomography.
-
+    TODO: add method to comment
     Parameters
     ----------
     tomo_input : ndarray
@@ -201,18 +200,18 @@ class Tomography():
         Final value of the internal optimization function. Values greater than the number
         of measurements indicate poor agreement with a quantum state.
     """
-    def state_tomography(self, tomo_input, intensities = -1):
-        
-        # self.tomo_input = tomo_input
+    def state_tomography(self, tomo_input, intensities = -1,method="MLE"):
 
         # define a uniform intenstiy if not stated
-        if(isinstance(intensities,int)):
+        if (isinstance(intensities, int)):
             self.intensities = np.ones(tomo_input.shape[0])
-        else:
+        elif(len(intensities.shape) == 1 and intensities.shape[0] == tomo_input.shape[0]):
             self.intensities = intensities
+        else:
+            raise ValueError("Invalid intensities array")
 
         # filter the data
-        [coincidences, measurements_densities, measurements_pures, accidentals] = self.filter_data(tomo_input, intensities)
+        [coincidences, measurements_densities, measurements_pures, accidentals] = self.filter_data(tomo_input)
 
         # get the starting state from linear_tomography if not defined
         starting_matrix = self.conf['RhoStart']
@@ -222,18 +221,31 @@ class Tomography():
         # Currently linear tomography gets the phase wrong. So a temporary fix is to just transpose it.
         starting_matrix = starting_matrix.transpose()
 
-        # perform MLE tomography
-        [rhog, intensity, fvalp] = self.maximum_likelihood_tomography(starting_matrix, coincidences, measurements_densities, accidentals)\
-
+        if(method == "MLE"):
+            # perform MLE tomography
+            [rhog, intensity, fvalp] = self.maximum_likelihood_tomography(starting_matrix, coincidences, measurements_densities, accidentals)
+        else:
+            # perform Bayesian tomography
+            [rhog, intensity, fvalp] = self.bayesian_tomography(starting_matrix, coincidences, measurements_densities,accidentals)
         # save the results
         self.last_rho = rhog.copy()
         self.last_intensity = intensity
         self.last_fval = fvalp
 
-        # Curious as to why this is here.
+        # TODO: Figure out why this is here.
         self.mont_carl_states = 0
 
         return [rhog, intensity, fvalp]
+
+    """
+        state_tomo(measurements, counts)
+        todo:comment
+        """
+    def state_tomo(self,measurements,counts,crosstalk=-1,efficiency=0,time=-1,singles=-1,window=0,error=0, intensities=-1):
+        tomo_input = self.buildTomoInput(measurements, counts, crosstalk, efficiency, time, singles,window,error)
+        return self.state_tomography(tomo_input, intensities)
+
+
 
 
     """
@@ -322,7 +334,6 @@ class Tomography():
 
         rhog = t_to_density(t)
 
-
         for j in range(len(prediction)):
             prediction[j] = np.float64(np.real(self.intensities[j] * np.real(np.trace(np.dot(m[:, :, j], rhog))) + accidentals[j]))
             prediction[j] = np.max([prediction[j], 0.01])
@@ -361,7 +372,6 @@ class Tomography():
 
         rhog = t_to_density(t)
 
-
         for j in range(len(prediction)):
             prediction[j] = self.intensities[j] * np.real(np.trace(np.dot(m[:, :, j], rhog))) + accidentals[j]
             prediction[j] = np.max([prediction[j], 0.01])
@@ -374,10 +384,112 @@ class Tomography():
         return val
 
 
+    # TODO add comments for bayesian tomography
+    def bayesian_tomography(self, starting_matrix, coincidences, m, accidentals):
+        starting_matrix = make_positive(starting_matrix)
+        starting_matrix = starting_matrix / np.trace(starting_matrix)
+        init_intensity = np.mean(np.multiply(coincidences, 1 / self.intensities)) * (starting_matrix.shape[0])
+        starting_tvals = density2t(starting_matrix)
+        n_t = len(starting_tvals)
+        # np.multiply(coincidences, self.intensities)
+        # t_to_density(starting_tvals)
+        starting_tvals = starting_tvals + 0.0001
+        starting_tvals = starting_tvals * np.sqrt(init_intensity)
+
+        coincidences = np.real(coincidences)
+        coincidences = coincidences.flatten()
+
+        bet = self.conf['Beta']
+        # n_data = np.shape(coincidences)[0]
+
+        # redefine m
+        # measurement_basis =
+
+        # Outputs needed
+        # final_tvals, fvalp
+        # final_tvals = leastsq(self.maxlike_fitness, np.real(starting_tvals), args=(coincidences, accidentals, m, prediction))[0]
+        # fvalp = np.sum(self.maxlike_fitness(final_tvals, coincidences, accidentals, m, prediction) ** 2)
+
+
+        # Uniform Samples
+        #------------------
+        numMonteCarloSamples = 1000
+
+        # Need to sample mixed states too. Currently only pure states are sampled for uniform
+        monteCarloStates = np.array([toDensity(random_pure_state(self.conf["NQubits"])) for x in range(0,numMonteCarloSamples)])
+
+        mean_density = np.zeros_like(starting_matrix)
+        for state in monteCarloStates:
+            mean_density += state * self.prob_D_given_P_gaussian(state, coincidences,m,accidentals,self.intensities)
+
+        normalizationConstant = np.trace(mean_density)
+        mean_density = mean_density / normalizationConstant
+        mean_tvals = density2t(mean_density)
+        var_tvals = np.zeros((len(mean_tvals),len(mean_tvals)))
+        for state in monteCarloStates:
+            var_tvals += np.outer(density2t(state)-mean_tvals,density2t(state)-mean_tvals) * self.prob_D_given_P_gaussian(state, coincidences,m,accidentals,init_intensity)
+
+        var_tvals = var_tvals / normalizationConstant
+
+
+        mean_density_normal = mean_density.copy()
+
+        # Updated prior Samples
+        # ------------------
+        monteCarloTvals = np.random.multivariate_normal(mean_tvals, var_tvals, numMonteCarloSamples)
+
+        mean_density = np.zeros_like(starting_matrix)
+        for tvals in monteCarloTvals:
+            state = t_to_density(tvals)
+            mean_density += state * self.prob_D_given_P_gaussian(state, coincidences,m,accidentals,init_intensity)
+
+        normalizationConstant = np.trace(mean_density)
+        mean_density = mean_density / normalizationConstant
+        mean_tvals = density2t(mean_density)
+        var_tvals = np.zeros((len(mean_tvals), len(mean_tvals)))
+        for tvals in monteCarloTvals:
+            var_tvals += np.outer(tvals - mean_tvals,tvals - mean_tvals) * self.prob_D_given_P_gaussian(t_to_density(tvals), coincidences, m,accidentals,init_intensity)
+
+        var_tvals = var_tvals / normalizationConstant
+
+
+
+        intensity = init_intensity
+        intensity = np.float64(np.real(intensity))
+        fvalp = self.prob_D_given_P_gaussian(mean_density, coincidences,m,accidentals,init_intensity)
+        return [mean_density, intensity, fvalp]
+
+    # todo: comment
+    def prob_D_given_P_binomial(self,givenState,coincidences,measurments,accidentals):
+        total_prob = 1
+        for j in range(coincidences.shape[0]):
+            probMeas = np.real(np.trace(np.dot(measurments[:, :, j], givenState)))
+            nSamples = np.float64(np.real(self.intensities[j] * np.real(np.trace(np.dot(measurments[:, :, j], givenState))) + accidentals[j]))
+
+            total_prob *= probMeas ** Counts[x] * (1 - probMeas) ** (nSamples - Counts[x])
+        return 0
+
+    # todo: comment
+    def prob_D_given_P_gaussian(self,givenState,coincidences,measurments,accidentals,intensities):
+
+        Averages = np.zeros(measurments.shape[2]) + 0j
+
+        for j in range(coincidences.shape[0]):
+            # Averages[j] = inten0*np.float64(np.real(self.intensities[j] * np.real(np.trace(np.dot(measurments[:, :, j], givenState))) + accidentals[j]))
+            Averages[j] =  intensities[j]*np.trace(np.matmul(measurments[:, :, j],givenState))
+            if(Averages[j]==0):
+                Averages[j] = np.max([Averages[j], 0.0000001])
+
+        val = (Averages - coincidences)**2 / (2*Averages)
+        val = np.float64(np.real(val))
+        prob = np.exp(-1*np.sum(val),dtype=np.longdouble)
+        return prob
+
+
     """
     linear_tomography(coincidences, measurements)
     Desc: Uses linear techniques to find a starting state for maximum likelihood estimation.
-
+    TODO: idk what this is based off of. Does it even do the correct thing?
     Parameters
     ----------
     coincidences : ndarray with length = number of measurements or shape = (number of measurements, 2^numQubits) for 2 det/qubit
@@ -423,7 +535,8 @@ class Tomography():
     """
     filter_data(tomo_input, intensities)
     Desc: Filters the data into separate arrays.
-
+    TODO: edit intensities out of comment
+    
     Parameters
     ----------
     tomo_input : ndarray
@@ -443,16 +556,12 @@ class Tomography():
     acc : ndarray with length = number of measurements or shape = (number of measurements, 2^numQubits) for 2 det/qubit
         The singles values of the tomography. Used for accidental correction.
     """
-    def filter_data(self, tomo_input, intensities):
+    def filter_data(self, tomo_input):
         # getting variables
         self.input = tomo_input
-        # if not np.isscalar(intensities):
-        #    self.conf['DoDriftCorrection'] = 0
+
         nbits = self.conf['NQubits']
         ndet = self.conf['NDetectors']
-        if(isinstance(self.conf['Efficiency'], int)):
-            self.conf['Efficiency'] = np.ones(2**nbits)
-        eff = self.conf['Efficiency'][0:2 ** nbits]
 
         # time values
         t = tomo_input[:, 0]
@@ -462,13 +571,22 @@ class Tomography():
         # sings = tomo_input[:, np.arange(n_singles) + 1]
         sings = self.getSingles()
 
-
         # coincidences
         n_coinc = self.getNumCoinc()
         coinc = self.getCoincidences()
 
         # settings
         settings = tomo_input[:, np.arange(n_singles + n_coinc + 1, len(tomo_input[0]))]
+
+        # Set Efficiency is not already defined
+        if (isinstance(self.conf['Efficiency'], int)):
+            self.conf['Efficiency'] = np.ones(2 ** nbits)
+        eff = self.conf['Efficiency'][0:2 ** nbits]
+
+        # Set window is not already defined
+        if (isinstance(self.conf['Window'], int)):
+            self.conf['Window'] = np.ones(n_coinc)
+        eff = self.conf['Window'][0:n_coinc]
 
         # Accidental Correction
         acc = np.zeros_like(coinc)
@@ -492,16 +610,15 @@ class Tomography():
             if (acc.shape != coinc.shape):
                 acc = acc[:, 0]
 
-        # Drift Correction
-        self.conf['IntensityMap'] = intensities
-
         # crosstalk
         ctalk = np.array(self.conf['Crosstalk'])[0:2 ** nbits, 0:2 ** nbits]
+
+        # This chunk of code handles edge cases of the input of the crosstalk matrix.
+        # The important crosstalk matrix is the big_crosstalk
         crosstalk = ctalk
         if np.ndim(ctalk) >= 3:
             for j in range(ctalk.shape[2]):
                 crosstalk[j] = ctalk[:, :, j]
-
         if (ctalk == []):
             big_crosstalk = np.eye(2 ** nbits)
         else:
@@ -509,8 +626,10 @@ class Tomography():
         big_crosstalk = big_crosstalk * np.outer(eff, np.ones(n_coinc))
 
         # Get measurements
-        measurements_densities = np.zeros_like(coinc,dtype="O")
-        measurements_pures = np.zeros_like(coinc,dtype="O")
+        # Todo: this is very messy but works...? At some point it can be cleaned up, so that toDensity is used 
+        # and the shapes are similar. The axis of the measuremennts_densities is kinda wonky. Not similar to measurements_pures
+        measurements_densities = np.zeros([2 ** nbits, 2 ** nbits, np.prod(coinc.shape)],dtype=complex)
+        measurements_pures = np.zeros([np.prod(coinc.shape), 2 ** nbits],dtype=complex)
         for j in range(coinc.shape[0]):
             m_twiddle = np.zeros([2 ** nbits, 2 ** nbits, 2 ** nbits]) + 0j
             u = 1
@@ -543,7 +662,129 @@ class Tomography():
 
                 coincidences = coinc.reshape((np.prod(coinc.shape), 1))
                 acc = acc.reshape((np.prod(acc.shape), 1))
+
+
         return [coincidences, measurements_densities, measurements_pures, acc]
+
+    """
+        buildTomoInput(tomo_input, intensities)
+        TODO: Test and write comment for this"""
+    def buildTomoInput(self, measurements, counts, crosstalk, efficiency,time,singles,window, error):
+        ################
+        # measurements #
+        ################
+        # Get the number of qubits based on the measurement matrix
+        if (len(measurements.shape)!=2 or measurements.shape[1]%2 != 0):
+            raise ValueError("Invalid measurements matrix")
+        else:
+            self.conf['NQubits'] = int(measurements.shape[1]/2)
+        # TODO: make sure measurements span the entire space
+
+        ##########
+        # counts #
+        ##########
+        # Check if counts has right dimensions
+        if (counts.shape[0] != measurements.shape[0]):
+            raise ValueError("Number of Counts does not match the number of measurements")
+        # Determine if 2det/qubit from counts matrix
+        try:
+            if(counts.shape[1] == 1):
+                self.conf['NDetectors'] = 1
+            elif(counts.shape[1] == self.conf['NQubits']*2):
+                self.conf['NDetectors'] = 2
+            else:
+                raise ValueError("The second axis of counts does not have the right dimension. Should be 1 or 2*NQubits for 2det")
+        except:
+            self.conf['NDetectors'] = 1
+
+        ##############
+        # efficiency #
+        ##############
+        if((not isinstance(efficiency, int)) and (len(efficiency.shape) !=1 or efficiency.shape[0] != self.conf['NQubits']*2)):
+            raise ValueError("Invalid efficiency array. Length should be NQubits*2")
+        else:
+            self.conf['Efficiency'] = efficiency
+
+        ##########
+        # window #
+        ##########
+        if ((not isinstance(window, int)) and (len(window.shape) != 1 or window.shape[0] != self.getNumCoinc())):
+            raise ValueError("Invalid window array. Length should be NQubits*NDetectors")
+        else:
+            self.conf['Window'] = window
+
+        ################
+        # time/singles #
+        ################
+        if ((not isinstance(time, int)) or (not isinstance(singles, int)) or (not isinstance(window, int))):
+            self.conf['DoAccidentalCorrection'] = 1
+            # Check if time has right length
+            if (isinstance(time, int)):
+                time = np.ones(measurements.shape[0])
+            elif not (len(time.shape) == 1 and time.shape[0] == measurements.shape[0]):
+                ValueError("Invalid time array")
+            # Check if singles has right dimensions
+            if (isinstance(singles, int)):
+                singles = np.zeros((measurements.shape[0],2*self.conf["NQubits"]))
+            elif not (len(singles.shape) == 2 and singles.shape[0] == measurements.shape[0] and singles.shape[1] == 2*self.conf["NQubits"]):
+                raise ValueError("Invalid singles matrix")
+            # Check if window has right length
+            if (isinstance(window, int)):
+                self.conf['Window'] = window
+            elif (len(window.shape) == 1 and window.shape[0] == self.getNumCoinc()):
+                self.conf['Window'] = window
+            else:
+                raise ValueError("Invalid window array")
+        else:
+            time = np.ones(measurements.shape[0])
+            singles = np.zeros((measurements.shape[0],self.conf["NQubits"]))
+            self.conf['Window'] = window
+
+
+        #############
+        # crosstalk #
+        #############
+        if (isinstance(crosstalk, int)):
+            self.conf['Crosstalk'] = np.identity(2 ** self.conf["NQubits"])
+        elif (len(crosstalk.shape) == 2 and crosstalk.shape[0] == crosstalk.shape[1] and crosstalk.shape[0] == 2 ** self.conf["NQubits"] ):
+            self.conf['Crosstalk'] =  crosstalk
+        else:
+            raise ValueError("Invalid crosstalk matrix")
+
+        #########
+        # error #
+        #########
+        self.conf['DoErrorEstimation'] = error
+
+        ##############
+        # tomo_input #
+        ##############
+        # Here we build the tomo_input matrix and then return this to be fed to state_tomography
+        tomo_input = 0
+        n_qubit = self.conf['NQubits']
+        if (self.conf['NDetectors'] == 1):
+            tomo_input = np.zeros((measurements.shape[0], 3 * n_qubit + 2), dtype=complex)
+            # times
+            tomo_input[:, 0] = time
+            # singles
+            tomo_input[:, 1: n_qubit + 1] = singles
+            # counts
+            tomo_input[:, n_qubit + 1] = counts
+            # measurements
+            tomo_input[:, n_qubit + 2: 3 * n_qubit + 2] = measurements
+        else:
+            tomo_input = np.zeros((measurements.shape[0], 2 ** n_qubit + 4 * n_qubit + 1), dtype=complex)
+            # times
+            tomo_input[:, 0] = times
+            # singles
+            tomo_input[:, 1: 2 * n_qubit + 1] = singles
+            # counts
+            tomo_input[:, 2 * n_qubit + 1: 2 ** n_qubit + 2 * n_qubit + 1] = counts
+            # measurements
+            tomo_input[:, 2 ** n_qubit + 2 * n_qubit + 1: 2 ** n_qubit + 4 * n_qubit + 1] = measurements
+
+
+        return tomo_input
 
     # # # # # # # # # #
     '''Get Functions'''
@@ -629,56 +870,54 @@ class Tomography():
         return self.getNumDetPerQubit()*self.getNumBits()
 
     """
-    getBasisMeas(numBits)
+    numBits(numBits)
     Desc: Returns an array of standard measurments in pure state form for the given number of qubits.
-
+    TODO: edit comment to add numDet
     Parameters
     ----------
     numBits : int
         number of qubits you want for each measurement. Default will use the number of qubits in the current configurations.
     """
-    def getBasisMeas(self, numBits = -1,withDrift =-1):
-
-        # if not specified then use the current settings
-        if(numBits == -1):
+    def getBasisMeas(self, numBits = -1,numDet = -1):
+        # check if numBits is an int
+        if not (isinstance(numBits, int)):
+            raise ValueError("numBits must be an integer")
+        if(numBits < 1):
             numBits = self.getNumBits()
-        if(withDrift == -1):
-            withDrift = bool(self.getNumDetPerQubit()-1)
 
+        # check if numDet is not 1 or 2
+        if not (numDet in [-1, 1, 2]):
+            raise ValueError("numDet must be an 1 or 2")
+        if (numDet < 1):
+            numDet = self.getNumDetPerQubit()
 
-        # Declare 1D pure states
-        basis = np.array([[1, 0],
-                          [0, 1],
-                          [1, 1],
-                          [1, -1],
-                          [1, 1j],
-                          [1, -1j]], dtype=complex)
-        # normalize
-        basis[2:] = (2 ** (-1 / 2)) * basis[2:]
-
-        # Build up m basis which is kronecker product combinations of the 1d basis
-        if not withDrift:
-            m = np.zeros((6 ** numBits, 2 * numBits), dtype=complex)
-            for i in range(m.shape[0]):
-                for j in range(0, m.shape[1], 2):
-                    bitNumber = np.floor((m.shape[1] - j - 1) / 2)
-                    index = int(((i) / 6 ** (bitNumber)) % 6)
-
-                    m[i, j:j + 2] = basis[index]
+        # Define start meas basis
+        if(numDet == 1):
+            basis = np.array([[1, 0],
+                              [0, 1],
+                              [(2 ** (-1 / 2)), (2 ** (-1 / 2))],
+                              [(2 ** (-1 / 2)), -(2 ** (-1 / 2))],
+                              [(2 ** (-1 / 2)), (2 ** (-1 / 2)) * 1j],
+                              [(2 ** (-1 / 2)), -(2 ** (-1 / 2)) * 1j]],dtype=complex)
         else:
-            m = np.zeros((3 ** numBits, 2 * numBits), dtype=complex)
-            for i in range(m.shape[0]):
-                for j in range(0, m.shape[1], 2):
-                    bitNumber = np.floor((m.shape[1] - j - 1) / 2)
-                    index = int(((i) / 3 ** (bitNumber)) % 3)
+            basis = np.array([[1, 0],
+                              [(2 ** (-1 / 2)), (2 ** (-1 / 2))],
+                              [(2 ** (-1 / 2)), (2 ** (-1 / 2)) * 1j]], dtype=complex)
+        numBasis = basis.shape[0]
+        m = np.zeros((numBasis ** numBits, 2 * numBits), dtype = complex)
+        for i in range(m.shape[0]):
+            for j in range(0, m.shape[1], 2):
+                bitNumber = np.floor((m.shape[1] - j - 1) / 2)
+                index = int(((i) / numBasis ** (bitNumber)) % numBasis)
 
-                    m[i, j:j + 2] = basis[index*2]
+                m[i, j] = basis[index][0]
+                m[i, j + 1] = basis[index][1]
         return m
 
     """
     getTomoInputTemplate()
     Desc: returns a standard template for tomo_input for the given number of qubits.
-
+    TODO: edit this comment for numDet
     Parameters
     ----------
     numBits : int
@@ -690,14 +929,22 @@ class Tomography():
         The input data for the current tomography. This is what tomo_input will be set to. Example can be seen at top of page. 
         See getTomoInputTemplate() to get a template for this input.
     """
-    def getTomoInputTemplate(self, numBits = -1):
-
-        # if numBits not specified then use the number of bits in the current settings
-        if(numBits == -1):
+    def getTomoInputTemplate(self, numBits = -1,numDet = -1):
+        # check if numBits is an int
+        if not (isinstance(numBits, int)):
+            raise ValueError("numBits must be an integer")
+        if (numBits < 1):
             numBits = self.getNumBits()
 
-        measurements = self.getBasisMeas(numBits)
-        if(self.getNumDetPerQubit() == 1):
+        # check if numDet is not 1 or 2
+        if not(numDet in [-1,1,2]):
+            raise ValueError("numDet must be an 1 or 2")
+        if (numDet < 1):
+            numDet = self.getNumDetPerQubit()
+
+        measurements = self.getBasisMeas(numBits,numDet)
+
+        if(numDet == 1):
             # For n detectors:
             Tomoinput = np.zeros((6**numBits, 3*numBits+2), dtype = complex)
 
