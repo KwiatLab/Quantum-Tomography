@@ -89,7 +89,7 @@ class Tomography():
     setting : string
         The setting you want to update.
         Possible values are ['NQubits', 'NDetectors', 'Crosstalk', 'Bellstate', 'DoDriftCorrection', 'DoAccidentalCorrection', 'DoErrorEstimation', 'Window', 'Efficiency', 'RhoStart', 'Beta']
-    val: ndarray, int, or string
+    val : ndarray, int, or string
             The new value you want to the setting to be.
     """
     def setConfSetting(self, setting, val):
@@ -924,7 +924,7 @@ class Tomography():
         number of qubits you want for each measurement. Default will use the number of qubits in the current configurations.
 
     Returns
-    ----------
+    -------
     Tomoinput : ndarray
         The input data for the current tomography. This is what tomo_input will be set to. Example can be seen at top of page. 
         See getTomoInputTemplate() to get a template for this input.
