@@ -13,11 +13,40 @@ __author__ = 'Quoleon/Turro'
 """CHECK OUT THE REFERENCE PAGE ON OUR WEBSITE :
 http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
 
+'''
+    Comments Should be formatted like the following: 
+    (this comment is written in single quotes so that it is not picked up by the documentation generator).
+    
+    function(parameter 1, parameter 2)
+    Desc: This is where the description is written.
+
+    Parameters
+    ----------      (10 hyphens, one for each letter)
+    parameter 1 : type
+    description
+    parameter 2 : type
+    description
+                    (make sure the white spaces between are deleted all the way to the left side of the screen)
+    Returns
+    -------     (7 hyphens, one for each letter)
+    returnValue 1 : type
+    description
+    returnValue 2 : type
+    description
+
+    See Also
+     ------   (space, 6 hyphens, another space)
+    function1;function2;function2      (these should be the functionTitle without parentheses, as it appears on the Table of Contents
+'''
 
 """
     class Tomography()
     Desc: This is the main tomography object that the library is built around. The goal is to only have one tomography object and edit the
     configuration settings as you go.
+
+    See Also
+     ------ 
+    importEval;importConf;importData
     """
 class Tomography():
 
@@ -89,7 +118,7 @@ class Tomography():
     setting : string
         The setting you want to update.
         Possible values are ['NQubits', 'NDetectors', 'Crosstalk', 'Bellstate', 'DoDriftCorrection', 'DoAccidentalCorrection', 'DoErrorEstimation', 'Window', 'Efficiency', 'RhoStart', 'Beta']
-    val: ndarray, int, or string
+    val : ndarray, int, or string
             The new value you want to the setting to be.
     """
     def setConfSetting(self, setting, val):
@@ -109,9 +138,13 @@ class Tomography():
     Desc: Import a text file containing the configuration settings.
 
     Parameters
-    ----------
+     -------- 
     conftxt : string
         path to configuration file
+
+    See Also
+     ------ 
+    Conf File
     """
     def importConf(self, conftxt):
         conf = self.conf
@@ -135,6 +168,10 @@ class Tomography():
     fvalp : float
         Final value of the internal optimization function. Values greater than the number
         of measurements indicate poor agreement with a quantum state.
+
+    See Also
+     ------ 
+    Data File
    """
     def importData(self, datatxt):
         exec(compile(open(datatxt, "rb").read(), datatxt, 'exec'))
@@ -157,6 +194,10 @@ class Tomography():
     fvalp : float
         Final value of the internal optimization function. Values greater than the number
         of measurements indicate poor agreement with a quantum state.
+
+    See Also
+     ------ 
+    Eval File
     """
     def importEval(self, evaltxt):
         conf = self.conf
@@ -329,6 +370,10 @@ class Tomography():
     -------
     val : float
         value of the optimization function.
+
+    See Also
+     ------ 
+    maxlike_fitness_hedged
     """
     def maxlike_fitness(self, t, coincidences, accidentals, m, prediction):
 
@@ -367,6 +412,10 @@ class Tomography():
     -------
     val : float
         value of the optimization function.
+
+    See Also
+     ------ 
+    maxlike_fitness
     """
     def maxlike_fitness_hedged(self, t, coincidences, accidentals, m, prediction, bet):
 
@@ -513,7 +562,7 @@ class Tomography():
             linear_data = coincidences
 
         else:
-            n = np.int(np.sum(m_set))
+            n = int(np.sum(m_set))
             linear_measurements = measurements[(np.rot90(m_set == 1.0)[0])]
             linear_data = coincidences[(np.rot90(m_set == 1.0)[0])]
 
@@ -794,6 +843,10 @@ class Tomography():
     """
     getNumCoinc()
     Desc: Returns the number of coincidences per measurement for the current configurations.
+
+    See Also:
+     ------ 
+    getCoincidences
     """
     def getNumCoinc(self):
         if (self.conf['NDetectors'] == 2):
@@ -804,6 +857,10 @@ class Tomography():
     """
     getNumSingles()
     Desc: Returns the number of singles per measurement for the current configurations.
+
+    See Also
+     ------
+    getSingles
     """
     def getNumSingles(self):
         if (self.conf['NDetectors'] == 2):
@@ -814,6 +871,10 @@ class Tomography():
     """
     getCoincidences()
     Desc: Returns an array of counts for all the measurments.
+
+    See Also
+     ------ 
+    getNumCoinc
     """
     def getCoincidences(self):
         if (self.conf['NDetectors'] == 2):
@@ -824,6 +885,10 @@ class Tomography():
     """
     getSingles()
     Desc: Returns an array of singles for all the measurments.
+
+    See Also
+     ------ 
+    getNumSingles
     """
     def getSingles(self):
         if (self.conf['NDetectors'] == 2):
@@ -836,7 +901,7 @@ class Tomography():
     Desc: Returns an array of times for all the measurments.
     """
     def getTimes(self):
-        return self.tomo_input[:, 0]
+        return self.input[:, 0]
 
     """
         getMeasurements()
@@ -858,6 +923,10 @@ class Tomography():
     """
     getNumDetPerQubit()
     Desc: returns the number of detectors per qubit for the current configurations.
+
+    See Also
+     ------ 
+    getNumOfDetectorsTotal
     """
     def getNumDetPerQubit(self):
         return self.conf['NDetectors']
@@ -865,6 +934,10 @@ class Tomography():
     """
     getNumOfDetectorsTotal()
     Desc: Returns the total number of detectors for the current configurations.
+
+    See Also
+     ------ 
+    getNumDetPerQubit
     """
     def getNumOfDetectorsTotal(self):
         return self.getNumDetPerQubit()*self.getNumBits()
@@ -924,7 +997,7 @@ class Tomography():
         number of qubits you want for each measurement. Default will use the number of qubits in the current configurations.
 
     Returns
-    ----------
+    -------
     Tomoinput : ndarray
         The input data for the current tomography. This is what tomo_input will be set to. Example can be seen at top of page. 
         See getTomoInputTemplate() to get a template for this input.

@@ -211,13 +211,13 @@ def toDensity(psiMat):
         Lower t matrix.
     """
 def t_matrix(t):
-    d = np.int(np.sqrt(len(t)))
+    d = int(np.sqrt(len(t)))
 
     idx = 0
     cur_length = d
     tm = np.zeros([d, d])
 
-    for j in range(np.int(d)):
+    for j in range(int(d)):
         tm = tm + 1*np.diag(t[np.arange(idx, idx+cur_length)], -j)
         idx = idx + cur_length
 
@@ -327,6 +327,14 @@ def fidelity(state1, state2):
     -------
     val : float
         The calculated concurrence.
+    
+    Other Properties
+     -------------- 
+    entropy;linear_entropy;negativity;purity;tangle
+    
+    See Also
+     ------ 
+    err_functions;getProperties
     """
 def concurrence(rhog):
     if(rhog.shape[0]>2):
@@ -361,6 +369,14 @@ def concurrence(rhog):
     -------
     val : float
         The calculated tangle.
+        
+    Other Properties
+     -------------- 
+    entropy;linear_entropy;negativity;purity;concurrence
+    
+    See Also
+     ------ 
+    err_functions;getProperties
     """
 def tangle(rhog):
     if(rhog.shape[0]>2):
@@ -384,6 +400,14 @@ def tangle(rhog):
     -------
     val : float
         The calculated entropy.
+        
+    Other Properties
+     -------------- 
+    concurrence;linear_entropy;negativity;purity;tangle
+    
+    See Also
+     ------ 
+    err_functions;getProperties
     """
 def entropy(rhog):
     d = np.linalg.eig(rhog)[0]
@@ -409,6 +433,14 @@ def entropy(rhog):
     val : float
         The calculated linear entropy ranging from 0 to 1/(2^numQubits).
         A value of zero corresponds to a completly pure state.
+
+    Other Properties
+     -------------- 
+    entropy;concurrence;negativity;purity;tangle
+
+    See Also
+     ------ 
+    err_functions;getProperties
     """
 def linear_entropy(rhog):
 
@@ -428,6 +460,14 @@ def linear_entropy(rhog):
     -------
     val : float
         The calculated negativity.
+
+    Other Properties
+     -------------- 
+    entropy;linear_entropy;concurrence;purity;tangle
+
+    See Also
+     ------ 
+    err_functions;getProperties
     """
 def negativity(rhog):
     if(rhog.shape[0]>2):
@@ -455,6 +495,14 @@ def negativity(rhog):
     val : float
         The calculated purity ranging from 1/(2^numQubits) to 1.
         A value of one corresponds to a completly pure state.
+
+    Other Properties
+     -------------- 
+    entropy;linear_entropy;negativity;concurrence;tangle
+
+    See Also
+     ------ 
+    err_functions;getProperties
     """
 def purity(rhog):
     return np.real(np.trace(np.dot(rhog, rhog)))

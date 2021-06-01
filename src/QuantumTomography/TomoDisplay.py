@@ -30,6 +30,10 @@ http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
         Input pyplot for which the figures will be saved on to.
     customColor : boolean
         Specify if you want our custom colorMap. Default is true
+
+    See Also
+     ------ 
+    saveRhoImages
     """
 def makeRhoImages(p, plt_given, customColor = True):
     # Set up
@@ -126,6 +130,10 @@ def makeRhoImages(p, plt_given, customColor = True):
         Path to where you want your images to be saved.
     customColor : boolean
         Specify if you want our custom colorMap. Default is true.
+
+    See Also
+     ------ 
+    makeRhoImages
     """
 def saveRhoImages(p, pathToDirectory, customColor = True):
     # Set up
@@ -258,6 +266,10 @@ def printLastOutput(tomo, bounds = -1):
     -------
     res : string
         HTML code of the created table.
+
+    See Also
+     ------ 
+    propertiesToHTML
     """
 
 def matrixToHTML(M, printEigenVals = False):
@@ -304,6 +316,10 @@ def matrixToHTML(M, printEigenVals = False):
     -------
     res : string
         HTML code of the created table.
+
+    See Also
+     ------ 
+    matrixToHTML
     """
 
 def propertiesToHTML(vals):
