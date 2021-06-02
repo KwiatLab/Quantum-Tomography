@@ -61,11 +61,7 @@ def runTest(numQubits, nStates,
         tomo.conf['Efficiency'] = np.ones(2 ** numQubits)
 
         tomo_input = tomo.getTomoInputTemplate()
-
-        if (test2Det):
-            intensities = np.ones(tomo_input.shape[0] * 2 ** tomo.conf['NQubits'])
-        else:
-            intensities = np.ones(tomo_input.shape[0])
+        intensities = np.ones(tomo_input.shape[0])
         
         # set up measurements
         # measurements is an array of all the measurements for both classes mStates is only to help calculate Measurements
@@ -161,10 +157,10 @@ def runTest(numQubits, nStates,
             if (test2Det):
                 prob = np.zeros(2 ** numQubits, complex)
                 for j in range(0, 2 * numQubits):
-                    hBasis = np.zeros(2 ** numQubits, dtype=complex)
-                    hBasis[j] = 1
-                    prob[j] = np.dot(hBasis, newState)
-                    prob[j] = min(prob[j] * prob[j].conj(), .99999999)
+                    h_state = np.zeros((2 ** numQubits, 2 ** numQubits), dtype=complex)
+                    h_state[j, j] = 1
+                    prob[j] = np.trace(np.matmul(h_state, newState))
+                    prob[j] = min(np.real(prob[j]), .99999999)
                 prob = np.array(prob, dtype=float)
                 tomo_input[i,
                 2 * numQubits + 1: 2 ** numQubits + 2 * numQubits + 1] = np.random.multinomial(
@@ -260,7 +256,8 @@ def runTest(numQubits, nStates,
             tracebackError = "Low Fidelity of " + str(myFidel)
             
         if(saveData):
-            saveThisTomo(numQubits,method,myFidel,np.average(tomo.getCoincidences()),end_time-start_time,uniqueID(numQubits,errBounds,testAccCorr,test2Det,testCrossTalk, testBell,testDrift))
+            saveThisTomo(numQubits,method,myFidel,np.average(tomo.getCoincidences()),end_time-start_time,
+                         errBounds,testAccCorr,test2Det,testCrossTalk, testBell,testDrift)
 
     if(numErrors>0):
         print('At least 1 tomography failed with settings:' + uniqueID(numQubits,errBounds,testAccCorr,test2Det,testCrossTalk, testBell,testDrift))
@@ -337,8 +334,10 @@ def getOppositeState(psi):
 
 
 resultsFilePath = "Results/simulatedTomographyData.csv"
-def saveThisTomo(numQubits,method,myFidel,avgCoincPerMeas,totalTime,uniqueID):
-    dataRow = [numQubits,method,myFidel,avgCoincPerMeas,totalTime,uniqueID]
+def saveThisTomo(numQubits,method,myFidel,avgCoincPerMeas,totalTime, test_error, test_acc, test_det, test_cross, test_bell, test_drift):
+
+    errorOccurred = myFidel == -1
+    dataRow =   [numQubits,method,myFidel,avgCoincPerMeas,totalTime, errorOccurred, test_error, test_acc, test_det, test_cross, test_bell, test_drift]
     with open(resultsFilePath, "a",newline='') as csv_file:
         csv_writer = csv.writer(csv_file)
         csv_writer.writerow(dataRow)

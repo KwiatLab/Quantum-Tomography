@@ -1,1 +1,1 @@
-nqubits,method,fid_with_actual,avg_coinc_per_meas,total_time,settings_id
+nqubits,method,fid_with_actual,avg_coinc_per_meas,total_time,errorOccurred,test_error,test_acc,test_det,test_cross,test_bell,test_drift

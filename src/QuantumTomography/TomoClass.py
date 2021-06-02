@@ -205,10 +205,7 @@ class Tomography():
 
         # define a uniform intenstiy if not stated
         if (isinstance(intensities, int)):
-            if(self.conf['NDetectors'] == 2):
-                self.intensities = np.ones(tomo_input.shape[0]*2**self.conf['NQubits'])
-            else:
-                self.intensities = np.ones(tomo_input.shape[0])
+            self.intensities = np.ones(tomo_input.shape[0])
         elif(len(intensities.shape) == 1 and intensities.shape[0] == tomo_input.shape[0]):
             self.intensities = intensities
         else:
@@ -726,11 +723,6 @@ class Tomography():
         # settings
         settings = tomo_input[:, np.arange(n_singles + n_coinc + 1, len(tomo_input[0]))]
 
-        # Set Efficiency is not already defined
-        if (isinstance(self.conf['Efficiency'], int)):
-            self.conf['Efficiency'] = np.ones(2 ** nbits)
-        eff = self.conf['Efficiency'][0:2 ** nbits]
-
         # Set window is not already defined
         if (isinstance(self.conf['Window'], int)):
             self.conf['Window'] = np.ones(n_coinc)
@@ -811,6 +803,9 @@ class Tomography():
                 coincidences = coinc.reshape((np.prod(coinc.shape), 1))
                 acc = acc.reshape((np.prod(acc.shape), 1))
 
+
+        # If 2det/qubit then expand intensity array
+        self.intensities = np.kron(self.intensities,np.ones(2**nbits))
 
         return [coincidences, measurements_densities, measurements_pures, acc]
 
