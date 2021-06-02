@@ -140,7 +140,7 @@ def runTest(numQubits, nStates,
             tomo.conf['Crosstalk'] = cTalkMat
 
         # counts
-        numCounts = int(np.random.random() * 10 ** np.random.randint(4, 5))
+        numCounts = int(np.random.randint(np.ceil(5*2**numQubits),np.floor(50*2**numQubits)))
 
         # create random state
 
@@ -239,11 +239,9 @@ def runTest(numQubits, nStates,
             if (testBell):
                 tomo.getBellSettings(myDensity)
                 tomo.getProperties(myDensity)
-            if (myFidel < .8 and not testCrossTalk):
-                numErrors += 1
-                tracebackError += "-----------------------------\n"
-                tracebackError += "Low Fidelity of " + str(myFidel) +"\n"
-            
+            if (myFidel < .8 and not testCrossTalk and np.average(tomo.getCoincidences())> 10):
+                print("-----------------------------")
+                print("Low Fidelity of " + str(myFidel) + ". Avg counts per basis = " +str(np.average(tomo.getCoincidences())))
         except:
             myDensity = [[0]]
             inten = 0
