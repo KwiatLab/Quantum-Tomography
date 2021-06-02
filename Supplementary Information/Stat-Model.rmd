@@ -1,0 +1,95 @@
+---
+title: "Stat Model"
+output:
+    pdf_document:
+        extra_dependencies: ["braket","amsmath","mathtools","amssymb"]
+---
+\newcommand{\Like}{\mathcal{L}}
+\newcommand{\EX}{\mathbb{E}}
+
+# Introduction
+Given the measurement data we wish to determine the best possible estimate for the quantum state. We can use [Bayes' theorem](https://en.wikipedia.org/wiki/Bayes%27_theorem) to define the probability of the state given the data:
+
+$$\text{Pr}(\rho|\text{Data}) = \frac{\text{Pr}(\text{Data}|\rho)\text{Pr}(\rho)}{\text{Pr}(\text{Data})}$$
+
+We define these functions as the following
+
+- Posterior:  $\text{Pr}(\rho|\text{Data})$
+- Likelyhood: $\Like(\rho) = \text{Pr}(\text{Data}|\rho)$
+- Prior:      $\text{Pr}(\rho)$
+- Evidence:   $\text{Pr}(\text{Data})$
+
+# Estimators
+
+## Maximum Likelyhood Estimator(MLE)
+The MLE estimator is found by maximizing the log of the likelyhood function
+
+$$\rho_\text{MLE} =
+\operatorname*{argmin}_{\rho} \text{log}(\Like(\rho))$$
+
+## Bayesian Estimator(BME)
+The Bayes estimator is the expected value of the posterior
+
+$$\rho_\text{BME} =
+\EX[\rho|\text{Data}]$$
+
+$$\hat{\rho} = \int\rho\text{Pr}(\rho|Data) d\rho$$
+$$\hat{\rho} =  \int\rho \frac{\text{Pr}(\text{Data}|\rho)\text{Pr}(\rho)}{\text{Pr}(\text{Data})} d\rho$$
+We only care about an estimator that is proportional to the density matrix since we can normalize the matrix at the end.
+$$\hat{\rho} \propto  \int\rho\text{Pr}(\text{Data}|\rho)\text{Pr}(\rho) d\rho$$
+
+# Distribution of Counts
+The counts of the measurements can be modeled by a [Poisson Distrobution](https://en.wikipedia.org/wiki/Poisson_distribution). With high enough counts we can approximate this with a [Normal Distrobution](https://en.wikipedia.org/wiki/Normal_distribution) using the [Central Limit Theorm](https://en.wikipedia.org/wiki/Central_limit_theorem). A important fact of the poisson distrobution is the variance is equal to the mean.
+
+# 1det/qubit
+For each measurement we have 1 count number. We define the following variables:
+
+- $n_i$: Number of counts on measurement i
+    - Low number counts :  $n_i \sim \text{Poiss}(\mu_{i})$
+    - High number counts : $n_i \sim \text{Norm}(\mu_{i},\sigma_i)$
+- $\mu_i$: Expected number of counts on measurement i given $\rho$
+- $\sigma_i^2 = \mu_i$: Variance for the number of counts on measurement i given $\rho$
+
+From the [Photonic State Tomography](http://research.physics.illinois.edu/QI/Photonics/tomography-files/amo_tomo_chapter.pdf) paper:
+
+$$\mu_{i} = I_0 I_i \text{Tr}\left( M'_i \rho \right) + a_i$$
+
+### Variables:
+
+- $I_0$: Is the overall intensity
+- $I_i$: Is the relative intensity of measurement i given as an input. Default is 1
+- $M'_i$: Is measurement i with cross talk correction
+- $M_i$: Is measurement i
+- $T_i$ Is the time of measurement i given as an input. Default is 1
+- $S_{ik}$ Is the kth single count on measurement i given as an input. Default is 0
+- $W$ Is the coincidence window duration as an input. Default is 0
+- $a_i = \frac{W\prod_{k=1}^{2}S_{ik}}{T_i}$: Is the predicted accidental counts for measurement i.
+
+
+
+
+# 2det/qubit
+For each measurement a complete number of counts on all the possible outcomes. We define the following variables:
+
+- $n_{ij}$: Number of counts on measurement i
+    - Low number counts  :  ? todo: figure this out
+    - High number counts : $\vec{n_i} \sim \text{Multi-Norm}(\vec\mu_{i},\sigma_i)$
+- $\mu_{ij}$: Expected number of counts on the j basis of measurement i given $\rho$
+- $\Sigma_i = ?$: Variance matrix for the j basis of measurement i given $\rho$ todo: figure this out
+
+
+From the [Photonic State Tomography](http://research.physics.illinois.edu/QI/Photonics/tomography-files/amo_tomo_chapter.pdf) paper:
+
+$$\mu_{ij} = I_0 I_i E_j \text{Tr}\left( M'_{ij} \rho \right) + a_{ij}$$
+
+### Variables:
+
+- $I_0$: Is the overall intensity
+- $I_i$: Is the relative intensity of measurement i given as an input. Default is 1
+- $M'_{ij}$: Is the jth basis of measurement i with cross talk correction
+- $M_{ij}$: Is the jth basis of measurement i
+- $T_i$ Is the time of measurement i given as an input. Default is 1
+- $S_{ijk}$ Is the kth single count on measurement i given as an input. Default is 0
+- $W_j$ Is the coincidence window duration for the jth basis as an input. Default is 0
+- $E_j$ Is the relative efficiency on the jth basis
+- $a_{ij} = \frac{W_j\prod_{k=1}^{2}S_{ijk}}{T_i}$: Is the predicted accidental counts for measurement i.

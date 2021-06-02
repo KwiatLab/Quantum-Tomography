@@ -1,8 +1,9 @@
 from __future__ import print_function
 from .TomoFunctions import *
-from .TomoHelpers import *
+from .TomoClassHelpers import *
 import numpy as np
-from scipy.optimize import leastsq
+from scipy.optimize import leastsq,minimize
+from scipy.linalg import cholesky
 
 """
 Copyright 2020 University of Illinois Board of Trustees.
@@ -204,7 +205,10 @@ class Tomography():
 
         # define a uniform intenstiy if not stated
         if (isinstance(intensities, int)):
-            self.intensities = np.ones(tomo_input.shape[0])
+            if(self.conf['NDetectors'] == 2):
+                self.intensities = np.ones(tomo_input.shape[0]*2**self.conf['NQubits'])
+            else:
+                self.intensities = np.ones(tomo_input.shape[0])
         elif(len(intensities.shape) == 1 and intensities.shape[0] == tomo_input.shape[0]):
             self.intensities = intensities
         else:
@@ -220,19 +224,21 @@ class Tomography():
 
         # Currently linear tomography gets the phase wrong. So a temporary fix is to just transpose it.
         starting_matrix = starting_matrix.transpose()
+        starting_matrix = make_positive(starting_matrix)
+        starting_matrix = starting_matrix / np.trace(starting_matrix)
 
         if(method == "MLE"):
             # perform MLE tomography
-            [rhog, intensity, fvalp] = self.maximum_likelihood_tomography(starting_matrix, coincidences, measurements_densities, accidentals)
+            [rhog, intensity, fvalp] = self.tomography_MLE(starting_matrix, coincidences, measurements_densities, accidentals)
         else:
             # perform Bayesian tomography
-            [rhog, intensity, fvalp] = self.bayesian_tomography(starting_matrix, coincidences, measurements_densities,accidentals)
+            [rhog, intensity, fvalp] = self.tomography_BME(starting_matrix, coincidences, measurements_densities,accidentals)
         # save the results
         self.last_rho = rhog.copy()
         self.last_intensity = intensity
         self.last_fval = fvalp
 
-        # TODO: Figure out why this is here.
+        # Reset the monte carlo states after doing a tomography
         self.mont_carl_states = 0
 
         return [rhog, intensity, fvalp]
@@ -241,15 +247,15 @@ class Tomography():
         state_tomo(measurements, counts)
         todo:comment
         """
-    def state_tomo(self,measurements,counts,crosstalk=-1,efficiency=0,time=-1,singles=-1,window=0,error=0, intensities=-1):
+    def state_tomo(self,measurements,counts,crosstalk=-1,efficiency=0,time=-1,singles=-1,window=0,error=0, intensities=-1,method="MLE"):
         tomo_input = self.buildTomoInput(measurements, counts, crosstalk, efficiency, time, singles,window,error)
-        return self.state_tomography(tomo_input, intensities)
+        return self.state_tomography(tomo_input, intensities, method=method)
 
 
 
 
     """
-    maximum_likelihood_tomography(starting_matrix, coincidences, m, acc)
+    tomography_MLE(starting_matrix, coincidences, m, acc)
     Desc: Calculates the most likely state given the data.
 
     Parameters
@@ -272,9 +278,7 @@ class Tomography():
         Final value of the internal optimization function. Values greater than the number
         of measurements indicate poor agreement with a quantum state.
     """
-    def maximum_likelihood_tomography(self, starting_matrix, coincidences, m, accidentals):
-        starting_matrix = make_positive(starting_matrix)
-        starting_matrix = starting_matrix /np.trace(starting_matrix)
+    def tomography_MLE(self, starting_matrix, coincidences, m, accidentals):
         init_intensity = np.mean(np.multiply(coincidences, 1/self.intensities)) * (starting_matrix.shape[0])
         starting_tvals = density2t(starting_matrix)
         n_t = len(starting_tvals)
@@ -383,108 +387,252 @@ class Tomography():
 
         return val
 
+    def tomography_BME(self,starting_matrix, counts, measurements, accidentals):
 
-    # TODO add comments for bayesian tomography
-    def bayesian_tomography(self, starting_matrix, coincidences, m, accidentals):
-        starting_matrix = make_positive(starting_matrix)
-        starting_matrix = starting_matrix / np.trace(starting_matrix)
-        init_intensity = np.mean(np.multiply(coincidences, 1 / self.intensities)) * (starting_matrix.shape[0])
-        starting_tvals = density2t(starting_matrix)
-        n_t = len(starting_tvals)
-        # np.multiply(coincidences, self.intensities)
-        # t_to_density(starting_tvals)
-        starting_tvals = starting_tvals + 0.0001
-        starting_tvals = starting_tvals * np.sqrt(init_intensity)
+        # algorithm parameters
+        preallocationSize = 100000  # preallocate memory for speed
+        changeThreshold = 10 ** -9  # stopping condition threshold
+        numberOfPriorSamples = 5000  # number of samples to sample from the inital prior
+        updateFrequency = 1000  # controls how often the estimate of the posterior is updated, and how often stability is checked
+        max_iterations = 500  # The maximum number of times we update the posterior
 
-        coincidences = np.real(coincidences)
-        coincidences = coincidences.flatten()
+        # initialize and preallocatememory
+        d = starting_matrix.shape[0]
+        sectionLikelihood = 0
+        cumLikelihood = 0
+        i = 0
+        samplesToSC = 0
+        iterationCounter = 0
+        eps = 2.2204e-16
 
-        bet = self.conf['Beta']
-        # n_data = np.shape(coincidences)[0]
+        # Lists that are evaluated periodically
+        stabilityHistory = np.zeros(np.int(np.floor(preallocationSize)))
+        stoppingConditionTestLocations = np.zeros_like(stabilityHistory)
 
-        # redefine m
-        # measurement_basis =
+        # MonteCarlo States
+        randomStates = np.zeros((d, d, preallocationSize), dtype=complex)
+        randLikelihood = np.zeros(preallocationSize)
+        randomT = np.zeros((preallocationSize, d ** 2))
 
-        # Outputs needed
-        # final_tvals, fvalp
-        # final_tvals = leastsq(self.maxlike_fitness, np.real(starting_tvals), args=(coincidences, accidentals, m, prediction))[0]
-        # fvalp = np.sum(self.maxlike_fitness(final_tvals, coincidences, accidentals, m, prediction) ** 2)
+        # Current best guess for posterior parameters
+        meanT = np.zeros(d ** 2)
 
+        # estimate the state intensity for the guess state
+        norm = sum(counts / (len(counts) * d))
+        min_output = minimize(self.log_likelyhood, norm,
+                              args=(density2t(starting_matrix), counts, measurements, accidentals))
+        norm = min_output.x[0]
+        baseLike = min_output.fun
 
-        # Uniform Samples
-        #------------------
-        numMonteCarloSamples = 1000
+        # SAMPLE FROM PRIOR
+        # Samples are drawn from the ginibre distribution
+        stillUsingPrior = 1
+        while stillUsingPrior:
+            # expand memory in chunks if preallocation size is exceeded
+            if (i >= len(randLikelihood)):
+                randomStates = np.concatenate((randomStates, np.zeros((d, d, i))), axis=2)
+                randLikelihood = np.concatenate((randLikelihood, np.zeros(i)))
+                randomT = np.concatenate((randomT, np.zeros((i, d ** 2))), axis=0)
 
-        # Need to sample mixed states too. Currently only pure states are sampled for uniform
-        monteCarloStates = np.array([toDensity(random_pure_state(self.conf["NQubits"])) for x in range(0,numMonteCarloSamples)])
+            # Sample from the ginibre distribution
+            randP = random_density_state(self.conf['NQubits'])
+            randT = density2t(randP)
+            rLtemp = self.log_likelyhood(norm, randP, counts, measurements, accidentals)
 
-        mean_density = np.zeros_like(starting_matrix)
-        for state in monteCarloStates:
-            mean_density += state * self.prob_D_given_P_gaussian(state, coincidences,m,accidentals,self.intensities)
+            # if the range of likelihoods becomes toolarge, rescale
+            if rLtemp < baseLike:
+                oldBase = baseLike
+                baseLike = rLtemp
 
-        normalizationConstant = np.trace(mean_density)
-        mean_density = mean_density / normalizationConstant
-        mean_tvals = density2t(mean_density)
-        var_tvals = np.zeros((len(mean_tvals),len(mean_tvals)))
-        for state in monteCarloStates:
-            var_tvals += np.outer(density2t(state)-mean_tvals,density2t(state)-mean_tvals) * self.prob_D_given_P_gaussian(state, coincidences,m,accidentals,init_intensity)
+                # find the most optimal intensity for this best state
+                min_output = minimize(self.log_likelyhood, norm,
+                                      args=(randP, counts, measurements, accidentals))
+                norm = min_output.x[0]
 
-        var_tvals = var_tvals / normalizationConstant
+                # Rescale the log likelihoods
+                randLikelihood[:i] = randLikelihood[:i] + oldBase - baseLike
 
+            # Store sample state, tval, and its likelyhood
+            randLikelihood[i] = rLtemp - baseLike
+            randomStates[:, :, i] = randP
+            randomT[i, :] = randT
 
-        mean_density_normal = mean_density.copy()
+            # If we have met the min required amount of prior samples try to switching to the posterior estimate
+            if i >= numberOfPriorSamples:
+                # Calculate the covariance matrix for the posterior
+                normalizedLikelihood = normalizeExponentLikelihood(randLikelihood[:i + 1])
+                contributingParams = normalizedLikelihood > 0
+                nLMax = max(normalizedLikelihood)
+                nLNext = max(normalizedLikelihood[normalizedLikelihood < nLMax])
+                [meanT, covarianceMat] = weightedcov(randomT[:i + 1][contributingParams, :],
+                                                           normalizedLikelihood[contributingParams])
 
-        # Updated prior Samples
-        # ------------------
-        monteCarloTvals = np.random.multivariate_normal(mean_tvals, var_tvals, numMonteCarloSamples)
+                # switch to adaptive distributions only if the covariance matrix is valid
+                e = cholesky(covarianceMat, lower=True)
+                if all((e != 0).flatten()) or (nLNext / nLMax) < .0172:
+                    # Keep using the prior
+                    stillUsingPrior = 1
+                    numberOfPriorSamples = numberOfPriorSamples + updateFrequency
+                else:
+                    # Stop using the prior
+                    stillUsingPrior = 0
 
-        mean_density = np.zeros_like(starting_matrix)
-        for tvals in monteCarloTvals:
-            state = t_to_density(tvals)
-            mean_density += state * self.prob_D_given_P_gaussian(state, coincidences,m,accidentals,init_intensity)
+            # track the total likelihood and the section likelihood
+            # cumLikelihood=cumLikelihood+np.exp(-1*randLikelihood[i])
+            # sectionLikelihood = sectionLikelihood + np.exp(-1*randLikelihood[i])
 
-        normalizationConstant = np.trace(mean_density)
-        mean_density = mean_density / normalizationConstant
-        mean_tvals = density2t(mean_density)
-        var_tvals = np.zeros((len(mean_tvals), len(mean_tvals)))
-        for tvals in monteCarloTvals:
-            var_tvals += np.outer(tvals - mean_tvals,tvals - mean_tvals) * self.prob_D_given_P_gaussian(t_to_density(tvals), coincidences, m,accidentals,init_intensity)
+            # Increase iteration number
+            i = i + 1
 
-        var_tvals = var_tvals / normalizationConstant
+        # Calculate the running mean and likelihood with the states sampled from the prior
+        currMeanU = np.dot(randomStates[:, :, :i], np.exp(-1 * randLikelihood[:i]))
+        tr = np.trace(currMeanU)
+        if tr == 0:
+            currMean = np.zeros(d)
+        else:
+            currMean = currMeanU / tr
+        prevMean = currMean
 
+        # SAMPLE FROM POSTERIOR
+        # Samples by drawing tVals from a multivariate normal distro
+        stillUsingPosterior = 1
+        while stillUsingPosterior:
+            # expand memory in chunks if preallocation size is exceeded
+            if (i >= len(randLikelihood)):
+                randomStates = np.concatenate((randomStates, np.zeros((d, d, i))), axis=2)
+                randLikelihood = np.concatenate((randLikelihood, np.zeros(i)))
+                randomT = np.concatenate((randomT, np.zeros((i, d ** 2))), axis=0)
 
+            # Samples a drawn by sampling the tVals from a multivariate normal distro
+            randT = rand.multivariate_normal(meanT, covarianceMat)
+            randP = t_to_density(randT)
+            rLtemp = self.log_likelyhood(norm, randP, counts, measurements, accidentals)
 
-        intensity = init_intensity
-        intensity = np.float64(np.real(intensity))
-        fvalp = self.prob_D_given_P_gaussian(mean_density, coincidences,m,accidentals,init_intensity)
-        return [mean_density, intensity, fvalp]
+            # if the range of likelihoods becomes toolarge, rescale
+            if rLtemp < baseLike:
+                oldBase = baseLike
+                baseLike = rLtemp
 
-    # todo: comment
-    def prob_D_given_P_binomial(self,givenState,coincidences,measurments,accidentals):
-        total_prob = 1
-        for j in range(coincidences.shape[0]):
-            probMeas = np.real(np.trace(np.dot(measurments[:, :, j], givenState)))
-            nSamples = np.float64(np.real(self.intensities[j] * np.real(np.trace(np.dot(measurments[:, :, j], givenState))) + accidentals[j]))
+                # find the most optimal intensity for this best state
+                min_output = minimize(self.log_likelyhood, norm,
+                                      args=(randP, counts, measurements, accidentals))
+                norm = min_output.x[0]
 
-            total_prob *= probMeas ** Counts[x] * (1 - probMeas) ** (nSamples - Counts[x])
-        return 0
+                # Rescale the log likelihoods
+                randLikelihood[:i] = randLikelihood[:i] + oldBase - baseLike
 
-    # todo: comment
-    def prob_D_given_P_gaussian(self,givenState,coincidences,measurments,accidentals,intensities):
+                currMeanU = np.dot(randomStates[:, :, :i], np.exp(-1 * randLikelihood[:i]))
 
-        Averages = np.zeros(measurments.shape[2]) + 0j
+            # Store sample state, tval, and its likelyhood
+            randLikelihood[i] = rLtemp - baseLike
+            randomStates[:, :, i] = randP
+            randomT[i, :] = randT
+            # update the running mean and likelihood with the newly sampled state
+            currMeanU = currMeanU + randomStates[:, :, i] * np.exp(-1 * randLikelihood[i])
+            cumLikelihood = cumLikelihood + np.exp(-1 * randLikelihood[i])
+            sectionLikelihood = sectionLikelihood + np.exp(-1 * randLikelihood[i])
 
-        for j in range(coincidences.shape[0]):
-            # Averages[j] = inten0*np.float64(np.real(self.intensities[j] * np.real(np.trace(np.dot(measurments[:, :, j], givenState))) + accidentals[j]))
-            Averages[j] =  intensities[j]*np.trace(np.matmul(measurments[:, :, j],givenState))
-            if(Averages[j]==0):
-                Averages[j] = np.max([Averages[j], 0.0000001])
+            # Periodically perform the following tasks
+            if i % updateFrequency == 0:
+
+                # Update the posterior parameters
+                # -------------------------------
+
+                normalizedLikelihood = normalizeExponentLikelihood(randLikelihood[0:i + 1])
+                contributingParams = normalizedLikelihood > 0
+                nLMax = max(normalizedLikelihood)
+                nLNext = max(normalizedLikelihood[normalizedLikelihood < nLMax])
+                # What is adaptFactor????
+                # This was the previous line:
+                # covarianceMatNew = adaptFactor * weightedcov(randomT[contributingParams,:], normalizedLikelihood(contributingParams))
+                [meanTNew, covarianceMatNew] = weightedcov(randomT[:i + 1][contributingParams, :],
+                                                                 normalizedLikelihood[contributingParams])
+
+                # Update the posterior estimate only if the covariance matrix is valid
+                e = cholesky(covarianceMatNew, lower=True)
+                if all((e != 0).flatten()) and (nLNext / nLMax) > .00192:
+                    covarianceMat = covarianceMatNew
+                    meanT = meanTNew
+
+                # Check if the stopping condition is met
+                # --------------------------------------
+
+                tr = np.trace(currMeanU)
+                if tr == 0:
+                    currMean = np.zeros(d)
+                    stabilityHistory[iterationCounter] = float('inf')
+                    stoppingConditionTestLocations[iterationCounter] = i
+                else:
+                    currMean = currMeanU / tr
+
+                    # calculate the normalization factor based on the fraction
+                    # of total likelihood sampled in this iteration
+                    normFactor = np.floor(i / updateFrequency) * sectionLikelihood / cumLikelihood
+                    infidelity = (1 - np.real(fidelity(currMean, prevMean)))
+                    # ensure rounding never leads the infidelity to be negative
+                    if infidelity < 0:
+                        infidelity = eps
+
+                    stabilityHistory[iterationCounter] = infidelity / normFactor
+                    stoppingConditionTestLocations[iterationCounter] = i
+
+                    # Check if this is the first time we've calculated the posterior estimate
+                    if (iterationCounter > 0) and (stabilityHistory[iterationCounter] < changeThreshold):
+                        samplesToSC = i
+                        stillUsingPosterior = 0
+
+                    # IMPOSE STOPPING CONDITION IF TOO MANY ITERATIONS REACHED
+                    if (iterationCounter > max_iterations):
+                        print("MAX ITER REACHED - Array BME. Stability: " + str(stabilityHistory[iterationCounter]))
+                        samplesToSC = i
+                        stillUsingPosterior = 0
+
+                    # if we haven't reached stability, set the state to compare to next
+                    # iteration, and reset the section likelihood
+                    iterationCounter = iterationCounter + 1
+                    prevMean = currMean
+                    sectionLikelihood = 0
+
+            # Increase iteration number
+            i = i + 1
+        return [currMean, norm, samplesToSC]
+
+    # todo: comment block
+    def likelyhood(self,givenState,coincidences,measurments,accidentals,intensities):
+
+        Averages = np.zeros_like(coincidences)
+
+        for j in range(len(Averages)):
+            Averages[j] =  intensities[j]*np.trace(np.matmul(measurments[:, :, j],givenState)) + accidentals[j]
+            Averages[j] = np.max([Averages[j], 0.0000001])
 
         val = (Averages - coincidences)**2 / (2*Averages)
         val = np.float64(np.real(val))
         prob = np.exp(-1*np.sum(val),dtype=np.longdouble)
         return prob
 
+    def log_likelyhood(self, intensity, givenState, coincidences, measurements, accidentals):
+
+        if (len(givenState.shape) == 1):
+            givenState = t_to_density(givenState)
+
+        # todo : currently the intensity is sometimes being passed in as a 1x1 array
+        try:
+            intensity = intensity[0]
+        except:
+            pass
+
+        Averages = np.zeros_like(coincidences, dtype=np.float)
+        for j in range(len(Averages)):
+            Averages[j] = intensity * self.intensities[j] * np.real(np.trace(np.matmul(measurements[:, :, j], givenState))) + \
+                          accidentals[j]
+
+            # Avoid dividing by zero for pure states
+            if (Averages[j] == 0):
+                Averages[j] == 1
+
+        val = (Averages - coincidences) ** 2 / (2 * Averages)
+        return sum(val)
 
     """
     linear_tomography(coincidences, measurements)
@@ -817,9 +965,9 @@ class Tomography():
     """
     def getCoincidences(self):
         if (self.conf['NDetectors'] == 2):
-            return self.input[:, np.arange(2*self.conf['NQubits']+1, 2**self.conf['NQubits']+2*self.conf['NQubits']+1)]
+            return self.input[:, np.arange(2*self.conf['NQubits']+1, 2**self.conf['NQubits']+2*self.conf['NQubits']+1)].astype(float)
         else:
-            return self.input[:, self.conf['NQubits']+1]
+            return self.input[:, self.conf['NQubits']+1].astype(float)
 
     """
     getSingles()

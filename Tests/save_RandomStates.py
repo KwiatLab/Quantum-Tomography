@@ -18,5 +18,5 @@ http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
 
 "Attention! These tests run on the version that your environment uses. see readme for details"
 
-test1 = SaveRun([1, 0, 0, 1, 0, 0, 0, 25])
+test1 = SaveRun([1, 0, 0, 0, 0, 0, 0, 25])
 test1.run()

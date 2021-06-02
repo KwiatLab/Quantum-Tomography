@@ -1,5 +1,0 @@
----
-title: "Stat Model"
-output: pdf_document
----
-$$Y=x$$

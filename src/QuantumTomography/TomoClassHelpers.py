@@ -290,3 +290,33 @@ def getBellSettings_helper_bounds(rhop, rho, partsize_init, partsize, t, n):
         bmeans[m] = np.mean(belldata[:, m])
 
     return np.array([bellNames, berrors, bmeans], dtype = "O").transpose()
+
+# Calculates the weighted covariance. Used in bayesian tomography
+def weightedcov(samples,weights):
+
+    mean = np.zeros_like(samples[0])
+    for i in range(len(weights)):
+        mean += weights[i] * samples[i]
+
+    covariance = np.zeros_like(np.outer(mean, mean))
+    for i in range(len(weights)):
+        covariance += weights[i] * np.outer(mean - samples[i], mean - samples[i])
+
+    return [mean,covariance]
+
+# This function converts a list of loglikelihoods to normalized likelihoods
+def normalizeExponentLikelihood(likelihoods):
+    nFactor = min(likelihoods)
+    likelihoods = likelihoods - nFactor
+
+    # code before:
+    # for i in range(len(likelihoods)):
+    #     likelihoods[i] = np.exp(-1*likelihoods[i])
+    # norm = sum(likelihoods)
+    # fractionalLikelihood = likelihoods/ norm
+    # return fractionalLikelihood
+
+    # code after:
+    likelihoods = np.exp(-1 * likelihoods)
+    likelihoods /= sum(likelihoods)
+    return likelihoods

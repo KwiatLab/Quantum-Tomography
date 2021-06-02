@@ -2,6 +2,7 @@ from __future__ import print_function
 import scipy as sp
 import numpy as np
 from .TomoFunctionsHelpers import *
+import numpy.random as rand
 
 """
 Copyright 2020 University of Illinois Board of Trustees.
@@ -578,14 +579,69 @@ def performOperation(psi, g):
 
     Returns
     -------
-    pure_state : ndarray with shape = (2^numQubits, 2^numQubits)
+    pure_state : ndarray with length = 2^N
         The random quantum state.
     """
 def random_pure_state(N = 1):
     pure_state = np.zeros(2**N,dtype=complex)
     for x in range(len(pure_state)):
-        pure_state[x] = np.random.normal(0, 1)+np.random.normal(0, 1)*1j
+        pure_state[x] = rand.normal(0, 1)+rand.normal(0, 1)*1j
     length = np.inner(pure_state.conj(),pure_state)
     pure_state = pure_state/np.sqrt(length)
     length = np.inner(pure_state.conj(), pure_state)
     return pure_state
+
+
+"""
+    random_density_state(N)
+    Desc: Returns a random quantum density from an approximate uniform distribution across the space.
+
+    Parameters
+    ----------
+    N :int
+        The dimension of the quantum state
+
+    Returns
+    -------
+    pure_state : ndarray with shape = (2^N, 2^N)
+        The random quantum state.
+    """
+def random_density_state(N=1):
+    density = random_ginibre(2 ** N)
+    density = np.matmul(density, density.T.conj())
+    density = density / np.trace(density)
+    return density
+
+
+"""
+    random_ginibre(D)
+    Desc: Returns a random matrix from the Ginibre ensemble of size DxD. 
+    This is a complex matrix whos elements are a+ib | a,b iid. Norm(0,1)
+
+    Parameters
+    ----------
+    D :int
+        The dimension of the Matrix
+
+    Returns
+    -------
+    mat : ndarray with shape = (2^N, 2^N)
+        The random matrix
+    """
+def random_ginibre(D=2):
+    mat = np.zeros((D, D), dtype=complex)
+    for i in range(D):
+        for j in range(D):
+            mat[i, j] = rand.normal(0, 1) + rand.normal(0, 1) * 1j
+
+    return mat
+
+# todo : this comment block
+# performs the operation on the density matrix
+def densityOperation(psi, gate):
+    return np.matmul(np.matmul(gate, psi), np.conjugate(np.transpose(gate)))
+
+# todo : this comment block
+# performs the operation on the ket state
+def ketOperation(psi, gate):
+    return np.matmul(gate, psi)

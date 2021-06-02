@@ -1,12 +1,11 @@
 from __future__ import print_function
 import numpy as np
-import sys
-import matplotlib.pyplot as plt
 import QuantumTomography as qLib
-import os
 import traceback
 import warnings
 warnings.filterwarnings("ignore")
+import time
+import csv
 
 """
 Copyright 2020 University of Illinois Board of Trustees.
@@ -23,17 +22,22 @@ http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
 "Attention! These tests run on the version that your environment uses. see readme for details"
 
 # Returns 1 if success
-def runTest(args):
-    [numQubits, errBounds, testAccCorr, test2Det, testCrossTalk, testBell, testDrift, nStates] = args
-    success = False
+def runTest(numQubits, nStates,
+            errBounds = 0, 
+            testAccCorr = False, 
+            test2Det = False, 
+            testCrossTalk = False, 
+            testBell = False, 
+            testDrift = False,
+            saveData = False,
+            method='MLE'):
     try:
-        # set up the test
+        # Set up the test
         tomo = qLib.Tomography()
         AtotalCounts = np.zeros(nStates)
         myFidels = np.zeros(nStates)
 
         # set up settings for tomo class
-        intensity = np.ones(6 ** numQubits)
         tomo.conf['NQubits'] = numQubits
         tomo.conf['Properties'] = ['concurrence', 'tangle', 'entanglement', 'entropy', 'linear_entropy', 'negativity']
         if (testAccCorr):
@@ -58,6 +62,11 @@ def runTest(args):
 
         tomo_input = tomo.getTomoInputTemplate()
 
+        if (test2Det):
+            intensities = np.ones(tomo_input.shape[0] * 2 ** tomo.conf['NQubits'])
+        else:
+            intensities = np.ones(tomo_input.shape[0])
+        
         # set up measurements
         # measurements is an array of all the measurements for both classes mStates is only to help calculate Measurements
         if (test2Det):
@@ -118,15 +127,15 @@ def runTest(args):
                     temp = np.kron(temp, mStates[i][j])
                 measurements[i] = temp
     except:
-        print('Failed to set up Test: ' + uniqueID(args))
+        print('Failed to set up Test: ' + uniqueID(numQubits,errBounds,testAccCorr,test2Det,testCrossTalk, testBell,testDrift))
         print(traceback.format_exc())
         return 0
 
+    # Now that we have set everything up. Create states and do tomo
     numErrors = 0
     tracebackError = ""
-    # create states and do tomo
     for x in range(nStates):
-        # crostalk
+        # crosstalk
         cTalkMat = 0
         if (testCrossTalk):
             cTalkMat = np.random.rand(2 ** numQubits, 2 ** numQubits)
@@ -138,19 +147,17 @@ def runTest(args):
         numCounts = int(np.random.random() * 10 ** np.random.randint(4, 5))
 
         # create random state
-        state = np.random.beta(.5, .5, 2 ** numQubits) + 1j * np.random.beta(.5, .5, 2 ** numQubits)
-        state = state / np.sqrt(np.dot(state, state.conj()))
 
-        startingRho = qLib.toDensity(state)
+        startingRho = qLib.random_density_state(numQubits)
         # Testing setting
         for i in range(len(tomo_input)):
             # state goes through wave plates
-            newState = np.matmul(wavePlateArray[i], state)
+            newState = qLib.densityOperation(startingRho,wavePlateArray[i])
             # state goes through beam splitter and we measure the H counts
             if (testCrossTalk):
-                newState = np.matmul(cTalkMat, newState)
-            hBasis = np.zeros(2 ** numQubits, dtype=complex)
-            hBasis[0] = 1
+                newState = qLib.densityOperation(startingRho, cTalkMat)
+            h_state = np.zeros((2 ** numQubits,2 ** numQubits), dtype=complex)
+            h_state[0,0] = 1
             if (test2Det):
                 prob = np.zeros(2 ** numQubits, complex)
                 for j in range(0, 2 * numQubits):
@@ -163,8 +170,8 @@ def runTest(args):
                 2 * numQubits + 1: 2 ** numQubits + 2 * numQubits + 1] = np.random.multinomial(
                     numCounts, prob)
             else:
-                prob = np.dot(hBasis, newState)
-                prob = prob * prob.conj()
+                prob = np.trace(np.matmul(h_state, newState))
+                prob = np.real(prob)
                 tomo_input[i, numQubits + 1] = np.random.binomial(numCounts, min(prob, .99999999))
             # input[:, np.arange(2*n_qubit+ 1, 2**n_qubit+ 2*n_qubit+ 1)]: coincidences
 
@@ -212,30 +219,37 @@ def runTest(args):
             tomo_input[:, 0] = t
 
         if (testDrift):
-            intensity = np.random.random(intensity.shape) ** 2 * 10
+            intensities = np.random.random(intensities.shape) ** 2 * 10
             if (test2Det):
                 # tomo_input[:, np.arange(2*n_qubit+ 1, 2**n_qubit+ 2*n_qubit+ 1)]: coincidences
                 for k in range(tomo_input.shape[0]):
                     tomo_input[
                         k, np.arange(2 * numQubits + 1, 2 ** numQubits + 2 * numQubits + 1)] = int(
-                        (intensity[k]) * tomo_input[
+                        (intensities[k]) * tomo_input[
                             k, np.arange(2 * numQubits + 1, 2 ** numQubits + 2 * numQubits + 1)])
             else:
                 # tomo_input[:, n_qubit+ 1]: coincidences
                 for k in range(tomo_input.shape[0]):
-                    tomo_input[k, numQubits + 1] = int((intensity[k]) * tomo_input[k, numQubits + 1])
+                    tomo_input[k, numQubits + 1] = int((intensities[k]) * tomo_input[k, numQubits + 1])
+        
         # Do tomography with settings
         try:
-            myDensitie, inten, myfVal = tomo.state_tomography(tomo_input, intensity)
+            start_time = time.time()
+            myDensity, inten, myfVal = tomo.state_tomography(tomo_input, intensities,method=method)
+            end_time = time.time()
 
-            myFidel = qLib.fidelity(startingRho, myDensitie)
+            myFidel = qLib.fidelity(startingRho, myDensity)
+            myPurity = qLib.purity(myDensity)
             if (testBell):
-                tomo.getBellSettings(myDensitie)
-                tomo.getProperties(myDensitie)
+                tomo.getBellSettings(myDensity)
+                tomo.getProperties(myDensity)
+                
+            
         except:
-            myDensitie = [[0]]
+            myDensity = [[0]]
             inten = 0
             myfVal = -1
+            myPurity = -1
             myFidel = -1
             tracebackError = traceback.format_exc()
 
@@ -244,20 +258,26 @@ def runTest(args):
         if (myFidel < .8 and not testCrossTalk):
             numErrors -= 1
             tracebackError = "Low Fidelity of " + str(myFidel)
+            
+        if(saveData):
+            saveThisTomo(numQubits,method,myFidel,np.average(tomo.getCoincidences()),end_time-start_time,uniqueID(numQubits,errBounds,testAccCorr,test2Det,testCrossTalk, testBell,testDrift))
 
     if(numErrors>0):
-        FAIL = '\033[91m'
-        print('At least 1 tomography failed with settings:' + uniqueID(args))
+        print('At least 1 tomography failed with settings:' + uniqueID(numQubits,errBounds,testAccCorr,test2Det,testCrossTalk, testBell,testDrift))
         print(tracebackError)
         return 0
     else:
-        OKGREEN = '\033[92m'
-        print('Test ran with no issues: ' + uniqueID(args))
+        print('Test ran with no issues: ' + uniqueID(numQubits,errBounds,testAccCorr,test2Det,testCrossTalk, testBell,testDrift))
         return 1
 
 
-def uniqueID(args):
-    [numQubits, errBounds, testAccCorr, test2Det, testCrossTalk, testBell, testDrift, nStates] = args
+def uniqueID(numQubits,
+            errBounds, 
+            testAccCorr, 
+            test2Det, 
+            testCrossTalk, 
+            testBell, 
+            testDrift):
 
     s = "N" + str(numQubits) + "-"
     s +="e" + str(errBounds) + "-"
@@ -314,3 +334,11 @@ def getOppositeState(psi):
         return np.array([(2 ** (-1 / 2)), (2 ** (-1 / 2)) * 1j], dtype=complex)
     else:
         raise Exception('State Not Found getOppositeState')
+
+
+resultsFilePath = "Results/simulatedTomographyData.csv"
+def saveThisTomo(numQubits,method,myFidel,avgCoincPerMeas,totalTime,uniqueID):
+    dataRow = [numQubits,method,myFidel,avgCoincPerMeas,totalTime,uniqueID]
+    with open(resultsFilePath, "a",newline='') as csv_file:
+        csv_writer = csv.writer(csv_file)
+        csv_writer.writerow(dataRow)

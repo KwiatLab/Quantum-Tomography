@@ -12,5 +12,5 @@ dist
 __pycache__
 Debugger.py
 /Tests/Results/*
-!/Tests/Results/styleSheet.css
+!/Tests/Results/simulatedTomographyData.csv
 /Tests/save_IGNORE.py
