@@ -24,33 +24,39 @@ run and the results can be see in the actions tab"""
 class TestSum(unittest.TestCase):
     #    1 Qubit
     def test_N1_e0_a0_d0_c0_b0_dr0(self):
-        self.assertEqual(runTest([1, 0, 0, 0, 0, 0, 0, 20]), 1 )
+        self.assertEqual(runTest(1,50), 1 )
     def test_N1_e3_a0_d0_c0_b0_dr0(self):
-        self.assertEqual(runTest([1, 3, 0, 0, 0, 0, 0, 20]), 1 )
+        self.assertEqual(runTest(1,20,errBounds=4), 1 )
     def test_N1_e0_a0_d1_c0_b0_dr0(self):
-        self.assertEqual(runTest([1, 0, 0, 1, 0, 0, 0, 20]), 1 )
+        self.assertEqual(runTest(1,20,test2Det=1), 1 )
     def test_N1_e0_a0_d0_c1_b0_dr0(self):
-        self.assertEqual(runTest([1, 0, 0, 0, 1, 0, 0, 20]), 1 )
+        self.assertEqual(runTest(1,20,testCrossTalk=1), 1 )
     def test_N1_e0_a0_d0_c0_b0_dr1(self):
-        self.assertEqual(runTest([1, 0, 0, 0, 0, 1, 0, 20]), 1 )
+        self.assertEqual(runTest(1,20,testDrift=1), 1 )
 
     #     2 qubits
     def test_N2_e0_a0_d0_c0_b0_dr0(self):
-        self.assertEqual(runTest([2, 0, 0, 0, 0, 0, 0, 5]), 1 )
+        self.assertEqual(runTest(2,15), 1 )
     def test_N2_e3_a0_d0_c0_b0_dr0(self):
-        self.assertEqual(runTest([2, 3, 0, 0, 0, 0, 0, 5]), 1 )
+        self.assertEqual(runTest(2,5,errBounds=4), 1 )
     def test_N2_e0_a1_d0_c0_b0_dr0(self):
-        self.assertEqual(runTest([2, 0, 1, 0, 0, 0, 0, 5]), 1 )
+        self.assertEqual(runTest(2,5,testAccCorr=1), 1 )
     def test_N2_e0_a0_d1_c0_b0_dr0(self):
-        self.assertEqual(runTest([2, 0, 0, 1, 0, 0, 0, 5]), 1 )
+        self.assertEqual(runTest(2,5,test2Det=1), 1 )
     def test_N2_e0_a0_d0_c1_b0_dr0(self):
-        self.assertEqual(runTest([2, 0, 0, 0, 1, 0, 0, 5]), 1 )
+        self.assertEqual(runTest(2,5,testCrossTalk=1), 1 )
     def test_N2_e0_a0_d0_c0_b1_dr0(self):
-        self.assertEqual(runTest([2, 0, 0, 0, 0, 1, 0, 5]), 1 )
+        self.assertEqual(runTest(2,5,testBell=1), 1 )
     def test_N2_e0_a0_d0_c0_b0_dr1(self):
-        self.assertEqual(runTest([2, 0, 0, 0, 0, 1, 0, 5]), 1 )
+        self.assertEqual(runTest(2,5,testDrift=1), 1 )
+
+    # 3 qubits
     def test_N3_e0_a0_d0_c0_b0_dr0(self):
-        self.assertEqual(runTest([3, 0, 0, 0, 0, 1, 0, 5]), 1 )
+        self.assertEqual(runTest(3,1), 1 )
+
+
+    # Testing tomo functions
+
     def test_fidelity(self):
         for x in range(5):
             numQubits = np.random.randint(1, 4)

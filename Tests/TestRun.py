@@ -161,7 +161,7 @@ def runTest(numQubits, nStates,
                     h_state[j, j] = 1
                     prob[j] = np.trace(np.matmul(h_state, newState))
                     prob[j] = min(np.real(prob[j]), .99999999)
-                prob = np.array(prob, dtype=float)
+                prob = np.real(prob)
                 tomo_input[i,
                 2 * numQubits + 1: 2 ** numQubits + 2 * numQubits + 1] = np.random.multinomial(
                     numCounts, prob)
@@ -226,7 +226,7 @@ def runTest(numQubits, nStates,
             else:
                 # tomo_input[:, n_qubit+ 1]: coincidences
                 for k in range(tomo_input.shape[0]):
-                    tomo_input[k, numQubits + 1] = int((intensities[k]) * tomo_input[k, numQubits + 1])
+                    tomo_input[k, numQubits + 1] = int(np.real((intensities[k]) * tomo_input[k, numQubits + 1]))
         
         # Do tomography with settings
         try:
@@ -239,7 +239,10 @@ def runTest(numQubits, nStates,
             if (testBell):
                 tomo.getBellSettings(myDensity)
                 tomo.getProperties(myDensity)
-                
+            if (myFidel < .8 and not testCrossTalk):
+                numErrors += 1
+                tracebackError += "-----------------------------\n"
+                tracebackError += "Low Fidelity of " + str(myFidel) +"\n"
             
         except:
             myDensity = [[0]]
@@ -247,21 +250,22 @@ def runTest(numQubits, nStates,
             myfVal = -1
             myPurity = -1
             myFidel = -1
-            tracebackError = traceback.format_exc()
+            tracebackError += "-----------------------------\n"
+            tracebackError += traceback.format_exc() + "\n"
+            numErrors += 1
 
         AtotalCounts[x] = numCounts
         myFidels[x] = myFidel
-        if (myFidel < .8 and not testCrossTalk):
-            numErrors -= 1
-            tracebackError = "Low Fidelity of " + str(myFidel)
             
         if(saveData):
             saveThisTomo(numQubits,method,myFidel,np.average(tomo.getCoincidences()),end_time-start_time,
                          errBounds,testAccCorr,test2Det,testCrossTalk, testBell,testDrift)
 
     if(numErrors>0):
-        print('At least 1 tomography failed with settings:' + uniqueID(numQubits,errBounds,testAccCorr,test2Det,testCrossTalk, testBell,testDrift))
+        print('\nAt least 1 out of '+str(nStates)+' tomographys failed with settings:' + uniqueID(numQubits,errBounds,testAccCorr,test2Det,testCrossTalk, testBell,testDrift))
+        tracebackError += "-----------------------------\n\n"
         print(tracebackError)
+
         return 0
     else:
         print('Test ran with no issues: ' + uniqueID(numQubits,errBounds,testAccCorr,test2Det,testCrossTalk, testBell,testDrift))

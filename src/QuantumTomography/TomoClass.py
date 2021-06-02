@@ -216,13 +216,17 @@ class Tomography():
 
         # get the starting state from linear_tomography if not defined
         starting_matrix = self.conf['RhoStart']
-        if not starting_matrix:
-            starting_matrix = self.linear_tomography(coincidences, measurements_pures)[0]
 
-        # Currently linear tomography gets the phase wrong. So a temporary fix is to just transpose it.
-        starting_matrix = starting_matrix.transpose()
-        starting_matrix = make_positive(starting_matrix)
-        starting_matrix = starting_matrix / np.trace(starting_matrix)
+        try:
+            # todo: go over linear tomography. Clean it up. Figure out why it fails on the very rare occasion.
+            if not starting_matrix:
+                starting_matrix = self.linear_tomography(coincidences, measurements_pures)[0]
+            # Currently linear tomography gets the phase wrong. So a temporary fix is to just transpose it.
+            starting_matrix = starting_matrix.transpose()
+            starting_matrix = make_positive(starting_matrix)
+            starting_matrix = starting_matrix / np.trace(starting_matrix)
+        except:
+            raise RuntimeError('Failed to run linear Tomography')
 
         if(method == "MLE"):
             # perform MLE tomography
@@ -338,6 +342,10 @@ class Tomography():
         for j in range(len(prediction)):
             prediction[j] = np.float64(np.real(self.intensities[j] * np.real(np.trace(np.dot(m[:, :, j], rhog))) + accidentals[j]))
             prediction[j] = np.max([prediction[j], 0.01])
+            # Avoid dividing by zero for pure states
+            if (prediction[j] == 0):
+                prediction[j] == 1
+
         val = (prediction - coincidences) / np.sqrt(prediction)
 
         val = np.float64(np.real(val))
@@ -613,11 +621,11 @@ class Tomography():
         if (len(givenState.shape) == 1):
             givenState = t_to_density(givenState)
 
-        # todo : currently the intensity is sometimes being passed in as a 1x1 array
-        try:
-            intensity = intensity[0]
-        except:
-            pass
+        # # todo : currently the intensity is sometimes being passed in as a 1x1 array
+        # try:
+        #     intensity = intensity[0]
+        # except:
+        #     pass
 
         Averages = np.zeros_like(coincidences, dtype=np.float)
         for j in range(len(Averages)):
@@ -755,14 +763,12 @@ class Tomography():
 
         # This chunk of code handles edge cases of the input of the crosstalk matrix.
         # The important crosstalk matrix is the big_crosstalk
+        # Todo : this could use some clean up
         crosstalk = ctalk
         if np.ndim(ctalk) >= 3:
             for j in range(ctalk.shape[2]):
                 crosstalk[j] = ctalk[:, :, j]
-        if (ctalk == []):
-            big_crosstalk = np.eye(2 ** nbits)
-        else:
-            big_crosstalk = crosstalk[:]
+        big_crosstalk = crosstalk[:]
         big_crosstalk = big_crosstalk * np.outer(eff, np.ones(n_coinc))
 
         # Get measurements
@@ -805,7 +811,8 @@ class Tomography():
 
 
         # If 2det/qubit then expand intensity array
-        self.intensities = np.kron(self.intensities,np.ones(2**nbits))
+        if(ndet==2):
+            self.intensities = np.kron(self.intensities,np.ones(2**nbits))
 
         return [coincidences, measurements_densities, measurements_pures, acc]
 
@@ -960,9 +967,9 @@ class Tomography():
     """
     def getCoincidences(self):
         if (self.conf['NDetectors'] == 2):
-            return self.input[:, np.arange(2*self.conf['NQubits']+1, 2**self.conf['NQubits']+2*self.conf['NQubits']+1)].astype(float)
+            return np.real(self.input[:, np.arange(2*self.conf['NQubits']+1, 2**self.conf['NQubits']+2*self.conf['NQubits']+1)])
         else:
-            return self.input[:, self.conf['NQubits']+1].astype(float)
+            return np.real(self.input[:, self.conf['NQubits']+1])
 
     """
     getSingles()

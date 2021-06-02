@@ -22,38 +22,58 @@ run and the results can be see in the actions tab"""
 "Attention! These tests run on the version that your environment uses. see readme for details"
 
 class TestSum(unittest.TestCase):
-
-    # Testing random states
-
     #    1 Qubit
     def test_N1_e0_a0_d0_c0_b0_dr0(self):
-        self.assertEqual(runTest([1, 0, 0, 0, 0, 0, 0, 50]), 1 )
+        self.assertEqual(runTest(1, 250), 1)
+
     def test_N1_e3_a0_d0_c0_b0_dr0(self):
-        self.assertEqual(runTest([1, 3, 0, 0, 0, 0, 0, 50]), 1 )
+        self.assertEqual(runTest(1, 10, errBounds=10), 1)
+
     def test_N1_e0_a0_d1_c0_b0_dr0(self):
-        self.assertEqual(runTest([1, 0, 0, 1, 0, 0, 0, 50]), 1 )
+        self.assertEqual(runTest(1, 50, test2Det=1), 1)
+
     def test_N1_e0_a0_d0_c1_b0_dr0(self):
-        self.assertEqual(runTest([1, 0, 0, 0, 1, 0, 0, 50]), 1 )
+        self.assertEqual(runTest(1, 50, testCrossTalk=1), 1)
+
     def test_N1_e0_a0_d0_c0_b0_dr1(self):
-        self.assertEqual(runTest([1, 0, 0, 0, 0, 1, 0, 50]), 1 )
+        self.assertEqual(runTest(1, 50, testDrift=1), 1)
 
     #     2 qubits
     def test_N2_e0_a0_d0_c0_b0_dr0(self):
-        self.assertEqual(runTest([2, 0, 0, 0, 0, 0, 0, 10]), 1 )
+        self.assertEqual(runTest(2, 100), 1)
+
     def test_N2_e3_a0_d0_c0_b0_dr0(self):
-        self.assertEqual(runTest([2, 3, 0, 0, 0, 0, 0, 5]), 1 )
+        self.assertEqual(runTest(2, 15, errBounds=10), 1)
+
     def test_N2_e0_a1_d0_c0_b0_dr0(self):
-        self.assertEqual(runTest([2, 0, 1, 0, 0, 0, 0, 10]), 1 )
+        self.assertEqual(runTest(2, 25, testAccCorr=1), 1)
+
     def test_N2_e0_a0_d1_c0_b0_dr0(self):
-        self.assertEqual(runTest([2, 0, 0, 1, 0, 0, 0, 10]), 1 )
+        self.assertEqual(runTest(2, 25, test2Det=1), 1)
+
     def test_N2_e0_a0_d0_c1_b0_dr0(self):
-        self.assertEqual(runTest([2, 0, 0, 0, 1, 0, 0, 10]), 1 )
+        self.assertEqual(runTest(2, 25, testCrossTalk=1), 1)
+
     def test_N2_e0_a0_d0_c0_b1_dr0(self):
-        self.assertEqual(runTest([2, 0, 0, 0, 0, 1, 0, 10]), 1 )
+        self.assertEqual(runTest(2, 25, testBell=1), 1)
+
     def test_N2_e0_a0_d0_c0_b0_dr1(self):
-        self.assertEqual(runTest([2, 0, 0, 0, 0, 1, 0, 10]), 1 )
+        self.assertEqual(runTest(2, 25, testDrift=1), 1)
+
+    def test_N2_e0_a0_d0_c0_b0_dr1(self):
+        self.assertEqual(runTest(2, 25, test2Det1=1,testAccCorr=1), 1)
+
+    def test_N2_e0_a0_d0_c0_b0_dr1(self):
+        self.assertEqual(runTest(2, 25, test2Det=1, testAccCorr=1,testCrossTalk=1,testDrift=1), 1)
+
+    # 3 qubits
     def test_N3_e0_a0_d0_c0_b0_dr0(self):
-        self.assertEqual(runTest([3, 0, 0, 0, 0, 1, 0, 5]), 1 )
+        self.assertEqual(runTest(3, 10), 1)
+
+    # # todo: get this to work.
+    # def test_N3_e0_a1_d1_c1_b0_dr1(self):
+    #     self.assertEqual(runTest(3, 5,test2Det=1, testAccCorr=1,testCrossTalk=1,testDrift=1), 1)
+
 
     # Testing tomo functions
 
@@ -65,6 +85,7 @@ class TestSum(unittest.TestCase):
             density = qLib.toDensity(state)
             self.assertGreater(qLib.fidelity(state,state), .95)
             self.assertGreater(qLib.fidelity(density,density), .95)
+
     def test_purity_linEntropy_pure(self):
         pureStates = np.zeros((6, 2), dtype=complex)
         pureStates[0] = np.array([1, 0], dtype=complex)
