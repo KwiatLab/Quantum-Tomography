@@ -16,7 +16,7 @@ By default it returns true. Most likely if you are running tests you'll want to 
 
 class TestSum(unittest.TestCase):
     def test_main(self):
-        self.assertEqual(runTest(1,50,saveData=True), 1 )
+        self.assertEqual(runTest(1,50,saveData=True), 1)
 
 if __name__ == '__main__':
     unittest.main()
