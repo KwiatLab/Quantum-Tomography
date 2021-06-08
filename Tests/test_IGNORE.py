@@ -18,7 +18,7 @@ class TestSum(unittest.TestCase):
     def test_main(self):
         self.assertEqual(runTest(1,10), 1)
         self.assertEqual(runTest(2,10), 1)
-        self.assertEqual(runTest(1,10,method="BME"),1)
+        self.assertEqual(runTest(1,1,method="BME"),1)
 
 if __name__ == '__main__':
     unittest.main()
