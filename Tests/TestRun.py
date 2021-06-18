@@ -5,8 +5,7 @@ import traceback
 import warnings
 warnings.filterwarnings("ignore")
 import time
-import csv
-
+import os
 """
 Copyright 2020 University of Illinois Board of Trustees.
 Licensed under the terms of an MIT license
@@ -21,55 +20,69 @@ http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
 
 "Attention! These tests run on the version that your environment uses. see readme for details"
 
-# Returns 1 if success
-def runTest(numQubits, nStates,
-            errBounds = 0, 
-            testAccCorr = False, 
-            test2Det = False, 
-            testCrossTalk = False, 
-            testBell = False, 
-            testDrift = False,
-            saveData = False,
-            method='MLE'):
-    try:
-        # Set up the test
-        tomo = qLib.Tomography()
-        AtotalCounts = np.zeros(nStates)
-        myFidels = np.zeros(nStates)
 
-        # set up settings for tomo class
-        tomo.conf['NQubits'] = numQubits
-        tomo.conf['Properties'] = ['concurrence', 'tangle', 'entanglement', 'entropy', 'linear_entropy', 'negativity']
+"""
+runTests
+This function runs a number of tomography's and returns the objects as well as other things such as the original
+state and total time it took to run the tomography.
+
+Parameters
+----------
+randomStateDist : ["density","pure","bellstate"] or a ndarray
+    What distribution you want to use to create the random state. You can also give it a state to use
+    
+Returns
+-------
+BigListOfTomographies: list
+    Each row has the following form [Tomo_Object, Fidelity_with_Original, Original_Purity, Total_Time]
+
+"""
+def runTests(numQubits, nStates,
+             randomStateDist="density",errBounds=0,testAccCorr=False,test2Det=False,testCrossTalk=False,
+             testBell=False,testDrift=False,method='MLE'):
+    BigListOfTomographies = list()
+    numErrors = 0
+    for TomographyNumber in range(nStates):
+
+        ################################
+        # SETUP THE CLASS AND SETTINGS #
+        ################################
+
+        # Create Class
+        Tomo_Object = qLib.Tomography()
+        # set up settings for tomography class
+        Tomo_Object.conf['NQubits'] = numQubits
+        Tomo_Object.conf['Properties'] = ['concurrence', 'tangle', 'entanglement', 'entropy', 'linear_entropy', 'negativity']
         if (testAccCorr):
-            tomo.conf['DoAccidentalCorrection'] = 1
+            Tomo_Object.conf['DoAccidentalCorrection'] = 'yEs'
         else:
-            tomo.conf['DoAccidentalCorrection'] = 0
+            Tomo_Object.conf['DoAccidentalCorrection'] = "nO"
         if (test2Det):
-            tomo.conf['NDetectors'] = 2
+            Tomo_Object.conf['NDetectors'] = 2
         else:
-            tomo.conf['NDetectors'] = 1
+            Tomo_Object.conf['NDetectors'] = 1
         if (not testCrossTalk):
-            tomo.conf['Crosstalk'] = np.identity(2 ** numQubits)
-        tomo.conf['UseDerivative'] = 0
-        tomo.conf['Bellstate'] = testBell
-        tomo.conf['DoErrorEstimation'] = errBounds
+            Tomo_Object.conf['Crosstalk'] = np.identity(2 ** numQubits)
+        Tomo_Object.conf['UseDerivative'] = "TrUe"
+        Tomo_Object.conf['Bellstate'] = testBell
+        Tomo_Object.conf['DoErrorEstimation'] = errBounds
         if (testDrift):
-            tomo.conf['DoDriftCorrection'] = 1
+            Tomo_Object.conf['DoDriftCorrection'] = "T"
         else:
-            tomo.conf['DoDriftCorrection'] = 0
-        tomo.conf['Window'] = 1
-        tomo.conf['Efficiency'] = np.ones(2 ** numQubits)
+            Tomo_Object.conf['DoDriftCorrection'] = "F"
+        Tomo_Object.conf['Window'] = 1
+        Tomo_Object.conf['Efficiency'] = np.ones(2 ** numQubits)
 
-        tomo_input = tomo.getTomoInputTemplate()
+        tomo_input = Tomo_Object.getTomoInputTemplate()
         intensities = np.ones(tomo_input.shape[0])
-        
+
         # set up measurements
         # measurements is an array of all the measurements for both classes mStates is only to help calculate Measurements
         if (test2Det):
             measurements = np.zeros((len(tomo_input), 2 ** numQubits, 2 ** (numQubits)), dtype=complex)
         else:
             measurements = np.zeros((len(tomo_input), 2 ** numQubits), dtype=complex)
-        if (tomo.getNumDetPerQubit() == 1):
+        if (Tomo_Object.getNumDetPerQubit() == 1):
             # input[:, np.arange(n_qubit+ 2, 3*n_qubit+ 2)]: measurements
             mStates = tomo_input[:, np.arange(numQubits + 2, 3 * numQubits + 2)]
         else:
@@ -122,38 +135,52 @@ def runTest(numQubits, nStates,
                 for j in range(1, len(mStates[i])):
                     temp = np.kron(temp, mStates[i][j])
                 measurements[i] = temp
-    except:
-        print('Failed to set up Test: ' + uniqueID(numQubits,errBounds,testAccCorr,test2Det,testCrossTalk, testBell,testDrift))
-        print(traceback.format_exc())
-        return 0
 
-    # Now that we have set everything up. Create states and do tomo
-    numErrors = 0
-    tracebackError = ""
-    for x in range(nStates):
+        ####################################
+        # CREATE STATE AND SIM PROJECTIONS #
+        ####################################
+
+        # create random state
+        if isinstance(randomStateDist,str):
+            if randomStateDist == "density":
+                startingRho = qLib.random_density_state(numQubits)
+            elif randomStateDist == "pure":
+                startingRho = qLib.random_pure_state(numQubits)
+            elif randomStateDist == "bellstate":
+                startingRho = qLib.random_bell_state(numQubits)
+            else:
+                raise ValueError('"'+ randomStateDist +'" is not a valid state distribution. '
+                                'Possible values are ["density","pure","bellstate"]')
+        elif isinstance(randomStateDist, np.ndarray):
+                if abs(np.log2(randomStateDist.shape[0])-numQubits) < 10**-6:
+                    if len(randomStateDist.shape) ==1:
+                        startingRho = qLib.toDensity(randomStateDist)
+                    else:
+                        startingRho = randomStateDist
+                else:
+                    raise ValueError('"' + str(randomStateDist) + '" does not have the right dimensions for '+str(numQubits)+' Qubits.')
+        else:
+            raise ValueError('"' + str(randomStateDist) + '" is not a valid state distribution.')
         # crosstalk
         cTalkMat = 0
         if (testCrossTalk):
             cTalkMat = np.random.rand(2 ** numQubits, 2 ** numQubits)
             for i in range(2 ** numQubits):
                 cTalkMat[:, i] = cTalkMat[:, i] / (sum(cTalkMat[:, i] + 0 * np.random.random()))
-            tomo.conf['Crosstalk'] = cTalkMat
+            Tomo_Object.conf['Crosstalk'] = cTalkMat
 
         # counts
-        numCounts = int(np.random.randint(np.ceil(5*2**numQubits),np.floor(50*2**numQubits)))
+        numCounts = int(np.random.randint(np.ceil(5 * 2 ** numQubits), np.floor(50 * 2 ** numQubits)))
 
-        # create random state
-
-        startingRho = qLib.random_density_state(numQubits)
         # Testing setting
         for i in range(len(tomo_input)):
             # state goes through wave plates
-            newState = qLib.densityOperation(startingRho,wavePlateArray[i])
+            newState = qLib.densityOperation(startingRho, wavePlateArray[i])
             # state goes through beam splitter and we measure the H counts
             if (testCrossTalk):
                 newState = qLib.densityOperation(startingRho, cTalkMat)
-            h_state = np.zeros((2 ** numQubits,2 ** numQubits), dtype=complex)
-            h_state[0,0] = 1
+            h_state = np.zeros((2 ** numQubits, 2 ** numQubits), dtype=complex)
+            h_state[0, 0] = 1
             if (test2Det):
                 prob = np.zeros(2 ** numQubits, complex)
                 for j in range(0, 2 * numQubits):
@@ -201,7 +228,7 @@ def runTest(numQubits, nStates,
                 index = index * scalerIndex + additiveIndex
                 index = np.array(index, dtype=int)
                 acc[:, j] = np.prod(np.real(sings[:, tuple(index)]), axis=1) * (window[j] * 1e-9 / np.real(t)) ** (
-                            numQubits - 1)
+                        numQubits - 1)
             if (acc.shape != coinc.shape):
                 acc = acc[:, 0]
             if (test2Det):
@@ -211,7 +238,7 @@ def runTest(numQubits, nStates,
             else:
                 tomo_input[:, np.arange(1, numQubits + 1)] = sings
                 tomo_input[:, numQubits + 1] = coinc + acc
-            tomo.conf['Window'] = window
+            Tomo_Object.conf['Window'] = window
             tomo_input[:, 0] = t
 
         if (testDrift):
@@ -227,57 +254,101 @@ def runTest(numQubits, nStates,
                 # tomo_input[:, n_qubit+ 1]: coincidences
                 for k in range(tomo_input.shape[0]):
                     tomo_input[k, numQubits + 1] = int(np.real((intensities[k]) * tomo_input[k, numQubits + 1]))
-        
+
         # Do tomography with settings
         try:
             start_time = time.time()
-            myDensity, inten, myfVal = tomo.state_tomography(tomo_input, intensities,method=method)
+            myDensity, inten, myfVal = Tomo_Object.state_tomography(tomo_input, intensities, method=method)
             end_time = time.time()
 
-            myFidel = qLib.fidelity(startingRho, myDensity)
-            myPurity = qLib.purity(myDensity)
+            Fidelity_with_Original = qLib.fidelity(startingRho, myDensity)
+            Original_Purity = qLib.purity(startingRho)
             if (testBell):
-                tomo.getBellSettings(myDensity)
-                tomo.getProperties(myDensity)
-            if (myFidel < .8 and not testCrossTalk and np.average(tomo.getCoincidences())> 10):
+                Tomo_Object.getBellSettings(myDensity)
+            if (Fidelity_with_Original < .8 and not testCrossTalk and np.average(Tomo_Object.getCoincidences()) > 10):
                 print("-----------------------------")
-                print("Low Fidelity of " + str(myFidel) + ". Avg counts per basis = " +str(np.average(tomo.getCoincidences())))
+                print("Low Fidelity of " + str(Fidelity_with_Original) + ". Avg counts per basis = " + str(
+                    np.average(Tomo_Object.getCoincidences())))
         except:
-            myDensity = [[0]]
-            inten = 0
-            myfVal = -1
-            myPurity = -1
-            myFidel = -1
-            tracebackError += "-----------------------------\n"
-            tracebackError += traceback.format_exc() + "\n"
+            Original_Purity = -1
+            Fidelity_with_Original = -1
+            print("-----------------------------\n")
+            print(traceback.format_exc() + "\n")
             numErrors += 1
-
-        AtotalCounts[x] = numCounts
-        myFidels[x] = myFidel
+            end_time = time.time()
             
-        if(saveData):
-            saveThisTomo(numQubits,method,myFidel,np.average(tomo.getCoincidences()),end_time-start_time,
-                         errBounds,testAccCorr,test2Det,testCrossTalk, testBell,testDrift)
+        BigListOfTomographies.append([Tomo_Object, Fidelity_with_Original, Original_Purity, end_time - start_time])
 
-    if(numErrors>0):
-        print('\nAt least 1 out of '+str(nStates)+' tomographys failed with settings:' + uniqueID(numQubits,errBounds,testAccCorr,test2Det,testCrossTalk, testBell,testDrift))
-        tracebackError += "-----------------------------\n\n"
-        print(tracebackError)
-
-        return 0
+    if (numErrors > 0):
+        print("-----------------------------")
+        print('\nAt least 1 out of ' + str(nStates) + ' tomographys failed with settings:' + uniqueID(Tomo_Object) + "\n")
     else:
-        print('Test ran with no issues: ' + uniqueID(numQubits,errBounds,testAccCorr,test2Det,testCrossTalk, testBell,testDrift))
-        return 1
+        print('Test ran with no issues: ' + uniqueID(Tomo_Object))
+    return BigListOfTomographies
 
 
-def uniqueID(numQubits,
-            errBounds, 
-            testAccCorr, 
-            test2Det, 
-            testCrossTalk, 
-            testBell, 
-            testDrift):
+# Returns 1 if success
+def saveRunsGeneral(numQubits, nStates,resultsFilePath="Results/results_GeneralData.csv",
+                 randomStateDist="density", errBounds=0, testAccCorr=False, test2Det=False, testCrossTalk=False,
+                 testBell=False, testDrift=False, saveData=False, method='MLE'):
 
+    Tomographys = runTests(numQubits, nStates,randomStateDist=randomStateDist, errBounds=errBounds, testAccCorr=testAccCorr, 
+                           test2Det=test2Det, testCrossTalk=testCrossTalk,testBell=testBell, testDrift=testDrift, method=method)
+
+    if os.path.isfile(resultsFilePath):
+        printHeader=False
+    else:
+        printHeader=True
+
+    # Open a file with access mode 'a'
+    file_object = open(resultsFilePath, 'a')
+    # Print details of each tomography to csv
+    for t in Tomographys:
+        [Tomo_Object, Fidelity_with_Original, Original_Purity,Total_Time] = t
+        # Set up dictionary
+        dataRow = dict()
+        dataRow['numQubits'] = Tomo_Object.conf["NQubits"]
+        dataRow['method'] = Tomo_Object.conf["Method"]
+        dataRow['Fidelity_with_Original'] = Fidelity_with_Original
+        dataRow['avgCoincPerMeas'] = np.average(Tomo_Object.getCoincidences())
+        dataRow['Total_Time'] = Total_Time
+        dataRow['errorOccurred'] = Fidelity_with_Original == -1
+        dataRow['test_error'] = Tomo_Object.conf["DoErrorEstimation"]
+        dataRow['test_acc'] = Tomo_Object.conf["DoAccidentalCorrection"]
+        dataRow['test_det'] = Tomo_Object.conf["NDetectors"]
+        dataRow['test_cross'] = np.any(Tomo_Object.conf["Crosstalk"] - np.eye(Tomo_Object.conf["Crosstalk"].shape[0]) > 1e-6)
+        dataRow['test_bell'] = Tomo_Object.conf["Bellstate"]
+        dataRow['test_drift'] = Tomo_Object.conf["DoDriftCorrection"]
+        dataRow['Original_Purity'] = Original_Purity
+
+        if printHeader:
+            TORREPLACE = ""
+            for key in dataRow.keys():
+                TORREPLACE += key + ","
+            printHeader = False
+        else:
+            TORREPLACE=","
+
+        TORREPLACE= TORREPLACE[:-1] +"\n"
+        for key in dataRow.keys():
+            TORREPLACE += str(dataRow[key])+","
+        TORREPLACE = TORREPLACE[:-1]
+
+        # Append at the end of file
+        file_object.write(TORREPLACE)
+    # Close the file
+    file_object.close()
+
+def uniqueID(Tomo_Object):
+    numQubits = Tomo_Object.conf["NQubits"]
+    method = Tomo_Object.conf["Method"]
+    errBounds = Tomo_Object.conf["DoErrorEstimation"]
+    testAccCorr = Tomo_Object.conf["DoAccidentalCorrection"]
+    test2Det = Tomo_Object.conf["NDetectors"]
+    testCrossTalk = np.any(Tomo_Object.conf["Crosstalk"] - np.eye(Tomo_Object.conf["Crosstalk"].shape[0]) > 1e-6)
+    testBell = Tomo_Object.conf["Bellstate"]
+    testDrift = Tomo_Object.conf["DoDriftCorrection"]
+    
     s = "N" + str(numQubits) + "-"
     s +="e" + str(errBounds) + "-"
     if (testAccCorr):
@@ -300,20 +371,8 @@ def uniqueID(numQubits,
         s+="dr1"
     else:
         s += "dr0"
+    s += "-" + method
     return s
-
-
-class SetUpError(Exception):
-    def __init__(self):
-        pass
-    def __str__(self):
-        return "Error Setting up a test"
-
-class TomographyError(Exception):
-    def __init__(self):
-        pass
-    def __str__(self):
-        return "Error running tomography on a data set"
 
 def getOppositeState(psi):
     # Horizontal
@@ -333,13 +392,3 @@ def getOppositeState(psi):
         return np.array([(2 ** (-1 / 2)), (2 ** (-1 / 2)) * 1j], dtype=complex)
     else:
         raise Exception('State Not Found getOppositeState')
-
-
-resultsFilePath = "Results/simulatedTomographyData.csv"
-def saveThisTomo(numQubits,method,myFidel,avgCoincPerMeas,totalTime, test_error, test_acc, test_det, test_cross, test_bell, test_drift):
-
-    errorOccurred = myFidel == -1
-    dataRow =   [numQubits,method,myFidel,avgCoincPerMeas,totalTime, errorOccurred, test_error, test_acc, test_det, test_cross, test_bell, test_drift]
-    with open(resultsFilePath, "a",newline='') as csv_file:
-        csv_writer = csv.writer(csv_file)
-        csv_writer.writerow(dataRow)

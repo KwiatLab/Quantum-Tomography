@@ -55,3 +55,17 @@ def random_ginibre(D=2):
             mat[i, j] = rand.normal(0, 1) + rand.normal(0, 1) * 1j
 
     return mat
+
+
+def phaserToComplex(phaser):
+    Magn = phaser[0]
+    Phase = phaser[1]
+    complex = Magn*(np.cos(Phase) +  1j*np.sin(Phase))
+    return complex
+
+def complexToPhaser(complex):
+    Magn = np.absolute(complex)
+    Phase = np.angle(complex)
+    if(Phase<0):
+        Phase += 2*np.pi
+    return np.array([Magn,Phase])

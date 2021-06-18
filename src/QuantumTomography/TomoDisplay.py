@@ -7,6 +7,9 @@ import matplotlib as mpl
 from mpl_toolkits.mplot3d import Axes3D
 import sys
 from .TomoDisplayHelpers import *
+from .TomoFunctions import removeGlobalPhase
+from .Utilities import getValidFileName
+from matplotlib.colors import LinearSegmentedColormap
 
 """
 Copyright 2020 University of Illinois Board of Trustees.
@@ -124,10 +127,8 @@ def makeRhoImages(p, plt_given, customColor = True):
         The density matrix you want to create plots of.
     pathToDirectory : string
         Path to where you want your images to be saved.
-    customColor : boolean
-        Specify if you want our custom colorMap. Default is true.
     """
-def saveRhoImages(p, pathToDirectory, customColor = True):
+def saveRhoImages(p, pathToDirectory):
     # Set up
     numQubits = int(np.log2(p.shape[0]))
     xpos = np.zeros_like(p.flatten(), dtype = float)
@@ -142,19 +143,16 @@ def saveRhoImages(p, pathToDirectory, customColor = True):
     dy = .9 * np.ones_like(ypos)
     # custom color map
     n_bin = 100
-    if (customColor):
-        from matplotlib.colors import LinearSegmentedColormap
-        cmap_name = 'my_list'
-        colors = [(1 / 255.0, 221 / 255.0, 137 / 255.0),
-                  (32 / 255.0, 151 / 255.0, 138 / 255.0),
-                  (53 / 255.0, 106 / 255.0, 138 / 255.0),
-                  (86 / 255.0, 33 / 255.0, 139 / 255.0),
-                  (131 / 255.0, 75 / 255.0, 114 / 255.0),
-                  (173 / 255.0, 114 / 255.0, 90 / 255.0),
-                  (253 / 255.0, 187 / 255.0, 45 / 255.0)]
-        colorMap = LinearSegmentedColormap.from_list(cmap_name, colors, N = n_bin)
-    else:
-        colorMap = plt.cm.jet
+    cmap_name = 'my_list'
+    colors = [(1 / 255.0, 221 / 255.0, 137 / 255.0),
+              (32 / 255.0, 151 / 255.0, 138 / 255.0),
+              (53 / 255.0, 106 / 255.0, 138 / 255.0),
+              (86 / 255.0, 33 / 255.0, 139 / 255.0),
+              (131 / 255.0, 75 / 255.0, 114 / 255.0),
+              (173 / 255.0, 114 / 255.0, 90 / 255.0),
+              (253 / 255.0, 187 / 255.0, 45 / 255.0)]
+    colorMap = LinearSegmentedColormap.from_list(cmap_name, colors, N = n_bin)
+
     norm = mpl.colors.Normalize(vmin = -1, vmax = 1)
 
     tickBase = ["H", "V"]
@@ -206,6 +204,7 @@ def saveRhoImages(p, pathToDirectory, customColor = True):
     cb1 = mpl.colorbar.ColorbarBase(ax1, cmap = colorMap,
                                     norm = norm,
                                     orientation = 'horizontal')
+
     plt.savefig(pathToDirectory + "/rhobarImag.png", bbox_inches = 'tight', pad_inches = 0)
 
 """
@@ -223,6 +222,7 @@ def saveRhoImages(p, pathToDirectory, customColor = True):
     """
 def printLastOutput(tomo, bounds = -1):
     p = np.array(tomo.last_rho.copy(), dtype = "O")
+    raise DeprecationWarning('As of v1.0.3.7 printLastOutput() can be called using the Tomography Object Class.')
     print("State: ")
     mx = 0
     for i in range(p.shape[0]):
@@ -259,7 +259,6 @@ def printLastOutput(tomo, bounds = -1):
     res : string
         HTML code of the created table.
     """
-
 def matrixToHTML(M, printEigenVals = False):
     s = np.shape(M)
     res = '<table class="KwiatDataMatrix" style = \"border: 1px solid black;border-collapse: collapse;font-size: 15px; table-layout:fixed;width:100%;margin-top: 25px;\">'
@@ -305,7 +304,6 @@ def matrixToHTML(M, printEigenVals = False):
     res : string
         HTML code of the created table.
     """
-
 def propertiesToHTML(vals):
     f = '<h3 >Properties of Rho</h3><table style = \"width:60%;margin-top:10px;font-size: 15px;padding-bottom:5px;float:none;\"><tr><td style = "font-size: 20;font-weight: 1000;color: rebeccapurple;">Property</td><td  style = "font-size: 20;font-weight: 1000;color: rebeccapurple;padding-bottom:5px;">Value</td>'
     if(vals.shape[1] < 3):
@@ -324,3 +322,9 @@ def propertiesToHTML(vals):
             f += '</tr>'
     f += "</table>"
     return f
+
+
+# todo : this comment block
+def stateToString(x):
+    x = removeGlobalPhase(x)
+    return floatToString(x[0])+"|H> + "+floatToString(x[1])+"|V>"

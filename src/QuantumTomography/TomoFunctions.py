@@ -603,14 +603,64 @@ def random_pure_state(N = 1):
 
     Returns
     -------
-    pure_state : ndarray with shape = (2^N, 2^N)
+    density : ndarray with shape = (2^N, 2^N)
         The random quantum state.
     """
 def random_density_state(N=1):
     density = random_ginibre(2 ** N)
     density = np.matmul(density, density.T.conj())
-    density = density / np.trace(density)
+    if np.trace(density).real<10**-6:
+        # If trace is close to 0 then resample
+        return random_density_state(N)
+    else:
+        density = density / np.trace(density)
     return density
+
+"""
+    random_bell_state(N)
+    Desc: Randomly returns one of the 4 bell state. 
+    For 1 qubits on of the standard basis states is returned. For states with dimension
+    greater then 2 the Greenberger–Horne–Zeilinger state is returned with a random phase.
+
+    Parameters
+    ----------
+    N :int
+        The dimension of the quantum state
+
+    Returns
+    -------
+    pure_state : ndarray with shape = (2^N, 2^N)
+        The random quantum state.
+    """
+def random_bell_state(N=2):
+    if N ==1:
+        whichState = rand.randint(0,6)
+        if whichState == 0:
+            return np.array([1,0],dtype=complex)
+        elif whichState == 1:
+            return np.array([0,1],dtype=complex)
+        elif whichState == 2:
+            return 1/np.sqrt(2)*np.array([1,1],dtype=complex)
+        elif whichState == 3:
+            return 1/np.sqrt(2)*np.array([1,-1],dtype=complex)
+        elif whichState == 4:
+            return 1/np.sqrt(2)*np.array([1,1j],dtype=complex)
+        elif whichState == 5:
+            return 1/np.sqrt(2)*np.array([1,-1j],dtype=complex)
+    if N ==2:
+        whichState = rand.randint(0, 4)
+        if whichState == 0:
+            return 1 / np.sqrt(2) * np.array([1,0,0,1], dtype=complex)
+        elif whichState == 1:
+            return 1 / np.sqrt(2) * np.array([1,0,0,-1], dtype=complex)
+        elif whichState == 2:
+            return 1 / np.sqrt(2) * np.array([0,1,1,0], dtype=complex)
+        elif whichState == 3:
+            return 1 / np.sqrt(2) * np.array([0,1,-1,0], dtype=complex)
+    GHZ = np.zeros(2**N,dtype=complex)
+    GHZ[0] = 1
+    GHZ[-1] = 1
+    return 1 / np.sqrt(2)* GHZ
 
 
 """
@@ -645,3 +695,59 @@ def densityOperation(psi, gate):
 # performs the operation on the ket state
 def ketOperation(psi, gate):
     return np.matmul(gate, psi)
+
+# todo : this comment block
+def quarterWavePlate(theta):
+    return np.array([
+        [np.cos(theta)**2+1j*np.sin(theta)**2   ,   (1-1j)*np.cos(theta)*np.sin(theta)  ],
+        [(1-1j)*np.cos(theta)*np.sin(theta)     ,   np.sin(theta)**2+1j*np.cos(theta)**2]
+    ],dtype=complex)
+
+# todo : this comment block
+def halfWavePlate(theta):
+    return np.array([
+        [np.cos(theta)**2-np.sin(theta)**2      ,   2*np.cos(theta)*np.sin(theta)  ],
+        [2*np.cos(theta)*np.sin(theta)          ,   np.sin(theta)**2-np.cos(theta)**2]
+    ],dtype=complex)
+
+"""
+getWavePlateBasis(theta_qwp,theta_hwp,flipPBS)
+    Desc: Given the angles for the QWP and HWP plate find the measurement basis. PBS is assumed to transmit 
+    Horizontally polarized light and reflect vertical. This function does not take into account crosstalk.
+
+    Parameters
+    ----------
+    theta_qwp : string
+        The angle with respect to horizontal for the quarter wave plate.
+    theta_hwp : string
+        The angle with respect to horizontal for the quarter wave plate.    
+    flipPBS: bool
+            Set this to true to assume the PBS transmits V and reflects H
+    
+    Returns
+    -------
+    basis : ndarray with shape (2,2)
+        Top row : State the original state was projected onto given that it transmitted through the PBS,
+        Bottom row : State the original state was projected onto given that it reflected off the PBS
+"""
+def getWavePlateBasis(theta_qwp,theta_hwp,flipPBS=False):
+    basis = np.eye(2,dtype=complex)
+    if(flipPBS):
+        basis = np.fliplr(basis)
+    basis = np.matmul(halfWavePlate(theta_hwp).T.conj(),basis)
+    basis = np.matmul(quarterWavePlate(theta_qwp).T.conj(),basis)
+    # return the transpose so that basis[0] returns state 1
+    # no need to do conj, its just a reordering of the numbers
+    return basis.T
+
+# todo: this comment block
+def removeGlobalPhase(pure_state):
+    # Normalize
+    norm = np.dot(pure_state.conj(), pure_state)
+    pure_state = pure_state / norm
+    # get phase of first number
+    [magn,phase] = complexToPhaser(pure_state[0])
+    complexPhaser = phaserToComplex(np.array([1,phase]))
+    # divide state by first phase
+    pure_state = pure_state/complexPhaser
+    return pure_state

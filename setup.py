@@ -22,7 +22,7 @@ setup(
     long_description = readme(),
     long_description_content_type = "text/markdown",
     url = "https://github.com/KwiatQIM/Quantum-Tomography",
-    author = "Scott Turro",
+    author = "University of Illinois",
     author_email = "turroscott@gmail.com",
     license = "MIT",
     classifiers = [

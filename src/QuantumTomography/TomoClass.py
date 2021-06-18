@@ -1,9 +1,11 @@
 from __future__ import print_function
 from .TomoFunctions import *
 from .TomoClassHelpers import *
+from .Utilities import ConfDict,getValidFileName
 import numpy as np
 from scipy.optimize import leastsq,minimize
 from scipy.linalg import cholesky
+import warnings
 
 """
 Copyright 2020 University of Illinois Board of Trustees.
@@ -55,7 +57,8 @@ class Tomography():
     # last_rho: The predicted density matrix of the last tomography run.
     # last_intensity: The predicted intensity of the state for the last tomography run.
     # last_fval: The final value of the internal optimization function for the last tomography run.
-    # mont_carl_states: The generated monte carlo states. 0 if no states have been generated yet.
+    # last_input: The last tomo_input matrix used
+    # mont_carlo_states: The generated monte carlo states.
     # intensity: Relative pump power (arb. units) during measurement for the last tomography run.
     # err_functions: These are the properties that you want to be calculated when getProperties is called.
 
@@ -68,22 +71,17 @@ class Tomography():
     Desc: This initializes a default tomography object
     """
     def __init__(self,nQ = 2):
-        self.conf = {'NQubits': nQ,
-            'NDetectors': 1,
-            'Crosstalk': np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]),
-            'Bellstate': 0,
-            'DoDriftCorrection': 0,
-            'DoAccidentalCorrection' : 0,
-            'DoErrorEstimation': 0,
-            'Window': 0,
-            'Efficiency': 0,
-            'RhoStart': [],
-            'Beta': 0}
+        self.conf = ConfDict([('NQubits',nQ), ('NDetectors', 1),
+                              ('Crosstalk', np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])),
+                              ('Bellstate', 0),('DoDriftCorrection', 0), ('DoAccidentalCorrection', 0),
+                              ('DoErrorEstimation', 0),('Window', 0),('Efficiency', 0),('RhoStart', []),
+                              ('Beta', 0)])
         self.err_functions = ['concurrence', 'tangle', 'entropy', 'linear_entropy', 'negativity', 'purity']
 
     """
     setConfSetting(setting, val)
-    Desc: Sets a specific self.conf setting
+    Desc: Sets a specific self.conf setting. This is no longer needed but will be kept in the class to
+    support old code.
 
     Parameters
     ----------
@@ -94,10 +92,8 @@ class Tomography():
             The new value you want to the setting to be.
     """
     def setConfSetting(self, setting, val):
-        try:
-            valC = val.copy()
-        except:
-            valC = val
+        raise DeprecationWarning('As of v1.0.3.7 setConfSetting() is no longer needed to set a conf setting. '
+                                 'Settings can now be set directly like a normal dictionary.')
         if (isinstance(val, str)):
             if (valC.lower() == "yes" or val.lower() == "true"):
                 valC = 1
@@ -117,17 +113,16 @@ class Tomography():
     def importConf(self, conftxt):
         conf = self.conf
         exec(compile(open(conftxt, "rb").read(), conftxt, 'exec'))
-        self.standardizeConf()
 
     """
-   importData(datatxt)
-   Desc: Import a text file containing the tomography data and run tomography.
+    importData(datatxt)
+    Desc: Import a text file containing the tomography data and run tomography.
 
-   Parameters
-   ----------
-   datatxt : string
+    Parameters
+    ----------
+    datatxt : string
        path to data file
-   Returns
+    Returns
     -------
     rhog : ndarray with shape = (2^numQubits, 2^numQubits)
         The predicted density matrix.
@@ -136,7 +131,7 @@ class Tomography():
     fvalp : float
         Final value of the internal optimization function. Values greater than the number
         of measurements indicate poor agreement with a quantum state.
-   """
+    """
     def importData(self, datatxt):
         exec(compile(open(datatxt, "rb").read(), datatxt, 'exec'))
         return self.state_tomography(locals().get('tomo_input'), locals().get('intensity'))
@@ -162,19 +157,7 @@ class Tomography():
     def importEval(self, evaltxt):
         conf = self.conf
         exec(compile(open(evaltxt, "rb").read(), evaltxt, 'exec'))
-        self.standardizeConf()
         return self.state_tomography(locals().get('tomo_input'), locals().get('intensity'))
-    """
-    standardizeConf()
-    Desc: Helper function to handle different cases of conf inputs
-    """
-    def standardizeConf(self):
-        for k in self.conf.keys():
-            if (isinstance(self.conf[k], str)):
-                if (self.conf[k].lower() == "yes" or self.conf[k].lower() == "true"):
-                    self.conf[k] = 1
-                elif (self.conf[k].lower() == "no" or self.conf[k].lower() == "false"):
-                    self.conf[k] = 0
 
     # # # # # # # # # # # # # #
     '''Tomography Functions'''
@@ -183,11 +166,10 @@ class Tomography():
     """
     state_tomography(tomo_input, intensities)
     Desc: Main function that runs tomography.
-    TODO: add method to comment
     Parameters
     ----------
     tomo_input : ndarray
-        The input data for the current tomography. This is what tomo_input will be set to. Example can be seen at top of page. 
+        The input data for the current tomography. This is what tomo_input will be set to. Example can be seen at top of page.
         See getTomoInputTemplate() to get a template for this input.
     intensities : 1darray with length = number of measurements
         Relative pump power (arb. units) during measurement; used for drift correction. Default will be an array of ones
@@ -196,12 +178,12 @@ class Tomography():
     rhog : ndarray with shape = (2^numQubits, 2^numQubits)
         The predicted density matrix.
     intensity : The predicted overall intensity used to normalize the state.
-        The predicted overall intensity used to normalize the state. 
+        The predicted overall intensity used to normalize the state.
     fvalp : float
         Final value of the internal optimization function. Values greater than the number
         of measurements indicate poor agreement with a quantum state.
     """
-    def state_tomography(self, tomo_input, intensities = -1,method="MLE"):
+    def state_tomography(self, tomo_input, intensities = -1,method="MLE",saveState=True):
 
         # define a uniform intenstiy if not stated
         if (isinstance(intensities, int)):
@@ -212,7 +194,9 @@ class Tomography():
             raise ValueError("Invalid intensities array")
 
         # filter the data
+        self.last_input = tomo_input
         [coincidences, measurements_densities, measurements_pures, accidentals] = self.filter_data(tomo_input)
+        self.conf['Method'] = method
 
         # get the starting state from linear_tomography if not defined
         starting_matrix = self.conf['RhoStart']
@@ -234,13 +218,14 @@ class Tomography():
         else:
             # perform Bayesian tomography
             [rhog, intensity, fvalp] = self.tomography_BME(starting_matrix, coincidences, measurements_densities,accidentals)
-        # save the results
-        self.last_rho = rhog.copy()
-        self.last_intensity = intensity
-        self.last_fval = fvalp
 
-        # Reset the monte carlo states after doing a tomography
-        self.mont_carl_states = 0
+        if saveState:
+            # save the results
+            self.last_rho = rhog.copy()
+            self.last_intensity = intensity
+            self.last_fval = fvalp
+            # Reset the monte carlo states after doing a tomography
+            self.mont_carlo_states = list([[rhog, intensity, fvalp]])
 
         return [rhog, intensity, fvalp]
 
@@ -251,7 +236,6 @@ class Tomography():
     def state_tomo(self,measurements,counts,crosstalk=-1,efficiency=0,time=-1,singles=-1,window=0,error=0, intensities=-1,method="MLE"):
         tomo_input = self.buildTomoInput(measurements, counts, crosstalk, efficiency, time, singles,window,error)
         return self.state_tomography(tomo_input, intensities, method=method)
-
 
 
 
@@ -336,9 +320,7 @@ class Tomography():
         value of the optimization function.
     """
     def maxlike_fitness(self, t, coincidences, accidentals, m, prediction):
-
         rhog = t_to_density(t)
-
         for j in range(len(prediction)):
             prediction[j] = np.float64(np.real(self.intensities[j] * np.real(np.trace(np.dot(m[:, :, j], rhog))) + accidentals[j]))
             prediction[j] = np.max([prediction[j], 0.01])
@@ -399,7 +381,7 @@ class Tomography():
         changeThreshold = 10 ** -9  # stopping condition threshold
         numberOfPriorSamples = 5000  # number of samples to sample from the inital prior
         updateFrequency = 1000  # controls how often the estimate of the posterior is updated, and how often stability is checked
-        max_iterations = 500  # The maximum number of times we update the posterior
+        max_iterations = 150  # The maximum number of times we update the posterior
 
         # initialize and preallocatememory
         d = starting_matrix.shape[0]
@@ -411,131 +393,119 @@ class Tomography():
         eps = 2.2204e-16
 
         # Lists that are evaluated periodically
-        stabilityHistory = np.zeros(np.int(np.floor(preallocationSize)))
-        stoppingConditionTestLocations = np.zeros_like(stabilityHistory)
+        stabilityHistory = np.zeros(max_iterations+1)
+        # stoppingConditionTestLocations = np.zeros_like(stabilityHistory)
 
-        # MonteCarlo States
-        randomStates = np.zeros((d, d, preallocationSize), dtype=complex)
-        randLikelihood = np.zeros(preallocationSize)
-        randomT = np.zeros((preallocationSize, d ** 2))
+        # List of Sample States
+        sampleStates_rho = np.zeros((d, d, preallocationSize), dtype=complex)
+        sampleStates_loglike = np.zeros(preallocationSize)
+        sampleStates_tvals = np.zeros((preallocationSize, d ** 2))
 
         # Current best guess for posterior parameters
-        meanT = np.zeros(d ** 2)
+        mean_tvals = np.zeros(d ** 2)
 
         # estimate the state intensity for the guess state
         norm = sum(counts / (len(counts) * d))
-        min_output = minimize(self.log_likelyhood, norm,
+        minimization_output = minimize(self.log_likelyhood, norm,
                               args=(density2t(starting_matrix), counts, measurements, accidentals))
-        norm = min_output.x[0]
-        baseLike = min_output.fun
+        norm = minimization_output.x[0]
+        base_loglike = minimization_output.fun
 
         # SAMPLE FROM PRIOR
         # Samples are drawn from the ginibre distribution
         stillUsingPrior = 1
         while stillUsingPrior:
             # expand memory in chunks if preallocation size is exceeded
-            if (i >= len(randLikelihood)):
-                randomStates = np.concatenate((randomStates, np.zeros((d, d, i))), axis=2)
-                randLikelihood = np.concatenate((randLikelihood, np.zeros(i)))
-                randomT = np.concatenate((randomT, np.zeros((i, d ** 2))), axis=0)
+            if (i >= len(sampleStates_loglike)):
+                sampleStates_rho = np.concatenate((sampleStates_rho, np.zeros((d, d, i))), axis=2)
+                sampleStates_loglike = np.concatenate((sampleStates_loglike, np.zeros(i)))
+                sampleStates_tvals = np.concatenate((sampleStates_tvals, np.zeros((i, d ** 2))), axis=0)
 
             # Sample from the ginibre distribution
-            randP = random_density_state(self.conf['NQubits'])
-            randT = density2t(randP)
-            rLtemp = self.log_likelyhood(norm, randP, counts, measurements, accidentals)
+            random_rho = random_density_state(self.conf['NQubits'])
+            random_tvals = density2t(random_rho)
+            random_loglike = self.log_likelyhood(norm, random_rho, counts, measurements, accidentals)
 
-            # if the range of likelihoods becomes toolarge, rescale
-            if rLtemp < baseLike:
-                oldBase = baseLike
-                baseLike = rLtemp
-
-                # find the most optimal intensity for this best state
-                min_output = minimize(self.log_likelyhood, norm,
-                                      args=(randP, counts, measurements, accidentals))
-                norm = min_output.x[0]
-
-                # Rescale the log likelihoods
-                randLikelihood[:i] = randLikelihood[:i] + oldBase - baseLike
-
-            # Store sample state, tval, and its likelyhood
-            randLikelihood[i] = rLtemp - baseLike
-            randomStates[:, :, i] = randP
-            randomT[i, :] = randT
+            # Store sample state, tval, and its loglikelyhood
+            sampleStates_rho[:, :, i] = random_rho
+            sampleStates_tvals[i, :] = random_tvals
+            sampleStates_loglike[i] = random_loglike - base_loglike
 
             # If we have met the min required amount of prior samples try to switching to the posterior estimate
             if i >= numberOfPriorSamples:
+                # if the range of likelihoods becomes toolarge, rescale
+                if min(sampleStates_loglike[:i+1])<0:
+                    base_loglike = min(sampleStates_loglike[:i+1])
+                    sampleStates_loglike[:i+1] = sampleStates_loglike[:i+1] - base_loglike
+
+                    # find the most optimal intensity for this best state
+                    minimization_output = minimize(self.log_likelyhood, norm,
+                                          args=(random_rho, counts, measurements, accidentals))
+                    norm = minimization_output.x[0]
+
                 # Calculate the covariance matrix for the posterior
-                normalizedLikelihood = normalizeExponentLikelihood(randLikelihood[:i + 1])
-                contributingParams = normalizedLikelihood > 0
-                nLMax = max(normalizedLikelihood)
-                nLNext = max(normalizedLikelihood[normalizedLikelihood < nLMax])
-                [meanT, covarianceMat] = weightedcov(randomT[:i + 1][contributingParams, :],
-                                                           normalizedLikelihood[contributingParams])
+                sampleStates_like = normalizeExponentLikelihood(sampleStates_loglike[:i+1])
+                contributingParams = sampleStates_like > 0
+                firstMax_like = max(sampleStates_like)
+                secondMax_like = max(sampleStates_like[sampleStates_like < firstMax_like])
+                [mean_tvals, cov_tvals] = weightedcov(sampleStates_tvals[:i + 1][contributingParams, :],
+                                                           sampleStates_like[contributingParams])
 
                 # switch to adaptive distributions only if the covariance matrix is valid
-                e = cholesky(covarianceMat, lower=True)
-                if all((e != 0).flatten()) or (nLNext / nLMax) < .0172:
+                # cov must be positive semi - definite
+                try:
+                    if not all(np.linalg.eigvals(cov_tvals)>=0) or (secondMax_like / firstMax_like) < .01:
+                        # Keep using the prior
+                        stillUsingPrior = 1
+                        numberOfPriorSamples = numberOfPriorSamples + updateFrequency
+                    else:
+                        # Stop using the prior
+                        stillUsingPrior = 0
+                except:
                     # Keep using the prior
                     stillUsingPrior = 1
                     numberOfPriorSamples = numberOfPriorSamples + updateFrequency
-                else:
-                    # Stop using the prior
-                    stillUsingPrior = 0
 
             # track the total likelihood and the section likelihood
-            # cumLikelihood=cumLikelihood+np.exp(-1*randLikelihood[i])
-            # sectionLikelihood = sectionLikelihood + np.exp(-1*randLikelihood[i])
+            # cumLikelihood=cumLikelihood+np.exp(-1*sampleStates_loglike[i])
+            # sectionLikelihood = sectionLikelihood + np.exp(-1*sampleStates_loglike[i])
 
             # Increase iteration number
             i = i + 1
 
         # Calculate the running mean and likelihood with the states sampled from the prior
-        currMeanU = np.dot(randomStates[:, :, :i], np.exp(-1 * randLikelihood[:i]))
-        tr = np.trace(currMeanU)
+        unNormedMean_rho = np.dot(sampleStates_rho[:, :, :i], np.exp(-1 * sampleStates_loglike[:i]))
+        tr = np.trace(unNormedMean_rho)
         if tr == 0:
-            currMean = np.zeros(d)
+            mean_rho = np.zeros(d)
         else:
-            currMean = currMeanU / tr
-        prevMean = currMean
+            mean_rho = unNormedMean_rho / tr
+        prevMean_rho = mean_rho
 
         # SAMPLE FROM POSTERIOR
         # Samples by drawing tVals from a multivariate normal distro
         stillUsingPosterior = 1
         while stillUsingPosterior:
             # expand memory in chunks if preallocation size is exceeded
-            if (i >= len(randLikelihood)):
-                randomStates = np.concatenate((randomStates, np.zeros((d, d, i))), axis=2)
-                randLikelihood = np.concatenate((randLikelihood, np.zeros(i)))
-                randomT = np.concatenate((randomT, np.zeros((i, d ** 2))), axis=0)
+            if (i >= len(sampleStates_loglike)):
+                sampleStates_rho = np.concatenate((sampleStates_rho, np.zeros((d, d, i))), axis=2)
+                sampleStates_loglike = np.concatenate((sampleStates_loglike, np.zeros(i)))
+                sampleStates_tvals = np.concatenate((sampleStates_tvals, np.zeros((i, d ** 2))), axis=0)
 
-            # Samples a drawn by sampling the tVals from a multivariate normal distro
-            randT = rand.multivariate_normal(meanT, covarianceMat)
-            randP = t_to_density(randT)
-            rLtemp = self.log_likelyhood(norm, randP, counts, measurements, accidentals)
-
-            # if the range of likelihoods becomes toolarge, rescale
-            if rLtemp < baseLike:
-                oldBase = baseLike
-                baseLike = rLtemp
-
-                # find the most optimal intensity for this best state
-                min_output = minimize(self.log_likelyhood, norm,
-                                      args=(randP, counts, measurements, accidentals))
-                norm = min_output.x[0]
-
-                # Rescale the log likelihoods
-                randLikelihood[:i] = randLikelihood[:i] + oldBase - baseLike
-
-                currMeanU = np.dot(randomStates[:, :, :i], np.exp(-1 * randLikelihood[:i]))
+            # Draws by sampling the tVals from a multivariate normal distro
+            random_tvals = rand.multivariate_normal(mean_tvals, cov_tvals)
+            random_rho = t_to_density(random_tvals)
+            random_loglike = self.log_likelyhood(norm, random_rho, counts, measurements, accidentals)
 
             # Store sample state, tval, and its likelyhood
-            randLikelihood[i] = rLtemp - baseLike
-            randomStates[:, :, i] = randP
-            randomT[i, :] = randT
+            sampleStates_loglike[i] = random_loglike - base_loglike
+            sampleStates_rho[:, :, i] = random_rho
+            sampleStates_tvals[i, :] = random_tvals
+
             # update the running mean and likelihood with the newly sampled state
-            currMeanU = currMeanU + randomStates[:, :, i] * np.exp(-1 * randLikelihood[i])
-            cumLikelihood = cumLikelihood + np.exp(-1 * randLikelihood[i])
-            sectionLikelihood = sectionLikelihood + np.exp(-1 * randLikelihood[i])
+            unNormedMean_rho = unNormedMean_rho + sampleStates_rho[:, :, i] * np.exp(-1 * sampleStates_loglike[i])
+            cumLikelihood = cumLikelihood + np.exp(-1 * sampleStates_loglike[i])
+            sectionLikelihood = sectionLikelihood + np.exp(-1 * sampleStates_loglike[i])
 
             # Periodically perform the following tasks
             if i % updateFrequency == 0:
@@ -543,43 +513,54 @@ class Tomography():
                 # Update the posterior parameters
                 # -------------------------------
 
-                normalizedLikelihood = normalizeExponentLikelihood(randLikelihood[0:i + 1])
-                contributingParams = normalizedLikelihood > 0
-                nLMax = max(normalizedLikelihood)
-                nLNext = max(normalizedLikelihood[normalizedLikelihood < nLMax])
-                # What is adaptFactor????
-                # This was the previous line:
-                # covarianceMatNew = adaptFactor * weightedcov(randomT[contributingParams,:], normalizedLikelihood(contributingParams))
-                [meanTNew, covarianceMatNew] = weightedcov(randomT[:i + 1][contributingParams, :],
-                                                                 normalizedLikelihood[contributingParams])
+                # if the range of likelihoods becomes toolarge, rescale
+                if min(sampleStates_loglike[:i + 1]) < 0:
+                    base_loglike = min(sampleStates_loglike[:i + 1])
+                    sampleStates_loglike[:i + 1] = sampleStates_loglike[:i + 1] - base_loglike
+                    unNormedMean_rho = np.dot(sampleStates_rho[:, :, :i], np.exp(-1 * sampleStates_loglike[:i]))
+
+                    # find the most optimal intensity for this best state
+                    minimization_output = minimize(self.log_likelyhood, norm,
+                                                   args=(random_rho, counts, measurements, accidentals))
+                    norm = minimization_output.x[0]
+
+                sampleStates_like = normalizeExponentLikelihood(sampleStates_loglike[0:i + 1])
+                contributingParams = sampleStates_like > 0
+                firstMax_like = max(sampleStates_like)
+                secondMax_like = max(sampleStates_like[sampleStates_like < firstMax_like])
+                [newMean_tvals, newCov_tvals] = weightedcov(sampleStates_tvals[:i + 1][contributingParams, :],
+                                                                 sampleStates_like[contributingParams])
 
                 # Update the posterior estimate only if the covariance matrix is valid
-                e = cholesky(covarianceMatNew, lower=True)
-                if all((e != 0).flatten()) and (nLNext / nLMax) > .00192:
-                    covarianceMat = covarianceMatNew
-                    meanT = meanTNew
+                # cov must be positive semidefinite
+                try:
+                    if all(np.linalg.eigvals(cov_tvals) >= 0) and (secondMax_like / firstMax_like) > .001:
+                        cov_tvals = newCov_tvals
+                        mean_tvals = newMean_tvals
+                except:
+                    pass
 
                 # Check if the stopping condition is met
                 # --------------------------------------
 
-                tr = np.trace(currMeanU)
+                tr = np.trace(unNormedMean_rho)
                 if tr == 0:
-                    currMean = np.zeros(d)
+                    mean_rho = np.zeros(d)
                     stabilityHistory[iterationCounter] = float('inf')
-                    stoppingConditionTestLocations[iterationCounter] = i
+                    # stoppingConditionTestLocations[iterationCounter] = i
                 else:
-                    currMean = currMeanU / tr
+                    mean_rho = unNormedMean_rho / tr
 
                     # calculate the normalization factor based on the fraction
                     # of total likelihood sampled in this iteration
                     normFactor = np.floor(i / updateFrequency) * sectionLikelihood / cumLikelihood
-                    infidelity = (1 - np.real(fidelity(currMean, prevMean)))
+                    infidelity = (1 - np.real(fidelity(mean_rho, prevMean_rho)))
                     # ensure rounding never leads the infidelity to be negative
                     if infidelity < 0:
                         infidelity = eps
 
                     stabilityHistory[iterationCounter] = infidelity / normFactor
-                    stoppingConditionTestLocations[iterationCounter] = i
+                    # stoppingConditionTestLocations[iterationCounter] = i
 
                     # Check if this is the first time we've calculated the posterior estimate
                     if (iterationCounter > 0) and (stabilityHistory[iterationCounter] < changeThreshold):
@@ -588,19 +569,19 @@ class Tomography():
 
                     # IMPOSE STOPPING CONDITION IF TOO MANY ITERATIONS REACHED
                     if (iterationCounter > max_iterations):
-                        print("MAX ITER REACHED - Array BME. Stability: " + str(stabilityHistory[iterationCounter]))
+                        warnings.warn("MAX ITER REACHED - BME. Stability: " + str(stabilityHistory[iterationCounter]))
                         samplesToSC = i
                         stillUsingPosterior = 0
 
                     # if we haven't reached stability, set the state to compare to next
                     # iteration, and reset the section likelihood
                     iterationCounter = iterationCounter + 1
-                    prevMean = currMean
+                    prevMean_rho = mean_rho
                     sectionLikelihood = 0
 
             # Increase iteration number
             i = i + 1
-        return [currMean, norm, samplesToSC]
+        return [mean_rho, norm, samplesToSC]
 
     # todo: comment block
     def likelyhood(self,givenState,coincidences,measurments,accidentals,intensities):
@@ -689,11 +670,11 @@ class Tomography():
     filter_data(tomo_input, intensities)
     Desc: Filters the data into separate arrays.
     TODO: edit intensities out of comment
-    
+
     Parameters
     ----------
     tomo_input : ndarray
-        The input data for the current tomography. This is what self.tomo_input will be set to. Example can be seen at top of page. 
+        The input data for the current tomography. This is what self.last_input will be set to. Example can be seen at top of page.
         See getTomoInputTemplate() to get a template for this input.
     intensities : 1darray with length = number of measurements
         Relative pump power (arb. units) during measurement; used for drift correction.
@@ -711,7 +692,6 @@ class Tomography():
     """
     def filter_data(self, tomo_input):
         # getting variables
-        self.input = tomo_input
 
         nbits = self.conf['NQubits']
         ndet = self.conf['NDetectors']
@@ -772,7 +752,7 @@ class Tomography():
         big_crosstalk = big_crosstalk * np.outer(eff, np.ones(n_coinc))
 
         # Get measurements
-        # Todo: this is very messy but works...? At some point it can be cleaned up, so that toDensity is used 
+        # Todo: this is very messy but works...? At some point it can be cleaned up, so that toDensity is used
         # and the shapes are similar. The axis of the measuremennts_densities is kinda wonky. Not similar to measurements_pures
         measurements_densities = np.zeros([2 ** nbits, 2 ** nbits, np.prod(coinc.shape)],dtype=complex)
         measurements_pures = np.zeros([np.prod(coinc.shape), 2 ** nbits],dtype=complex)
@@ -967,9 +947,9 @@ class Tomography():
     """
     def getCoincidences(self):
         if (self.conf['NDetectors'] == 2):
-            return np.real(self.input[:, np.arange(2*self.conf['NQubits']+1, 2**self.conf['NQubits']+2*self.conf['NQubits']+1)])
+            return np.real(self.last_input[:, np.arange(2*self.conf['NQubits']+1, 2**self.conf['NQubits']+2*self.conf['NQubits']+1)])
         else:
-            return np.real(self.input[:, self.conf['NQubits']+1])
+            return np.real(self.last_input[:, self.conf['NQubits']+1])
 
     """
     getSingles()
@@ -977,16 +957,16 @@ class Tomography():
     """
     def getSingles(self):
         if (self.conf['NDetectors'] == 2):
-            return self.input[:, np.arange(1, 2*self.conf['NQubits']+1)]
+            return self.last_input[:, np.arange(1, 2*self.conf['NQubits']+1)]
         else:
-            return self.input[:, np.arange(1, self.conf['NQubits']+1)]
+            return self.last_input[:, np.arange(1, self.conf['NQubits']+1)]
 
     """
     getTimes()
     Desc: Returns an array of times for all the measurments.
     """
     def getTimes(self):
-        return self.tomo_input[:, 0]
+        return self.last_input[:, 0]
 
     """
         getMeasurements()
@@ -994,9 +974,9 @@ class Tomography():
         """
     def getMeasurements(self):
         if (self.conf['NDetectors'] == 2):
-            return self.input[:, np.arange(2**self.conf['NQubits']+2*self.conf['NQubits']+1, 2**self.conf['NQubits']+4*self.conf['NQubits']+1)]
+            return self.last_input[:, np.arange(2**self.conf['NQubits']+2*self.conf['NQubits']+1, 2**self.conf['NQubits']+4*self.conf['NQubits']+1)]
         else:
-            return self.input[:, np.arange(self.conf['NQubits']+2, 3*self.conf['NQubits']+2)]
+            return self.last_input[:, np.arange(self.conf['NQubits']+2, 3*self.conf['NQubits']+2)]
 
     """
     getNumBits()
@@ -1076,7 +1056,7 @@ class Tomography():
     Returns
     ----------
     Tomoinput : ndarray
-        The input data for the current tomography. This is what tomo_input will be set to. Example can be seen at top of page. 
+        The input data for the current tomography. This is what tomo_input will be set to. Example can be seen at top of page.
         See getTomoInputTemplate() to get a template for this input.
     """
     def getTomoInputTemplate(self, numBits = -1,numDet = -1):
@@ -1132,11 +1112,9 @@ class Tomography():
 
     Parameters
     ----------
-    rho : ndarray with shape = (2^numQubits, 2^numQubits)
-        The density matrix you would like to know the properties of.
     bounds : boolean
         Set this to true if you want error bounds on your estimated property values. Default is False.
-        These are determined with monte carlo simulation and the states are saved under self.mont_carl_states
+        These are determined with monte carlo simulation and the states are saved under self.mont_carlo_states
 
     Returns
     -------
@@ -1145,34 +1123,22 @@ class Tomography():
         The second col is the value of the property.
         The third col is the error bound on the property.
     """
-    def getProperties(self, rho, bounds = -1):
+    def getProperties(self,bounds = -1):
         # if bounds not set use the conf settings
-        if(type(bounds) == int):
-            bounds = (self.conf['DoErrorEstimation'] > 1) or self.mont_carl_states != 0
-        if (bounds):
-            # check if given state is of the current data
-            if(fidelity(self.last_rho, rho) < .95):
-                raise ValueError("Input data needed. You can only calculate bounds on the state used in the tomography.")
-            err_n = self.conf['DoErrorEstimation']
-            # increase err_n if needed
-            if(err_n<= 1):
-                err_n = 2
-            # generate states if needed
-            if(self.mont_carl_states == 0):
-                states = self.tomography_states_generator(err_n)
-            else:
-                states = self.mont_carl_states
-                err_n = len(states[1])
-            vals1 = np.array([["intensity", np.mean(np.hstack((states[1], self.last_intensity))),
-                               np.std(np.hstack((states[1], self.last_intensity)), ddof = err_n-1)],
-                              ["fval", np.mean(np.hstack((states[2], self.last_fval))),
-                               np.std(np.hstack((states[2], self.last_fval)), ddof = err_n-1)]], dtype = "O")
-            vals2 = getProperties_helper_bounds(self.err_functions, states[0], rho)
+        if bounds == -1:
+            bounds = self.conf['DoErrorEstimation']
+
+        # generate states if needed
+        if bounds > len(self.mont_carlo_states)-1:
+            self.tomography_states_generator(bounds-len(self.mont_carlo_states)+1)
+        states = np.array(self.mont_carlo_states)[:bounds+1,:]
+        if states.shape[0] == 1:
+            vals1 = np.array([["intensity",np.mean(states[:,1]),"NA"],
+                              ["fval", np.mean(states[:,2]),"NA"]])
         else:
-            vals1 = np.array([["intensity", self.last_intensity], ["fval", self.last_fval]], dtype = "O")
-            vals2 = getProperties_helper(self.err_functions, rho)
-
-
+            vals1 = np.array([["intensity", np.mean(states[:, 1]), np.std(states[:, 1],ddof=1)],
+                              ["fval", np.mean(states[:, 2]), np.std(states[:, 2],ddof=1)]])
+        vals2 = getProperties_helper_bounds(self.err_functions, states[:,0])
 
         vals = np.concatenate((vals1, vals2))
         return vals
@@ -1182,7 +1148,7 @@ class Tomography():
     """
     tomography_states_generator(n)
     Desc: Uses monte carlo simulation to create random states similar to the estimated state.
-          The states are also saved under self.mont_carl_states
+          The states are also saved under self.mont_carlo_states
 
     Parameters
     ----------
@@ -1198,55 +1164,45 @@ class Tomography():
     fvalp : ndarray with length = n
         The fval of the regression associated with each approximate density matrices.
     """
-    def tomography_states_generator(self, n = -1):
-        if(n <= 1):
-            n = max(self.conf['DoErrorEstimation'], 2)
-        last_outPut = [self.last_rho, self.last_intensity, self.last_fval]
+    def tomography_states_generator(self, n):
+        # Save the last data so we can restore it later
+        last_input = self.last_input.copy()
 
         ndet = self.conf['NDetectors']
-        nbits = self.conf['NQubits']
         acc = self.conf['DoAccidentalCorrection']
-        rhop = np.zeros([n, 2 ** nbits, 2 ** nbits]) + 0j
-        intenp = np.zeros(n)
-        fvalp = np.zeros(n)
-        length = len(self.tomo_input[:, 0])
-        if ndet == 1:
-            time = np.reshape(self.tomo_input[:, 0], (length, 1))
-            meas = self.tomo_input[:, np.arange(nbits + 2, len(self.tomo_input[0, :]))]
-            for j in range(n):
-                test_data = np.zeros([length, nbits + 1])
+        time = self.getTimes()
+        meas = self.getMeasurements()
+        singles = self.getSingles()
+        counts = self.getCoincidences()
+        for j in range(n):
+            if ndet == 1:
+                test_counts = np.zeros_like(counts)
+                for k in range(len(counts)):
+                        test_counts[k] = np.random.poisson(counts[k])
                 if acc:
-                    kk = range(nbits + 1)
+                    test_singles = np.zeros_like(singles)
+                    for k in range(len(singles)):
+                        test_singles[k] = np.random.poisson(singles[k])
                 else:
-                    kk = np.array([nbits])
-                for k in kk:
-                    for l in range(length):
-                        test_data[l, k] = np.random.poisson(np.real(self.tomo_input[l, k + 1]))
-
-                test_data = np.concatenate((time, test_data, meas), axis = 1)
-
-                [rhop[j, :, :], intenp[j], fvalp[j]] = self.state_tomography(test_data, self.intensities)
-
-        elif ndet == 2:
-            time = np.reshape(self.tomo_input[:, 0], (length, 1))
-            meas = self.tomo_input[:, np.arange(nbits + 2 ** nbits + 1, len(self.tomo_input[0, :]))]
-            for j in range(n):
-                test_data = np.zeros([length, nbits + 2 ** nbits])
+                    test_singles = singles
+                test_data = np.concatenate((np.array([time]).T, test_singles,np.array([test_counts]).T, meas), axis = 1)
+                [rhop, intenp, fvalp] = self.state_tomography(test_data, self.intensities,saveState=False)
+            elif ndet == 2:
+                test_counts = np.zeros_like(counts)
+                for k in range(len(counts)):
+                    test_counts[k] = np.random.poisson(counts[k])
                 if acc:
-                    kk = range(nbits + 2 ** nbits)
+                    test_singles = np.zeros_like(singles)
+                    for k in range(len(singles)):
+                        test_singles[k] = np.random.poisson(singles[k])
                 else:
-                    kk = np.arange(nbits, nbits + 2 ** nbits)
-                for k in kk:
-                    for l in range(length):
-                        test_data[l, k] = np.random.poisson(np.real(self.tomo_input[l, k + 1]))
-
-                test_data = np.concatenate((time, test_data, meas), axis = 1)
-
-                [rhop[j, :, :], intenp[j], fvalp[j]] = self.state_tomography(test_data, intensities)[0]
-
-        [self.last_rho, self.last_intensity, self.last_fval] = last_outPut
-        self.mont_carl_states = [rhop, intenp, fvalp]
-        return [rhop, intenp, fvalp]
+                    test_singles = singles
+                test_data = np.concatenate((np.array([time]).T, test_singles, np.array([test_counts]).T, meas), axis=1)
+                [rhop, intenp, fvalp] = self.state_tomography(test_data, self.intensities,saveState=False)
+            self.mont_carlo_states.append([rhop, intenp, fvalp])
+        # Restore the last tomo_input matrix to the original one
+        self.last_input = last_input
+        return self.mont_carlo_states
 
     """
         getBellSettings(rho, bounds = -1)
@@ -1261,7 +1217,7 @@ class Tomography():
             The density matrix you would like to know the optimal bell measurment settings of.
         bounds : boolean
             Set this to true if you want error bounds on your estimated measurment settings. Default will use the conf settings.
-            These are determined with monte carlo simulation and the states are saved under self.mont_carl_states
+            These are determined with monte carlo simulation and the states are saved under self.mont_carlo_states
 
         Returns
         -------
@@ -1273,7 +1229,7 @@ class Tomography():
     def getBellSettings(self, rho, partsize_init = 9, partsize = 5, t = 3, bounds = -1):
         # if bounds not set use the conf settings
         if (type(bounds) == int):
-            bounds = (self.conf['DoErrorEstimation'] > 1) or self.mont_carl_states != 0
+            bounds = (self.conf['DoErrorEstimation'] > 1) or self.mont_carlo_states != 0
         if (bounds):
             # check if given state is of the current data
             if (fidelity(self.last_rho, rho) < .95):
@@ -1283,12 +1239,195 @@ class Tomography():
             if (err_n <= 1):
                 err_n = 2
             # generate states if needed
-            if (self.mont_carl_states == 0):
+            if (self.mont_carlo_states == 0):
                 states = self.tomography_states_generator(err_n)
             else:
-                states = self.mont_carl_states
+                states = self.mont_carlo_states
                 err_n = len(states[1])
             vals = getBellSettings_helper_bounds(states[0], rho, partsize_init, partsize, t, err_n)
         else:
             vals = getBellSettings_helper(rho, partsize_init, partsize, t)
         return vals
+
+    """
+        printLastOutput(tomo, bounds)
+        Desc: Prints the properties of the last tomography to the console. Properties are defined in tomography conf settings.
+              Using bounds will not change the conf settings. The calculated properties are determined by self.err_functions.
+
+        Parameters
+        ----------
+        bounds : boolean
+            The amount of monte carlo states to use in the error estimation. Default will use whatever is set in the conf settings.
+            The states are saved under self.mont_carlo_states
+        """
+    def printLastOutput(self, bounds = -1):
+        p = np.array(self.last_rho.copy(), dtype = "O")
+        print("State: ")
+        mx = 0
+        for i in range(p.shape[0]):
+            for j in range(p.shape[1]):
+                p[i, j] = floatToString(p[i, j]).replace(" ", "") + "  "
+                if(len(p[i, j])>mx):
+                    mx = len(p[i, j])
+
+        for i in range(p.shape[0]):
+            for j in range(p.shape[1]):
+                print(p[i, j] + " "*(mx-len(p[i, j])), end = "")
+            print("")
+
+        # print(p)
+        properties = self.getProperties(self.last_rho, bounds)
+        for prop in properties:
+            if(len(prop) >3):
+                print(prop[0] + " : " + floatToString(prop[1]) + " +/- " + floatToString(prop[2]))
+            else:
+                print(prop[0] + " : " + floatToString(prop[1]))
+
+    # todo: this comment block
+    def exportToEval(self, filePath="pythonEval.txt"):
+        TORREPLACE = ""
+        # Conf settings
+        for k in self.conf.keys():
+            if (k != "IntensityMap"):
+                if (isinstance(self.conf[k], np.ndarray)):
+                    A = self.conf[k]
+                    TORREPLACE += "conf['" + str(k) + "'] = ["
+                    for i in range(A.shape[0]):
+                        TORREPLACE += str(A[i]).replace(" ", ",") + ","
+
+                    TORREPLACE = TORREPLACE[:-1] + "]\n"
+                else:
+                    TORREPLACE += "conf['" + str(k) + "'] = " + str(self.conf[k]) + "\n"
+
+        # Tomoinput
+        A = self.last_input
+        TORREPLACE += "tomo_input = np.array([\n"
+        for i in range(A.shape[0]):
+            TORREPLACE += "["
+            for j in range(A.shape[1]):
+                TORREPLACE += str(A[i, j]) + ","
+            TORREPLACE = TORREPLACE[:-1] + "],\n"
+
+        TORREPLACE = TORREPLACE[:-2] + "])\n"
+
+        # intensity
+        A = self.conf["IntensityMap"]
+        TORREPLACE += "intensity = np.array(["
+        for i in range(A.shape[0]):
+            TORREPLACE += str(A[i]) + ","
+        TORREPLACE = TORREPLACE[:-1] + "])"
+
+        # print contents to file
+        with open(filePath, 'w') as f:
+            f.write(TORREPLACE)
+
+    # todo: this comment block
+    def exportToConf(self, filePath="pythonConf.txt"):
+        TORREPLACE = ""
+        # Conf settings
+        for k in self.conf.keys():
+            if (k != "IntensityMap"):
+                if (isinstance(self.conf[k], np.ndarray)):
+                    A = self.conf[k]
+                    TORREPLACE += "conf['" + str(k) + "'] = ["
+                    for i in range(A.shape[0]):
+                        TORREPLACE += str(A[i]).replace(" ", ",") + ","
+
+                    TORREPLACE = TORREPLACE[:-1] + "]\n"
+                else:
+                    TORREPLACE += "conf['" + str(k) + "'] = " + str(self.conf[k]) + "\n"
+
+            # print contents to file
+            with open(filePath, 'w') as f:
+                f.write(TORREPLACE)
+
+    # todo: this comment block
+    def exportToData(self, filePath="pythonData.txt"):
+        TORREPLACE = ""
+
+        # Tomoinput
+        A = self.last_input
+        TORREPLACE += "tomo_input = np.array([\n"
+        for i in range(A.shape[0]):
+            TORREPLACE += "["
+            for j in range(A.shape[1]):
+                TORREPLACE += str(A[i, j]) + ","
+            TORREPLACE = TORREPLACE[:-1] + "],\n"
+
+        TORREPLACE = TORREPLACE[:-2] + "])\n"
+
+        # intensity
+        A = self.conf["IntensityMap"]
+        TORREPLACE += "intensity = np.array(["
+        for i in range(A.shape[0]):
+            TORREPLACE += str(A[i]) + ","
+        TORREPLACE = TORREPLACE[:-1] + "])"
+
+        # print contents to file
+        with open(filePath, 'w') as f:
+            f.write(TORREPLACE)
+
+    # todo: this comment block
+    def exportToConf_web(self, filePath="Config_web.txt"):
+        TORREPLACE = ""
+        # Conf settings
+        for k in self.conf.keys():
+            if (k != "IntensityMap"):
+                if isinstance(self.conf[k], np.ndarray):
+                    A = self.conf[k]
+                    TORREPLACE += "conf." + str(k) + "=["
+                    for i in range(A.shape[0]):
+                        TORREPLACE += str(A[i]).replace(" ", ",") + ","
+                    TORREPLACE = TORREPLACE[:-1] + "];\n"
+                elif isinstance(self.conf[k], list):
+                    A = self.conf[k]
+                    TORREPLACE += "conf." + str(k) + "=["
+                    for i in range(len(A)):
+                        TORREPLACE += str(A[i]).replace(" ", "") + ","
+                    TORREPLACE = TORREPLACE[:-1] + "];\n"
+                else:
+                    TORREPLACE += "conf." + str(k) + "=" + str(self.conf[k]) + ";\n"
+
+            # print contents to file
+            with open(filePath, 'w') as f:
+                f.write(TORREPLACE)
+
+    # todo: this comment block
+    def exportToData_web(self, filePath="pythonData.txt"):
+        TORREPLACE = ""
+
+        # Tomoinput
+        A = self.last_input.astype("O")
+        n_qubit = self.conf['NQubits']
+        if self.conf['NDetectors'] == 2:
+            # tomo_input[ :, 1 : 2 * n_qubit + 1 ]: singles
+            A[:, 1: 2 * n_qubit + 1] = self.last_input[:, 1: 2 * n_qubit + 1].real.astype(int)
+            # tomo_input[ :, 2 * n_qubit + 1 : 2 ** n_qubit + 2 * n_qubit + 1 ]: coincidences
+            A[:, 2 * n_qubit + 1: 2 ** n_qubit + 2 * n_qubit + 1] = self.last_input[:,
+                                                                    2 * n_qubit + 1: 2 ** n_qubit + 2 * n_qubit + 1].real.astype(
+                int)
+        else:
+            # tomo_input[:, 1: n_qubit + 1]: singles
+            A[:, 1: n_qubit + 1] = self.last_input[:, 1: n_qubit + 1].real.astype(int)
+            # tomo_input[:, n_qubit + 1]: coincidences
+            A[:, n_qubit + 1] = self.last_input[:, n_qubit + 1].real.astype(int)
+
+        TORREPLACE += "tomo_input=["
+        for i in range(A.shape[0]):
+            TORREPLACE += "["
+            for j in range(A.shape[1]):
+                TORREPLACE += floatToString(A[i, j]) + ","
+            TORREPLACE = TORREPLACE[:-1] + "],"
+
+        TORREPLACE = TORREPLACE[:-1] + "];\n"
+
+        # intensity
+        A = self.conf["IntensityMap"]
+        TORREPLACE += "intensity=["
+        for i in range(A.shape[0]):
+            TORREPLACE += str(A[i]) + ","
+        TORREPLACE = TORREPLACE[:-1] + "];"
+
+        # print contents to file
+        with open(filePath, 'w') as f:
+            f.write(TORREPLACE)

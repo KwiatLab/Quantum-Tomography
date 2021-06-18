@@ -1,0 +1,321 @@
+---
+title: "R Notebook"
+author: Scott
+date: 5/26/2021
+output: html_document
+---
+# Data Analysis of Tomographies
+```{r, include=FALSE}
+knitr::opts_chunk$set(fig.width = 10, fig.height = 4,fig.align='center',echo=FALSE,warning=FALSE)
+library(tidyverse)
+library(ggplot2)
+require(gridExtra)
+library(fields)
+library(here)
+
+# RUN THIS RMD SCRIPT FROM THE HEAD OF THE REPO FOLDER
+total_data <- read_csv(file = here("Tests/Results/results_Monte_Carlo.csv"))
+total_data[is.na(total_data)] = 0
+
+
+numYaxisPlots = 1
+while (total_data$num_errors[numYaxisPlots+1]!=total_data$num_errors[1]){
+  numYaxisPlots = numYaxisPlots+1
+}
+```
+
+
+```{r}
+maxNA <- function(x) ifelse( !all(is.na(x)), max(x, na.rm=T), NA)
+xVals = total_data$num_errors[1:numYaxisPlots]
+maxX = maxNA(xVals)+1
+maxIntensity = maxNA(total_data$intensity_mean)+maxNA(total_data$intensity_std)
+maxConcurrence = 1+maxNA(total_data$concurrence_std)
+maxEntropy = maxNA(total_data$entropy_mean)+maxNA(total_data$entropy_std)
+maxNegativity = 1+maxNA(total_data$negativity_std)
+maxPurity = 1+maxNA(total_data$negativity_std)
+plotNum=-1
+```
+
+
+### Random Pure n = 1
+```{r, echo = FALSE}
+plotNum = plotNum +1
+temp_data = total_data[(1:numYaxisPlots)+(numYaxisPlots)*plotNum,]
+gI <- ggplot(mapping=aes(x=xVals)) +
+        geom_line(mapping=aes(y=temp_data$intensity_mean)) +
+        geom_point(mapping=aes(y=temp_data$intensity_mean))+
+        geom_errorbar(mapping=aes(y=temp_data$intensity_mean,
+        ymin=temp_data$intensity_mean-temp_data$intensity_std,
+        ymax=temp_data$intensity_mean+temp_data$intensity_std),
+                      width=.2)+
+        labs(x = "Number of Monte Carlo Runs",
+             y = "Intensity")+
+        xlim(0,maxX)
+gE <- ggplot(mapping=aes(x=xVals)) +
+        geom_line(mapping=aes(y=temp_data$entropy_mean)) +
+        geom_point(mapping=aes(y=temp_data$entropy_mean))+
+        geom_errorbar(mapping=aes(y=temp_data$entropy_mean,
+        ymin=temp_data$entropy_mean-temp_data$entropy_std,
+        ymax=temp_data$entropy_mean+temp_data$entropy_std),
+                      width=.2)+
+        labs(x = "Number of Monte Carlo Runs",
+             y = "Linear Entropy")+
+        xlim(0,maxX)+ expand_limits(y=0)
+gP <- ggplot(mapping=aes(x=xVals)) +
+        geom_line(mapping=aes(y=temp_data$purity_mean)) +
+        geom_point(mapping=aes(y=temp_data$purity_mean))+
+        geom_errorbar(mapping=aes(y=temp_data$purity_mean,
+        ymin=temp_data$purity_mean-temp_data$purity_std,
+        ymax=temp_data$purity_mean+temp_data$purity_std),
+                      width=.2)+
+        labs(x = "Number of Monte Carlo Runs",
+             y = "Purity")+
+        xlim(0,maxX)+expand_limits(y=0)+expand_limits(y=1)
+grid.arrange(gI,gE,gP,nrow=2)
+```
+
+### Random Standard Basis n = 1
+```{r, echo = FALSE}
+plotNum = plotNum +1
+temp_data = total_data[(1:numYaxisPlots)+(numYaxisPlots)*plotNum,]
+gI <- ggplot(mapping=aes(x=xVals)) +
+        geom_line(mapping=aes(y=temp_data$intensity_mean)) +
+        geom_point(mapping=aes(y=temp_data$intensity_mean))+
+        geom_errorbar(mapping=aes(y=temp_data$intensity_mean,
+        ymin=temp_data$intensity_mean-temp_data$intensity_std,
+        ymax=temp_data$intensity_mean+temp_data$intensity_std),
+                      width=.2)+
+        labs(x = "Number of Monte Carlo Runs",
+             y = "Intensity")+
+        xlim(0,maxX)
+gE <- ggplot(mapping=aes(x=xVals)) +
+        geom_line(mapping=aes(y=temp_data$entropy_mean)) +
+        geom_point(mapping=aes(y=temp_data$entropy_mean))+
+        geom_errorbar(mapping=aes(y=temp_data$entropy_mean,
+        ymin=temp_data$entropy_mean-temp_data$entropy_std,
+        ymax=temp_data$entropy_mean+temp_data$entropy_std),
+                      width=.2)+
+        labs(x = "Number of Monte Carlo Runs",
+             y = "Linear Entropy")+
+        xlim(0,maxX)+ expand_limits(y=0)
+gP <- ggplot(mapping=aes(x=xVals)) +
+        geom_line(mapping=aes(y=temp_data$purity_mean)) +
+        geom_point(mapping=aes(y=temp_data$purity_mean))+
+        geom_errorbar(mapping=aes(y=temp_data$purity_mean,
+        ymin=temp_data$purity_mean-temp_data$purity_std,
+        ymax=temp_data$purity_mean+temp_data$purity_std),
+                      width=.2)+
+        labs(x = "Number of Monte Carlo Runs",
+             y = "Purity")+
+        xlim(0,maxX)+expand_limits(y=0)+expand_limits(y=1)
+grid.arrange(gI,gE,gP,nrow=2)
+```
+
+### Random Density n = 1
+```{r, echo = FALSE}
+plotNum = plotNum +1
+temp_data = total_data[(1:numYaxisPlots)+(numYaxisPlots)*plotNum,]
+gI <- ggplot(mapping=aes(x=xVals)) +
+        geom_line(mapping=aes(y=temp_data$intensity_mean)) +
+        geom_point(mapping=aes(y=temp_data$intensity_mean))+
+        geom_errorbar(mapping=aes(y=temp_data$intensity_mean,
+        ymin=temp_data$intensity_mean-temp_data$intensity_std,
+        ymax=temp_data$intensity_mean+temp_data$intensity_std),
+                      width=.2)+
+        labs(x = "Number of Monte Carlo Runs",
+             y = "Intensity")+
+        xlim(0,maxX)
+gE <- ggplot(mapping=aes(x=xVals)) +
+        geom_line(mapping=aes(y=temp_data$entropy_mean)) +
+        geom_point(mapping=aes(y=temp_data$entropy_mean))+
+        geom_errorbar(mapping=aes(y=temp_data$entropy_mean,
+        ymin=temp_data$entropy_mean-temp_data$entropy_std,
+        ymax=temp_data$entropy_mean+temp_data$entropy_std),
+                      width=.2)+
+        labs(x = "Number of Monte Carlo Runs",
+             y = "Linear Entropy")+
+        xlim(0,maxX)+ expand_limits(y=0)
+gP <- ggplot(mapping=aes(x=xVals)) +
+        geom_line(mapping=aes(y=temp_data$purity_mean)) +
+        geom_point(mapping=aes(y=temp_data$purity_mean))+
+        geom_errorbar(mapping=aes(y=temp_data$purity_mean,
+        ymin=temp_data$purity_mean-temp_data$purity_std,
+        ymax=temp_data$purity_mean+temp_data$purity_std),
+                      width=.2)+
+        labs(x = "Number of Monte Carlo Runs",
+             y = "Purity")+
+        xlim(0,maxX)+expand_limits(y=0)+expand_limits(y=1)
+grid.arrange(gI,gE,gP,nrow=2)
+```
+
+### Random Pure n = 2
+```{r, echo = FALSE}
+plotNum = plotNum +1
+temp_data = total_data[(1:numYaxisPlots)+(numYaxisPlots)*plotNum,]
+gI <- ggplot(mapping=aes(x=xVals)) +
+        geom_line(mapping=aes(y=temp_data$intensity_mean)) +
+        geom_point(mapping=aes(y=temp_data$intensity_mean))+
+        geom_errorbar(mapping=aes(y=temp_data$intensity_mean,
+        ymin=temp_data$intensity_mean-temp_data$intensity_std,
+        ymax=temp_data$intensity_mean+temp_data$intensity_std),
+                      width=.2)+
+        labs(x = "Number of Monte Carlo Runs",
+             y = "Intensity")+
+        xlim(0,maxX)
+gE <- ggplot(mapping=aes(x=xVals)) +
+        geom_line(mapping=aes(y=temp_data$entropy_mean)) +
+        geom_point(mapping=aes(y=temp_data$entropy_mean))+
+        geom_errorbar(mapping=aes(y=temp_data$entropy_mean,
+        ymin=temp_data$entropy_mean-temp_data$entropy_std,
+        ymax=temp_data$entropy_mean+temp_data$entropy_std),
+                      width=.2)+
+        labs(x = "Number of Monte Carlo Runs",
+             y = "Linear Entropy")+
+        xlim(0,maxX)+ expand_limits(y=0)
+gP <- ggplot(mapping=aes(x=xVals)) +
+        geom_line(mapping=aes(y=temp_data$purity_mean)) +
+        geom_point(mapping=aes(y=temp_data$purity_mean))+
+        geom_errorbar(mapping=aes(y=temp_data$purity_mean,
+        ymin=temp_data$purity_mean-temp_data$purity_std,
+        ymax=temp_data$purity_mean+temp_data$purity_std),
+                      width=.2)+
+        labs(x = "Number of Monte Carlo Runs",
+             y = "Purity")+
+        xlim(0,maxX)+expand_limits(y=0)+expand_limits(y=1)
+gC <- ggplot(mapping=aes(x=xVals)) +
+        geom_line(mapping=aes(y=temp_data$concurrence_mean)) +
+        geom_point(mapping=aes(y=temp_data$concurrence_mean))+
+        geom_errorbar(mapping=aes(y=temp_data$concurrence_mean,
+        ymin=temp_data$concurrence_mean-temp_data$concurrence_std,
+        ymax=temp_data$concurrence_mean+temp_data$concurrence_std),
+                      width=.2)+
+        labs(x = "Number of Monte Carlo Runs",
+             y = "Concurrence")+
+        xlim(0,maxX)+expand_limits(y=0)+expand_limits(y=1)
+gN <- ggplot(mapping=aes(x=xVals)) +
+        geom_line(mapping=aes(y=temp_data$negativity_mean)) +
+        geom_point(mapping=aes(y=temp_data$negativity_mean))+
+        geom_errorbar(mapping=aes(y=temp_data$negativity_mean,
+        ymin=temp_data$negativity_mean-temp_data$negativity_std,
+        ymax=temp_data$negativity_mean+temp_data$negativity_std),
+                      width=.2)+
+        labs(x = "Number of Monte Carlo Runs",
+             y = "Negativity")+
+        xlim(0,maxX)+expand_limits(y=0)+expand_limits(y=1)
+grid.arrange(gI,gE,gP,gC,gN,nrow=2)
+```
+
+### Random Bell State n = 2
+```{r, echo = FALSE}
+plotNum = plotNum +1
+temp_data = total_data[(1:numYaxisPlots)+(numYaxisPlots)*plotNum,]
+gI <- ggplot(mapping=aes(x=xVals)) +
+        geom_line(mapping=aes(y=temp_data$intensity_mean)) +
+        geom_point(mapping=aes(y=temp_data$intensity_mean))+
+        geom_errorbar(mapping=aes(y=temp_data$intensity_mean,
+        ymin=temp_data$intensity_mean-temp_data$intensity_std,
+        ymax=temp_data$intensity_mean+temp_data$intensity_std),
+                      width=.2)+
+        labs(x = "Number of Monte Carlo Runs",
+             y = "Intensity")+
+        xlim(0,maxX)
+gE <- ggplot(mapping=aes(x=xVals)) +
+        geom_line(mapping=aes(y=temp_data$entropy_mean)) +
+        geom_point(mapping=aes(y=temp_data$entropy_mean))+
+        geom_errorbar(mapping=aes(y=temp_data$entropy_mean,
+        ymin=temp_data$entropy_mean-temp_data$entropy_std,
+        ymax=temp_data$entropy_mean+temp_data$entropy_std),
+                      width=.2)+
+        labs(x = "Number of Monte Carlo Runs",
+             y = "Linear Entropy")+
+        xlim(0,maxX)+ expand_limits(y=0)
+gP <- ggplot(mapping=aes(x=xVals)) +
+        geom_line(mapping=aes(y=temp_data$purity_mean)) +
+        geom_point(mapping=aes(y=temp_data$purity_mean))+
+        geom_errorbar(mapping=aes(y=temp_data$purity_mean,
+        ymin=temp_data$purity_mean-temp_data$purity_std,
+        ymax=temp_data$purity_mean+temp_data$purity_std),
+                      width=.2)+
+        labs(x = "Number of Monte Carlo Runs",
+             y = "Purity")+
+        xlim(0,maxX)+expand_limits(y=0)+expand_limits(y=1)
+gC <- ggplot(mapping=aes(x=xVals)) +
+        geom_line(mapping=aes(y=temp_data$concurrence_mean)) +
+        geom_point(mapping=aes(y=temp_data$concurrence_mean))+
+        geom_errorbar(mapping=aes(y=temp_data$concurrence_mean,
+        ymin=temp_data$concurrence_mean-temp_data$concurrence_std,
+        ymax=temp_data$concurrence_mean+temp_data$concurrence_std),
+                      width=.2)+
+        labs(x = "Number of Monte Carlo Runs",
+             y = "Concurrence")+
+        xlim(0,maxX)+expand_limits(y=0)+expand_limits(y=1)
+gN <- ggplot(mapping=aes(x=xVals)) +
+        geom_line(mapping=aes(y=temp_data$negativity_mean)) +
+        geom_point(mapping=aes(y=temp_data$negativity_mean))+
+        geom_errorbar(mapping=aes(y=temp_data$negativity_mean,
+        ymin=temp_data$negativity_mean-temp_data$negativity_std,
+        ymax=temp_data$negativity_mean+temp_data$negativity_std),
+                      width=.2)+
+        labs(x = "Number of Monte Carlo Runs",
+             y = "Negativity")+
+        xlim(0,maxX)+expand_limits(y=0)+expand_limits(y=1)
+grid.arrange(gI,gE,gP,gC,gN,nrow=2)
+```
+
+### Random Density n = 2
+```{r, echo = FALSE}
+plotNum = plotNum +1
+temp_data = total_data[(1:numYaxisPlots)+(numYaxisPlots)*plotNum,]
+gI <- ggplot(mapping=aes(x=xVals)) +
+        geom_line(mapping=aes(y=temp_data$intensity_mean)) +
+        geom_point(mapping=aes(y=temp_data$intensity_mean))+
+        geom_errorbar(mapping=aes(y=temp_data$intensity_mean,
+        ymin=temp_data$intensity_mean-temp_data$intensity_std,
+        ymax=temp_data$intensity_mean+temp_data$intensity_std),
+                      width=.2)+
+        labs(x = "Number of Monte Carlo Runs",
+             y = "Intensity")+
+        xlim(0,maxX)
+gE <- ggplot(mapping=aes(x=xVals)) +
+        geom_line(mapping=aes(y=temp_data$entropy_mean)) +
+        geom_point(mapping=aes(y=temp_data$entropy_mean))+
+        geom_errorbar(mapping=aes(y=temp_data$entropy_mean,
+        ymin=temp_data$entropy_mean-temp_data$entropy_std,
+        ymax=temp_data$entropy_mean+temp_data$entropy_std),
+                      width=.2)+
+        labs(x = "Number of Monte Carlo Runs",
+             y = "Linear Entropy")+
+        xlim(0,maxX)+ expand_limits(y=0)
+gP <- ggplot(mapping=aes(x=xVals)) +
+        geom_line(mapping=aes(y=temp_data$purity_mean)) +
+        geom_point(mapping=aes(y=temp_data$purity_mean))+
+        geom_errorbar(mapping=aes(y=temp_data$purity_mean,
+        ymin=temp_data$purity_mean-temp_data$purity_std,
+        ymax=temp_data$purity_mean+temp_data$purity_std),
+                      width=.2)+
+        labs(x = "Number of Monte Carlo Runs",
+             y = "Purity")+
+        xlim(0,maxX)+expand_limits(y=0)+expand_limits(y=1)
+gC <- ggplot(mapping=aes(x=xVals)) +
+        geom_line(mapping=aes(y=temp_data$concurrence_mean)) +
+        geom_point(mapping=aes(y=temp_data$concurrence_mean))+
+        geom_errorbar(mapping=aes(y=temp_data$concurrence_mean,
+        ymin=temp_data$concurrence_mean-temp_data$concurrence_std,
+        ymax=temp_data$concurrence_mean+temp_data$concurrence_std),
+                      width=.2)+
+        labs(x = "Number of Monte Carlo Runs",
+             y = "Concurrence")+
+        xlim(0,maxX)+expand_limits(y=0)+expand_limits(y=1)
+gN <- ggplot(mapping=aes(x=xVals)) +
+        geom_line(mapping=aes(y=temp_data$negativity_mean)) +
+        geom_point(mapping=aes(y=temp_data$negativity_mean))+
+        geom_errorbar(mapping=aes(y=temp_data$negativity_mean,
+        ymin=temp_data$negativity_mean-temp_data$negativity_std,
+        ymax=temp_data$negativity_mean+temp_data$negativity_std),
+                      width=.2)+
+        labs(x = "Number of Monte Carlo Runs",
+             y = "Negativity")+
+        xlim(0,maxX)+expand_limits(y=0)+expand_limits(y=1)
+grid.arrange(gI,gE,gP,gC,gN,nrow=2)
+```

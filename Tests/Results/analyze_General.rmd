@@ -1,0 +1,176 @@
+---
+title: "R Notebook"
+author: Scott
+date: 5/26/2021
+output: html_notebook
+---
+# Data Analysis of Tomographies
+```{r, include=FALSE}
+knitr::opts_chunk$set(fig.width = 10, fig.height = 4,fig.align='center',echo=FALSE,warning=FALSE)
+library(tidyverse)
+library(ggplot2)
+require(gridExtra)
+library(fields)
+library(here)
+
+# RUN THIS RMD SCRIPT FROM THE HEAD OF THE REPO FOLDER
+total_data <- read_csv(file = here("Tests/Results/simulatedTomographyData.csv"))
+```
+### Head of data:
+```{r, echo = FALSE}
+# if time is over 30 minutes for 1qubit then error
+total_data <- total_data %>%
+              mutate(errorOccurred = case_when(total_time>=60*30 & nqubits == 1 ~ TRUE,
+                                               TRUE ~ errorOccurred))
+
+head(total_data)
+
+cat(nrow(total_data)," Data Samples\n",
+    nrow(filter(total_data,errorOccurred==1))," Errors",
+    sep="")
+```
+### Summary:
+```{r}
+stderr <- function(x, na.rm=FALSE) {
+  if (na.rm) x <- na.omit(x)
+  sqrt(var(x)/length(x))
+}
+summary_stats <- total_data %>%
+         group_by(method,nqubits) %>%
+         summarise(num_samples = length(fid_with_actual),
+                   num_errors = sum(errorOccurred),
+                   avg_fid = mean(fid_with_actual),
+                   se_fid = stderr(fid_with_actual),
+                   avg_time = mean(total_time),
+                   se_time = stderr(total_time))
+
+total_data <- total_data %>%
+                filter(errorOccurred==0)
+summary_stats
+```
+
+```{r, echo = FALSE}
+df_mle_1 = total_data %>%   filter(method == "MLE",nqubits==1,errorOccurred==0)
+df_bme_1 = total_data %>%   filter(method == "BME",nqubits==1,errorOccurred==0)
+df_mle_2 = total_data %>%   filter(method == "MLE",nqubits==2,errorOccurred==0)
+df_bme_2 = total_data %>%   filter(method == "BME",nqubits==2,errorOccurred==0)
+df_mle_3 = total_data %>%   filter(method == "MLE",nqubits==3,errorOccurred==0)
+df_bme_3 = total_data %>%   filter(method == "BME",nqubits==3,errorOccurred==0)
+```
+
+# Fid vs Counts
+```{r}
+numBins = 15
+brk<- seq( 0, 50,,numBins+1)
+lowerFidVal = .75
+
+# 1 qubit
+bin_stats_b1 = stats.bin(df_bme_1$avg_coinc_per_meas,df_bme_1$fid_with_actual,breaks = brk)
+bin_stats_m1 = stats.bin(df_mle_1$avg_coinc_per_meas,df_mle_1$fid_with_actual,breaks = brk)
+ggplot(mapping=aes(x=bin_stats_m1$centers)) +
+geom_line(mapping=aes(y=bin_stats_m1$stats["mean",],color="MLE")) +
+geom_point(mapping=aes(y=bin_stats_m1$stats["mean",],color="MLE"))+
+geom_line(mapping=aes(y=bin_stats_b1$stats["mean",],color="BME")) +
+geom_point(mapping=aes(y=bin_stats_b1$stats["mean",],color="BME"))+
+geom_errorbar(mapping=aes(y=bin_stats_m1$stats["mean",],color="MLE",
+ymin=bin_stats_m1$stats["mean",]-bin_stats_m1$stats["Std.Dev.",],
+ymax=bin_stats_m1$stats["mean",]+bin_stats_m1$stats["Std.Dev.",]),
+              width=1)+
+geom_errorbar(mapping=aes(y=bin_stats_b1$stats["mean",],color="BME",
+ymin=bin_stats_b1$stats["mean",]-bin_stats_b1$stats["Std.Dev.",],
+ymax=bin_stats_b1$stats["mean",]+bin_stats_b1$stats["Std.Dev.",]),
+              width=1)+
+labs(title = "1 qubit",
+     x = "Avg Counts per Basis",
+     y = "Fidelity",
+     colour="Methods")+
+xlim(0,50)+
+ylim(lowerFidVal,1)
+```
+
+```{r}
+# 2 qubits
+bin_stats_b2 = stats.bin(df_bme_2$avg_coinc_per_meas,df_bme_2$fid_with_actual,breaks = brk)
+bin_stats_m2 = stats.bin(df_mle_2$avg_coinc_per_meas,df_mle_2$fid_with_actual,breaks = brk)
+
+ggplot(mapping=aes(x=bin_stats_m2$centers)) +
+geom_line(mapping=aes(y=bin_stats_m2$stats["mean",],color="MLE")) +
+geom_point(mapping=aes(y=bin_stats_m2$stats["mean",],color="MLE"))+
+geom_line(mapping=aes(y=bin_stats_b2$stats["mean",],color="BME")) +
+geom_point(mapping=aes(y=bin_stats_b2$stats["mean",],color="BME"))+
+geom_errorbar(mapping=aes(y=bin_stats_m2$stats["mean",],color="MLE",
+ymin=bin_stats_m2$stats["mean",]-bin_stats_m2$stats["Std.Dev.",],
+ymax=bin_stats_m2$stats["mean",]+bin_stats_m2$stats["Std.Dev.",]),
+              width=1)+
+geom_errorbar(mapping=aes(y=bin_stats_b2$stats["mean",],color="BME",
+ymin=bin_stats_b2$stats["mean",]-bin_stats_b2$stats["Std.Dev.",],
+ymax=bin_stats_b2$stats["mean",]+bin_stats_b2$stats["Std.Dev.",]),
+              width=1)+
+labs(title = "2 Qubits",
+     x = "Avg Counts per Basis",
+     y = "Fidelity",
+     colour="Methods")+
+xlim(0,50)+
+ylim(lowerFidVal,1)
+```
+
+```{r}
+# 3 qubits
+bin_stats_b3 = stats.bin(df_bme_3$avg_coinc_per_meas,df_bme_3$fid_with_actual,breaks = brk)
+bin_stats_m3 = stats.bin(df_mle_3$avg_coinc_per_meas,df_mle_3$fid_with_actual,breaks = brk)
+
+ggplot(mapping=aes(x=bin_stats_m3$centers)) +
+geom_line(mapping=aes(y=bin_stats_m3$stats["mean",],color="MLE")) +
+geom_point(mapping=aes(y=bin_stats_m3$stats["mean",],color="MLE"))+
+geom_line(mapping=aes(y=bin_stats_b3$stats["mean",],color="BME")) +
+geom_point(mapping=aes(y=bin_stats_b3$stats["mean",],color="BME"))+
+geom_errorbar(mapping=aes(y=bin_stats_m3$stats["mean",],color="MLE",
+ymin=bin_stats_m3$stats["mean",]-bin_stats_m3$stats["Std.Dev.",],
+ymax=bin_stats_m3$stats["mean",]+bin_stats_m3$stats["Std.Dev.",]),
+              width=1)+
+geom_errorbar(mapping=aes(y=bin_stats_b3$stats["mean",],color="BME",
+ymin=bin_stats_b3$stats["mean",]-bin_stats_b3$stats["Std.Dev.",],
+ymax=bin_stats_b3$stats["mean",]+bin_stats_b3$stats["Std.Dev.",]),
+              width=1)+
+labs(title = "3 Qubits",
+     x = "Avg Counts per Basis",
+     y = "Fidelity",
+     colour="Methods")+
+xlim(0,50)+
+ylim(lowerFidVal,1)
+```
+# Time vs Counts. NOTE Y AXIS CHANGES
+```{r}
+# 1 qubit
+bin_stats_b1 = stats.bin(df_bme_1$avg_coinc_per_meas,df_bme_1$total_time,breaks = brk)
+ggplot(mapping=aes(x=bin_stats_b1$centers)) +
+geom_line(mapping=aes(y=bin_stats_b1$stats["mean",],color="BME")) +
+geom_point(mapping=aes(y=bin_stats_b1$stats["mean",],color="BME"))+
+geom_errorbar(mapping=aes(y=bin_stats_b1$stats["mean",],color="BME",
+ymin=bin_stats_b1$stats["mean",]-bin_stats_b1$stats["Std.Dev.",],
+ymax=bin_stats_b1$stats["mean",]+bin_stats_b1$stats["Std.Dev.",]),
+              width=1)+
+labs(title = "1 Qubit BME",
+     x = "Avg Counts per Basis",
+     y = "Time(sec)",
+     colour="Methods")+
+xlim(0,50)
+```
+
+```{r}
+# 2 qubits
+bin_stats_b2 = stats.bin(df_bme_2$avg_coinc_per_meas,df_bme_2$total_time,breaks = brk)
+ggplot(mapping=aes(x=bin_stats_b2$centers)) +
+geom_line(mapping=aes(y=bin_stats_b2$stats["mean",],color="BME")) +
+geom_point(mapping=aes(y=bin_stats_b2$stats["mean",],color="BME"))+
+geom_errorbar(mapping=aes(y=bin_stats_b2$stats["mean",],color="BME",
+ymin=bin_stats_b2$stats["mean",]-bin_stats_b2$stats["Std.Dev.",],
+ymax=bin_stats_b2$stats["mean",]+bin_stats_b2$stats["Std.Dev.",]),
+              width=1)+
+labs(title = "2 Qubits BME",
+     x = "Avg Counts per Basis",
+     y = "Time(sec)",
+     colour="Methods")+
+xlim(0,50)
+```
+

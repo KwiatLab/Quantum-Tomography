@@ -141,26 +141,29 @@ def getProperties_helper(errf, rho0):
 
 # Helper function that returns the given properties with bounds of the given rhos.
 # This will not given you fvals and intensities. So it is recommended to use getProperties in the TomoClass
-def getProperties_helper_bounds(errf, rhop, rho):
-    n = rhop.shape[0]
+def getProperties_helper_bounds(errf, rhos):
+    n = rhos.shape[0]
     n_fun = len(errf)
-    data = np.zeros([n+1, n_fun], dtype = "O")
+    data = np.zeros([n, n_fun], dtype = "O")
     for j in range(n):
-        data[j] = getProperties_helper(errf, rhop[j, :, :])[:, 1]
-    data[-1] = getProperties_helper(errf, rho)[:, 1]
+        data[j] = getProperties_helper(errf, rhos[j])[:, 1]
 
-    errors = np.zeros(n_fun, dtype = "O")
+    stds = np.zeros(n_fun, dtype = "O")
     means = np.zeros(n_fun, dtype = "O")
 
     for k in range(n_fun):
-        if any(data[:, k] == 'NA'):
-            errors[k] = ''
+        if all(data[:, k] == 'NA'):
+            stds[k] = 'NA'
             means[k] = 'NA'
         else:
-            errors[k] = np.std(data[:, k], ddof = n - 1)
-            means[k] = np.mean(data[:, k])
+            if n < 2:
+                stds[k] = "NA"
+                means[k] = np.mean(data[:, k])
+            else:
+                stds[k] = np.std(data[:, k], ddof = 1)
+                means[k] = np.mean(data[:, k])
 
-    return np.array([np.array(errf), means, errors], dtype = "O").transpose()
+    return np.array([np.array(errf), means, stds], dtype = "O").transpose()
 
 # used in getBellSettings
 def bellsettings_range_init(rhog, partsize):
@@ -308,15 +311,6 @@ def weightedcov(samples,weights):
 def normalizeExponentLikelihood(likelihoods):
     nFactor = min(likelihoods)
     likelihoods = likelihoods - nFactor
-
-    # code before:
-    # for i in range(len(likelihoods)):
-    #     likelihoods[i] = np.exp(-1*likelihoods[i])
-    # norm = sum(likelihoods)
-    # fractionalLikelihood = likelihoods/ norm
-    # return fractionalLikelihood
-
-    # code after:
     likelihoods = np.exp(-1 * likelihoods)
     likelihoods /= sum(likelihoods)
     return likelihoods
