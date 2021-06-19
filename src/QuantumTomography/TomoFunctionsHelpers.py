@@ -69,3 +69,6 @@ def complexToPhaser(complex):
     if(Phase<0):
         Phase += 2*np.pi
     return np.array([Magn,Phase])
+
+def isStateVector(state):
+    return np.ndim(state) == 1

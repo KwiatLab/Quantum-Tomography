@@ -31,9 +31,9 @@ if __name__ == '__main__':
     # Do tomographies of single qubit
     for state in states:
         [[Tomo_Object, Fidelity_with_Original, Original_Purity, Total_Time]] = runTests(int(np.floor(np.log2(state.shape[0])+.01)),1,
-                                                                                        randomStateDist=state)
+                                                                                        randomStateDist=state,errBounds=5)
         # todo: try error corrections with 2det and acc
-        for i in [10,9,8,7,6,5,4,3,2,1,0]:
+        for i in [0,1,2,3,4,5,10,9,8,7,6]:
             props = Tomo_Object.getProperties(i)
             dataRow = dict()
             dataRow['num_errors'] = str(i)

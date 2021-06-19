@@ -283,7 +283,7 @@ def getBellSettings_helper_bounds(rhop, rho, partsize_init, partsize, t, n):
     belldata = np.zeros([n+1, 5])
 
     for j in range(n):
-        belldata[j] = getBellSettings_helper(rhop[j, :, :], partsize_init, partsize, t)[:, 1]
+        belldata[j] = getBellSettings_helper(rhop[j], partsize_init, partsize, t)[:, 1]
     [bellNames, belldata[-1]] = getBellSettings_helper(rho, partsize_init, partsize, t).transpose()
     bmeans = np.zeros(5)
     berrors = np.zeros(5)

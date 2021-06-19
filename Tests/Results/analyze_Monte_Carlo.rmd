@@ -60,7 +60,7 @@ gE <- ggplot(mapping=aes(x=xVals)) +
         ymax=temp_data$entropy_mean+temp_data$entropy_std),
                       width=.2)+
         labs(x = "Number of Monte Carlo Runs",
-             y = "Linear Entropy")+
+             y = "Von Entropy")+
         xlim(0,maxX)+ expand_limits(y=0)
 gP <- ggplot(mapping=aes(x=xVals)) +
         geom_line(mapping=aes(y=temp_data$purity_mean)) +
@@ -97,7 +97,7 @@ gE <- ggplot(mapping=aes(x=xVals)) +
         ymax=temp_data$entropy_mean+temp_data$entropy_std),
                       width=.2)+
         labs(x = "Number of Monte Carlo Runs",
-             y = "Linear Entropy")+
+             y = "Von Entropy")+
         xlim(0,maxX)+ expand_limits(y=0)
 gP <- ggplot(mapping=aes(x=xVals)) +
         geom_line(mapping=aes(y=temp_data$purity_mean)) +
@@ -134,7 +134,7 @@ gE <- ggplot(mapping=aes(x=xVals)) +
         ymax=temp_data$entropy_mean+temp_data$entropy_std),
                       width=.2)+
         labs(x = "Number of Monte Carlo Runs",
-             y = "Linear Entropy")+
+             y = "Von Entropy")+
         xlim(0,maxX)+ expand_limits(y=0)
 gP <- ggplot(mapping=aes(x=xVals)) +
         geom_line(mapping=aes(y=temp_data$purity_mean)) +
@@ -171,7 +171,7 @@ gE <- ggplot(mapping=aes(x=xVals)) +
         ymax=temp_data$entropy_mean+temp_data$entropy_std),
                       width=.2)+
         labs(x = "Number of Monte Carlo Runs",
-             y = "Linear Entropy")+
+             y = "Von Entropy")+
         xlim(0,maxX)+ expand_limits(y=0)
 gP <- ggplot(mapping=aes(x=xVals)) +
         geom_line(mapping=aes(y=temp_data$purity_mean)) +
@@ -228,7 +228,7 @@ gE <- ggplot(mapping=aes(x=xVals)) +
         ymax=temp_data$entropy_mean+temp_data$entropy_std),
                       width=.2)+
         labs(x = "Number of Monte Carlo Runs",
-             y = "Linear Entropy")+
+             y = "Von Entropy")+
         xlim(0,maxX)+ expand_limits(y=0)
 gP <- ggplot(mapping=aes(x=xVals)) +
         geom_line(mapping=aes(y=temp_data$purity_mean)) +
@@ -285,7 +285,7 @@ gE <- ggplot(mapping=aes(x=xVals)) +
         ymax=temp_data$entropy_mean+temp_data$entropy_std),
                       width=.2)+
         labs(x = "Number of Monte Carlo Runs",
-             y = "Linear Entropy")+
+             y = "Von Entropy")+
         xlim(0,maxX)+ expand_limits(y=0)
 gP <- ggplot(mapping=aes(x=xVals)) +
         geom_line(mapping=aes(y=temp_data$purity_mean)) +

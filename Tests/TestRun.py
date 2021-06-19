@@ -295,49 +295,56 @@ def saveRunsGeneral(numQubits, nStates,resultsFilePath="Results/results_GeneralD
     Tomographys = runTests(numQubits, nStates,randomStateDist=randomStateDist, errBounds=errBounds, testAccCorr=testAccCorr, 
                            test2Det=test2Det, testCrossTalk=testCrossTalk,testBell=testBell, testDrift=testDrift, method=method)
 
-    if os.path.isfile(resultsFilePath):
-        printHeader=False
-    else:
-        printHeader=True
+    numTotalErrors = 0
 
-    # Open a file with access mode 'a'
-    file_object = open(resultsFilePath, 'a')
+    if saveData:
+        if os.path.isfile(resultsFilePath):
+            printHeader=False
+        else:
+            printHeader=True
+
+        # Open a file with access mode 'a'
+        file_object = open(resultsFilePath, 'a')
     # Print details of each tomography to csv
     for t in Tomographys:
-        [Tomo_Object, Fidelity_with_Original, Original_Purity,Total_Time] = t
-        # Set up dictionary
-        dataRow = dict()
-        dataRow['numQubits'] = Tomo_Object.conf["NQubits"]
-        dataRow['method'] = Tomo_Object.conf["Method"]
-        dataRow['Fidelity_with_Original'] = Fidelity_with_Original
-        dataRow['avgCoincPerMeas'] = np.average(Tomo_Object.getCoincidences())
-        dataRow['Total_Time'] = Total_Time
-        dataRow['errorOccurred'] = Fidelity_with_Original == -1
-        dataRow['test_error'] = Tomo_Object.conf["DoErrorEstimation"]
-        dataRow['test_acc'] = Tomo_Object.conf["DoAccidentalCorrection"]
-        dataRow['test_det'] = Tomo_Object.conf["NDetectors"]
-        dataRow['test_cross'] = np.any(Tomo_Object.conf["Crosstalk"] - np.eye(Tomo_Object.conf["Crosstalk"].shape[0]) > 1e-6)
-        dataRow['test_bell'] = Tomo_Object.conf["Bellstate"]
-        dataRow['test_drift'] = Tomo_Object.conf["DoDriftCorrection"]
-        dataRow['Original_Purity'] = Original_Purity
+        [Tomo_Object, Fidelity_with_Original, Original_Purity, Total_Time] = t
+        if Original_Purity <0:
+            numTotalErrors +=1
+        if saveData:
+            # Set up dictionary
+            dataRow = dict()
+            dataRow['numQubits'] = Tomo_Object.conf["NQubits"]
+            dataRow['method'] = Tomo_Object.conf["Method"]
+            dataRow['Fidelity_with_Original'] = Fidelity_with_Original
+            dataRow['avgCoincPerMeas'] = np.average(Tomo_Object.getCoincidences())
+            dataRow['Total_Time'] = Total_Time
+            dataRow['errorOccurred'] = Fidelity_with_Original == -1
+            dataRow['test_error'] = Tomo_Object.conf["DoErrorEstimation"]
+            dataRow['test_acc'] = Tomo_Object.conf["DoAccidentalCorrection"]
+            dataRow['test_det'] = Tomo_Object.conf["NDetectors"]
+            dataRow['test_cross'] = np.any(Tomo_Object.conf["Crosstalk"] - np.eye(Tomo_Object.conf["Crosstalk"].shape[0]) > 1e-6)
+            dataRow['test_bell'] = Tomo_Object.conf["Bellstate"]
+            dataRow['test_drift'] = Tomo_Object.conf["DoDriftCorrection"]
+            dataRow['Original_Purity'] = Original_Purity
 
-        if printHeader:
-            TORREPLACE = ""
+            if printHeader:
+                TORREPLACE = ""
+                for key in dataRow.keys():
+                    TORREPLACE += key + ","
+                printHeader = False
+            else:
+                TORREPLACE=","
+
+            TORREPLACE= TORREPLACE[:-1] +"\n"
             for key in dataRow.keys():
-                TORREPLACE += key + ","
-            printHeader = False
-        else:
-            TORREPLACE=","
+                TORREPLACE += str(dataRow[key])+","
+            TORREPLACE = TORREPLACE[:-1]
 
-        TORREPLACE= TORREPLACE[:-1] +"\n"
-        for key in dataRow.keys():
-            TORREPLACE += str(dataRow[key])+","
-        TORREPLACE = TORREPLACE[:-1]
-
-        # Append at the end of file
-        file_object.write(TORREPLACE)
+            # Append at the end of file
+            file_object.write(TORREPLACE)
     # Close the file
     file_object.close()
+    return numTotalErrors
 
 def uniqueID(Tomo_Object):
     numQubits = Tomo_Object.conf["NQubits"]

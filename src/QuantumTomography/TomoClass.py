@@ -198,26 +198,29 @@ class Tomography():
         [coincidences, measurements_densities, measurements_pures, accidentals] = self.filter_data(tomo_input)
         self.conf['Method'] = method
 
-        # get the starting state from linear_tomography if not defined
+        # get the starting state from tomography_linear if not defined
         starting_matrix = self.conf['RhoStart']
+        if not isinstance(starting_matrix,np.ndarray):
+            try:
+                # todo: go over linear tomography. Clean it up. Figure out why it fails on the very rare occasion.
+                [starting_matrix,inten_linear] = self.tomography_linear(coincidences, measurements_pures)
+                # Currently linear tomography gets the phase wrong. So a temporary fix is to just transpose it.
+                starting_matrix = starting_matrix.transpose()
+                starting_matrix = make_positive(starting_matrix)
+                starting_matrix = starting_matrix / np.trace(starting_matrix)
+            except:
+                raise RuntimeError('Failed to run linear Tomography')
 
-        try:
-            # todo: go over linear tomography. Clean it up. Figure out why it fails on the very rare occasion.
-            if not starting_matrix:
-                starting_matrix = self.linear_tomography(coincidences, measurements_pures)[0]
-            # Currently linear tomography gets the phase wrong. So a temporary fix is to just transpose it.
-            starting_matrix = starting_matrix.transpose()
-            starting_matrix = make_positive(starting_matrix)
-            starting_matrix = starting_matrix / np.trace(starting_matrix)
-        except:
-            raise RuntimeError('Failed to run linear Tomography')
-
-        if(method == "MLE"):
+        if method == "MLE":
             # perform MLE tomography
             [rhog, intensity, fvalp] = self.tomography_MLE(starting_matrix, coincidences, measurements_densities, accidentals)
+        elif method.upper() == "BME":
+            [rhog, intensity, fvalp] = self.tomography_BME(starting_matrix, coincidences, measurements_densities,
+                                                           accidentals)
+        elif method.upper() == "LINEAR":
+            [rhog, intensity, fvalp] = [starting_matrix,inten_linear,0]
         else:
-            # perform Bayesian tomography
-            [rhog, intensity, fvalp] = self.tomography_BME(starting_matrix, coincidences, measurements_densities,accidentals)
+            raise ValueError("Invalid Method name: " + str(method))
 
         if saveState:
             # save the results
@@ -230,10 +233,10 @@ class Tomography():
         return [rhog, intensity, fvalp]
 
     """
-        state_tomo(measurements, counts)
+        StateTomography(measurements, counts)
         todo:comment
         """
-    def state_tomo(self,measurements,counts,crosstalk=-1,efficiency=0,time=-1,singles=-1,window=0,error=0, intensities=-1,method="MLE"):
+    def StateTomography(self,measurements,counts,crosstalk=-1,efficiency=0,time=-1,singles=-1,window=0,error=0, intensities=-1,method="MLE"):
         tomo_input = self.buildTomoInput(measurements, counts, crosstalk, efficiency, time, singles,window,error)
         return self.state_tomography(tomo_input, intensities, method=method)
 
@@ -621,7 +624,7 @@ class Tomography():
         return sum(val)
 
     """
-    linear_tomography(coincidences, measurements)
+    tomography_linear(coincidences, measurements)
     Desc: Uses linear techniques to find a starting state for maximum likelihood estimation.
     TODO: idk what this is based off of. Does it even do the correct thing?
     Parameters
@@ -638,7 +641,7 @@ class Tomography():
     intensity : float
         The predicted overall intensity used to normalize the state.
     """
-    def linear_tomography(self, coincidences, measurements, m_set = ()):
+    def tomography_linear(self, coincidences, measurements, m_set = ()):
         if m_set == ():
             m_set = independent_set(measurements)
         if np.isscalar(m_set):
@@ -1228,26 +1231,18 @@ class Tomography():
         """
     def getBellSettings(self, rho, partsize_init = 9, partsize = 5, t = 3, bounds = -1):
         # if bounds not set use the conf settings
-        if (type(bounds) == int):
-            bounds = (self.conf['DoErrorEstimation'] > 1) or self.mont_carlo_states != 0
-        if (bounds):
-            # check if given state is of the current data
-            if (fidelity(self.last_rho, rho) < .95):
-                raise ValueError("Input data needed. You can only calculate bounds on the state used in the tomography.")
-            err_n = self.conf['DoErrorEstimation']
-            # increase err_n if needed
-            if (err_n <= 1):
-                err_n = 2
-            # generate states if needed
-            if (self.mont_carlo_states == 0):
-                states = self.tomography_states_generator(err_n)
-            else:
-                states = self.mont_carlo_states
-                err_n = len(states[1])
-            vals = getBellSettings_helper_bounds(states[0], rho, partsize_init, partsize, t, err_n)
+        if bounds == -1:
+            bounds = self.conf['DoErrorEstimation']
+
+        # generate states if needed
+        if bounds > len(self.mont_carlo_states) - 1:
+            self.tomography_states_generator(bounds - len(self.mont_carlo_states) + 1)
+        states = np.array(self.mont_carlo_states)[:bounds + 1, :]
+
+        if (bounds > 0):
+            return getBellSettings_helper_bounds(states[:,0], rho, partsize_init, partsize, t, bounds)
         else:
-            vals = getBellSettings_helper(rho, partsize_init, partsize, t)
-        return vals
+            return getBellSettings_helper(rho, partsize_init, partsize, t)
 
     """
         printLastOutput(tomo, bounds)

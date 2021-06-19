@@ -187,7 +187,10 @@ def density2t(rhog):
         Density Matrix of the input state.
     """
 def toDensity(psiMat):
-    return np.outer(psiMat, psiMat.conj())
+    if not isStateVector(psiMat):
+        raise ValueError("Invalid input state with shape " + str(psiMat.shape))
+    psiMat = np.outer(psiMat, psiMat.conj())
+    return psiMat / np.trace(psiMat)
 
 #
 # def one_in(idx, length):
@@ -271,31 +274,27 @@ def t_to_density(t):
         The calculated fidelity.
     """
 def fidelity(state1, state2):
-    pure = 0
     rho1 = state1
     rho2 = state2
-    if np.ndim(state1) == 1:
-        state1 = toDensity(state1)
-        rho1 = np.dot(state1, state1.conj().transpose())
+    pure = 0
+    if isStateVector(state1):
+        rho1 = toDensity(state1)
         pure = 1
     elif state1.shape[1] == state1.shape[0]:
         rho1 = state1
     else:
-        print("State1 is not a vector or density matrix")
+        raise ValueError("State1 is not a vector or density matrix")
 
-    if np.ndim(state2) == 1:
-        state2 = toDensity(state2)
-        rho2 = np.dot(state2, state2.conj().transpose())
+    if isStateVector(state2):
+        rho2 = toDensity(state2)
         pure = 1
     elif state2.shape[1] == state2.shape[0]:
         rho2 = state2
     else:
-        print("State2 is not a vector or density matrix")
+        raise ValueError("State2 is not a vector or density matrix")
 
     rho1 = rho1 /np.trace(rho1)
     rho2 = rho2 / np.trace(rho2)
-
-    rho1 = (rho1+rho1.conj().transpose())/2
 
     if pure:
         val = np.trace(np.dot(rho1, rho2))
@@ -307,7 +306,7 @@ def fidelity(state1, state2):
 
     # when comparing 2 identical pure state, it will get a value larger than 1,
     if val > 1:
-        if val - 1 < 0.000001:
+        if val - 1 < 0.00001:
             val = 1.0
         else:
             print("Fidelity larger than 1.")
@@ -330,7 +329,9 @@ def fidelity(state1, state2):
         The calculated concurrence.
     """
 def concurrence(rhog):
-    if(rhog.shape[0]>2):
+    if isStateVector(rhog):
+        rhog = toDensity(rhog)
+    if rhog.shape[0] == 4:
         if min(rhog.shape) == 1:
             rhog = np.dot(rhog.conj(), rhog.transpose())
 
@@ -364,6 +365,8 @@ def concurrence(rhog):
         The calculated tangle.
     """
 def tangle(rhog):
+    if isStateVector(rhog):
+        rhog = toDensity(rhog)
     if(rhog.shape[0]>2):
         c = concurrence(rhog)
         val = c ** 2
@@ -387,13 +390,14 @@ def tangle(rhog):
         The calculated entropy.
     """
 def entropy(rhog):
+    if isStateVector(rhog):
+        rhog = toDensity(rhog)
     d = np.linalg.eig(rhog)[0]
     e = np.real(d)
     val = 0
     for a in range(len(e)):
         if e[a] > 0:
             val = val-e[a]*np.log2(e[a])
-
     return val
 
 """
@@ -412,7 +416,8 @@ def entropy(rhog):
         A value of zero corresponds to a completly pure state.
     """
 def linear_entropy(rhog):
-
+    if isStateVector(rhog):
+        rhog = toDensity(rhog)
     return 1- purity(rhog)
 
 
@@ -431,10 +436,9 @@ def linear_entropy(rhog):
         The calculated negativity.
     """
 def negativity(rhog):
-    if(rhog.shape[0]>2):
-        if min(rhog.shape) == 1:
-            rhog = np.dot(rhog, rhog.conj().transpose())
-
+    if isStateVector(rhog):
+        rhog = toDensity(rhog)
+    if rhog.shape[0] == 4:
         rho1 = partial_transpose(rhog)
         val = -2*np.min(np.min(np.real(np.linalg.eig(rho1)[0])), 0)
 
@@ -463,8 +467,7 @@ def purity(rhog):
 """
     partial_transpose(rhog)
     Desc: Returns the partial transpose of the input density matrix.
-
-    DISCLAIMER : In Progress, not checked.
+    DISCLAIMER : Tests in progress
 
     Parameters
     ----------
@@ -549,21 +552,12 @@ def performOperation(psi, g):
     p = psi
     if(len(g.shape) == 3):
         # Multiple operations
-        if (len(psi.shape) == 1):
-            # ket form
-            for i in range(0, len(g)):
-                p = ketOperation(p, g[i])
-        else:
-            # density matrix form
-            for i in range(0, len(g)):
-                p = densityOperation(p, g[i])
+        for i in range(g.shape[0]):
+            p = performOperation(p,g[i])
     else:
-        # 1 operation
-        if (len(psi.shape) == 1):
-            # ket form
+        if isStateVector(psi):
             p = ketOperation(p, g)
         else:
-            # density matrix form
             p = densityOperation(p, g)
     return p
 
