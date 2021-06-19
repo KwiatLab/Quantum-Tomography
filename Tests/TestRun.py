@@ -276,7 +276,7 @@ def runTests(numQubits, nStates,
         # Do tomography with settings
         try:
             start_time = time.time()
-            myDensity, inten, myfVal = Tomo_Object.state_tomography(tomo_input, intensities, method=method)
+            myDensity, inten, myfVal = Tomo_Object.StateTomography_Matrix(tomo_input, intensities, method=method)
             end_time = time.time()
 
             Fidelity_with_Original = qLib.fidelity(startingRho, myDensity)

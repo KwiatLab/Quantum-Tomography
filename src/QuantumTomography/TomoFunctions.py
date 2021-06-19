@@ -18,66 +18,156 @@ http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
 # TOMOGRAPHY CALCULATE  #
 # # # # # # # # # # # # #
 
+
+"""
+maxlike_fitness(t, coincidences, accidentals, m, prediction)
+Desc: Calculates the diffrence between the current predicted state data and the actual data.
+
+Parameters
+----------
+t : ndarray
+    T values of the current predicted state.
+coincidences : ndarray with length = number of measurements or shape = (number of measurements, 2^numQubits) for 2 det/qubit
+    The counts of the tomography.
+accidentals : ndarray with length = number of measurements or shape = (number of measurements, 2^numQubits) for 2 det/qubit
+    The singles values of the tomography. Used for accidental correction.
+m : ndarray with shape = (2^numQubits, 2^numQubits, number of measurements)
+    The measurements of the tomography in density matrix form.
+prediction : ndarray
+    Predicted counts from the predicted state.
+
+Returns
+-------
+val : float
+    value of the optimization function.
+"""
+def maxlike_fitness(t, coincidences, accidentals, m, prediction,overall_norms=-1):
+    # If overall_norms not given then assume uniform
+    if not isinstance(overall_norms,np.ndarray):
+        overall_norms = np.ones(coincidences.shape[0])
+    elif not (len(overall_norms.shape) == 1 and overall_norms.shape[0] == coincidences.shape[0]):
+        raise ValueError("Invalid intensities array")
+    rhog = t_to_density(t)
+    for j in range(len(prediction)):
+        prediction[j] = np.float64(np.real(overall_norms[j] * np.real(np.trace(np.dot(m[:, :, j], rhog))) + accidentals[j]))
+        prediction[j] = np.max([prediction[j], 0.01])
+        # Avoid dividing by zero for pure states
+        if (prediction[j] == 0):
+            prediction[j] == 1
+
+    val = (prediction - coincidences) / np.sqrt(prediction)
+
+    val = np.float64(np.real(val))
+
+    return val
+
+# todo add overall_norms to comment block
+"""
+maxlike_fitness_hedged(t, coincidences, accidentals, m, prediction, bet)
+Desc: Calculates the diffrence between the current predicted state data and the actual data using hedged maximum likelihood.
+
+Parameters
+----------
+t : ndarray
+    T values of the current predicted state.
+coincidences : ndarray with length = number of measurements or shape = (number of measurements, 2^numQubits) for 2 det/qubit
+    The counts of the tomography.
+accidentals : ndarray with length = number of measurements or shape = (number of measurements, 2^numQubits) for 2 det/qubit
+    The singles values of the tomography. Used for accidental correction.
+m : ndarray with shape = (2^numQubits, 2^numQubits, number of measurements)
+    The measurements of the tomography in density matrix form .
+prediction : ndarray
+    Predicted counts from the predicted state.
+bet : float 0 to .5
+    The beta value used.
+
+Returns
+-------
+val : float
+    value of the optimization function.
+"""
+def maxlike_fitness_hedged(t, coincidences, accidentals, m, prediction, bet,overall_norms=-1):
+    # If overall_norms not given then assume uniform
+    if not isinstance(overall_norms,np.ndarray):
+        overall_norms = np.ones(coincidences.shape[0])
+    elif not (len(overall_norms.shape) == 1 and overall_norms.shape[0] == coincidences.shape[0]):
+        raise ValueError("Invalid intensities array")
+
+    rhog = t_to_density(t)
+    for j in range(len(prediction)):
+        prediction[j] = overall_norms[j] * np.real(np.trace(np.dot(m[:, :, j], rhog))) + accidentals[j]
+        prediction[j] = np.max([prediction[j], 0.01])
+
+    hedge = np.repeat(np.real((bet * np.log(np.linalg.det(np.mat(rhog)))) / len(prediction)), len(prediction))
+    val = np.sqrt(np.real((((prediction - coincidences) ** 2) / (2 * prediction)) - hedge) + 1000)
+
+    val = np.float64(np.real(val))
+
+    return val
+    # todo: comment block
+
+
+# def likelyhood(givenState, coincidences, measurments, accidentals, intensities):
+#     Averages = np.zeros_like(coincidences)
+#     for j in range(len(Averages)):
+#         Averages[j] = intensities[j] * np.trace(np.matmul(measurments[:, :, j], givenState)) + accidentals[j]
+#         Averages[j] = np.max([Averages[j], 0.0000001])
 #
-# def i2array(i, ii, n):
-#     nn = np.int(np.ceil((np.log(ii)/np.log(n))))
-#     rv = np.zeros(nn)
-#     for j in range(nn):
-#         rv[j] = i/(n**(nn-j-1))
-#         i % = n**(nn-j-1)
-#     return rv
-#
-# # returns the tensor product of the two states
-# def tensor_product(A, B):
-#     a = np.ndim(A)
-#     b = np.ndim(B)
-#     if (a == 2) & (b == 2):
-#         [n11, n12] = np.shape(A)
-#         [n21, n22] = np.shape(B)
-#         jj = n11 * n21
-#         kk = n12 * n22
-#         rv = np.zeros([jj, kk]) + 0j
-#         for j in range(jj):
-#             for k in range(kk):
-#                 rv[j, k] = A[int(np.floor(j / n21))][int(np.floor(k / n22))] * B[j % n21][k % n22]
-#     elif (a == 2) & (b == 1):
-#         [n11, n12] = np.shape(A)
-#         n21 = len(B)
-#         jj = n11 * n21
-#         kk = n12
-#         rv = np.zeros([jj, kk]) + 0j
-#         for j in range(jj):
-#             for k in range(kk):
-#                 rv[j, k] = A[int(np.floor(j / n21))][k] * B[j % n21]
-#     elif (a == 1) & (b == 2):
-#         [n21, n22] = np.shape(B)
-#         n11 = len(A)
-#         jj = n11 * n21
-#         kk = n22
-#         rv = np.zeros([jj, kk]) + 0j
-#         for j in range(jj):
-#             for k in range(kk):
-#                 rv[j, k] = A[int(np.floor(j / n21))] * B[j % n21][ k]
-#     elif (a == 1) & (b == 1):
-#         n11 = len(A)
-#         n21 = len(B)
-#         jj = n11 * n21
-#         rv = np.zeros(jj) + 0j
-#         for j in range(jj):
-#             rv[j] = A[int(np.floor(j / n21))] * B[j % n21]
-#     elif (a == 0) | (b == 0):
-#         rv = A * B
-#
-#     return rv
-#
-# def trace_dist(rho1, rho2):
-#     # didn't checked, and would not be called in this version.
-#     s1 = rho2stokes(rho1)
-#     s2 = rho2stokes(rho2)
-#     s = s1 - s2
-#     val = np.sqrt(np.dot(s.conj().transpose(), s))/2
-#
-#     return val
+#     val = (Averages - coincidences) ** 2 / (2 * Averages)
+#     val = np.float64(np.real(val))
+#     prob = np.exp(-1 * np.sum(val), dtype=np.longdouble)
+#     return prob
+
+"""
+maxlike_fitness(t, coincidences, accidentals, m, prediction)
+Desc: Calculates the diffrence between the current predicted state data and the actual data.
+
+Parameters
+----------
+t : ndarray
+    T values of the current predicted state.
+coincidences : ndarray with length = number of measurements or shape = (number of measurements, 2^numQubits) for 2 det/qubit
+    The counts of the tomography.
+accidentals : ndarray with length = number of measurements or shape = (number of measurements, 2^numQubits) for 2 det/qubit
+    The singles values of the tomography. Used for accidental correction.
+m : ndarray with shape = (2^numQubits, 2^numQubits, number of measurements)
+    The measurements of the tomography in density matrix form.
+prediction : ndarray
+    Predicted counts from the predicted state.
+
+Returns
+-------
+val : float
+    value of the optimization function.
+"""
+def log_likelyhood(intensity, givenState, coincidences, measurements, accidentals, overall_norms=-1):
+    # If overall_norms not given then assume uniform
+    if not isinstance(overall_norms, np.ndarray):
+        overall_norms = np.ones(coincidences.shape[0])
+    elif not (len(overall_norms.shape) == 1 and overall_norms.shape[0] == coincidences.shape[0]):
+        raise ValueError("Invalid intensities array")
+
+    if (len(givenState.shape) == 1):
+        givenState = t_to_density(givenState)
+
+    # # todo : currently the intensity is sometimes being passed in as a 1x1 array
+    # try:
+    #     intensity = intensity[0]
+    # except:
+    #     pass
+
+    Averages = np.zeros_like(coincidences, dtype=np.float)
+    for j in range(len(Averages)):
+        Averages[j] = intensity * overall_norms[j] * np.real(
+            np.trace(np.matmul(measurements[:, :, j], givenState))) + \
+                      accidentals[j]
+
+        # Avoid dividing by zero for pure states
+        if (Averages[j] == 0):
+            Averages[j] == 1
+
+    val = (Averages - coincidences) ** 2 / (2 * Averages)
+    return sum(val)
 
 
 """
