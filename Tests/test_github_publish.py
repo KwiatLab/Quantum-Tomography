@@ -23,7 +23,7 @@ run and the results can be see in the actions tab"""
 class TestFull(unittest.TestCase):
     #    1 Qubit
     def test_FULL(self):
-        numErrors = runFull()
+        numErrors = runFull(nStates=1,saveStates=False)
         self.assertEqual(numErrors,0)
 
 

@@ -3,9 +3,9 @@ import numpy as np
 import QuantumTomography as qLib
 import traceback
 import warnings
-warnings.filterwarnings("ignore")
 import time
 import os
+
 """
 Copyright 2020 University of Illinois Board of Trustees.
 Licensed under the terms of an MIT license
@@ -41,6 +41,16 @@ def runTests(numQubits, nStates,
              randomStateDist="density",errBounds=0,testAccCorr=False,test2Det=False,testCrossTalk=False,
              testBell=False,testDrift=False,method='MLE'):
     BigListOfTomographies = list()
+
+    # If invalid conf settings then don't run
+    if numQubits == 1:
+        if testAccCorr:
+            print('Run skipped. Invalid Conf settings code: n1-a1')
+            return BigListOfTomographies
+    if testBell and numQubits != 2:
+        print('Run skipped. Invalid Conf settings code: n1-b1')
+        return BigListOfTomographies
+
     numErrors = 0
     for TomographyNumber in range(nStates):
 
@@ -61,7 +71,9 @@ def runTests(numQubits, nStates,
             Tomo_Object.conf['NDetectors'] = 2
         else:
             Tomo_Object.conf['NDetectors'] = 1
-        if (not testCrossTalk):
+        if testCrossTalk:
+            Tomo_Object.conf['Crosstalk'] = 1
+        else:
             Tomo_Object.conf['Crosstalk'] = np.identity(2 ** numQubits)
         Tomo_Object.conf['UseDerivative'] = "TrUe"
         Tomo_Object.conf['Bellstate'] = testBell
@@ -72,6 +84,9 @@ def runTests(numQubits, nStates,
             Tomo_Object.conf['DoDriftCorrection'] = "F"
         Tomo_Object.conf['Window'] = 1
         Tomo_Object.conf['Efficiency'] = np.ones(2 ** numQubits)
+        Tomo_Object.conf["Method"] = method
+
+        print("Running Test " + uniqueID(Tomo_Object),end=" .")
 
         tomo_input = Tomo_Object.getTomoInputTemplate()
         intensities = np.ones(tomo_input.shape[0])
@@ -136,6 +151,8 @@ def runTests(numQubits, nStates,
                     temp = np.kron(temp, mStates[i][j])
                 measurements[i] = temp
 
+        print(".", end="")
+
         ####################################
         # CREATE STATE AND SIM PROJECTIONS #
         ####################################
@@ -198,7 +215,8 @@ def runTests(numQubits, nStates,
                 tomo_input[i, numQubits + 1] = np.random.binomial(numCounts, min(prob, .99999999))
             # input[:, np.arange(2*n_qubit+ 1, 2**n_qubit+ 2*n_qubit+ 1)]: coincidences
 
-        if (testAccCorr):
+        # todo : redo this thing. It doesnt work for 3 qubits.
+        if (testAccCorr and numQubits<3):
             # acc[:, j] = np.prod(np.real(sings[:, idx]), axis=1) * (window[j] * 1e-9 / np.real(t)) ** (nbits - 1)
             if (test2Det):
                 sings = tomo_input[:, np.arange(1, 2 * numQubits + 1)]
@@ -227,8 +245,7 @@ def runTests(numQubits, nStates,
                 index = [int(char) for char in index]
                 index = index * scalerIndex + additiveIndex
                 index = np.array(index, dtype=int)
-                acc[:, j] = np.prod(np.real(sings[:, tuple(index)]), axis=1) * (window[j] * 1e-9 / np.real(t)) ** (
-                        numQubits - 1)
+                acc[:, j] = np.prod(np.real(sings[:, tuple(index)]), axis=1) * (window[j] * 1e-9 / np.real(t)) ** (numQubits - 1)
             if (acc.shape != coinc.shape):
                 acc = acc[:, 0]
             if (test2Det):
@@ -242,18 +259,19 @@ def runTests(numQubits, nStates,
             tomo_input[:, 0] = t
 
         if (testDrift):
-            intensities = np.random.random(intensities.shape) ** 2 * 10
+            intensities = np.random.random(intensities.shape)*2+.25
             if (test2Det):
                 # tomo_input[:, np.arange(2*n_qubit+ 1, 2**n_qubit+ 2*n_qubit+ 1)]: coincidences
+                coinc_range = np.arange(2 * numQubits + 1, 2 ** numQubits + 2 * numQubits + 1)
                 for k in range(tomo_input.shape[0]):
-                    tomo_input[
-                        k, np.arange(2 * numQubits + 1, 2 ** numQubits + 2 * numQubits + 1)] = int(
-                        (intensities[k]) * tomo_input[
-                            k, np.arange(2 * numQubits + 1, 2 ** numQubits + 2 * numQubits + 1)])
+                    tomo_input[k, coinc_range] = (intensities[k]* tomo_input[k, coinc_range]).real.astype(int)
             else:
                 # tomo_input[:, n_qubit+ 1]: coincidences
-                for k in range(tomo_input.shape[0]):
-                    tomo_input[k, numQubits + 1] = int(np.real((intensities[k]) * tomo_input[k, numQubits + 1]))
+                coinc_range = numQubits + 1
+            for k in range(tomo_input.shape[0]):
+                tomo_input[k, coinc_range] = (intensities[k] * tomo_input[k, coinc_range]).real.astype(int)
+
+        print(".")
 
         # Do tomography with settings
         try:
@@ -265,7 +283,10 @@ def runTests(numQubits, nStates,
             Original_Purity = qLib.purity(startingRho)
             if (testBell):
                 Tomo_Object.getBellSettings(myDensity)
-            if (Fidelity_with_Original < .8 and not testCrossTalk and np.average(Tomo_Object.getCoincidences()) > 10):
+            if (Fidelity_with_Original < .8 and
+                    not testCrossTalk and
+                    np.average(Tomo_Object.getCoincidences()) > 10 and
+                    method.upper() != "LINEAR"):
                 print("-----------------------------")
                 print("Low Fidelity of " + str(Fidelity_with_Original) + ". Avg counts per basis = " + str(
                     np.average(Tomo_Object.getCoincidences())))
@@ -281,9 +302,9 @@ def runTests(numQubits, nStates,
 
     if (numErrors > 0):
         print("-----------------------------")
-        print('\nAt least 1 out of ' + str(nStates) + ' tomographys failed with settings:' + uniqueID(Tomo_Object) + "\n")
+        print('At least 1 out of ' + str(nStates) + ' tomographys failed\n\n')
     else:
-        print('Test ran with no issues: ' + uniqueID(Tomo_Object))
+        print('No Issues!\n\n')
     return BigListOfTomographies
 
 
@@ -352,7 +373,7 @@ def uniqueID(Tomo_Object):
     errBounds = Tomo_Object.conf["DoErrorEstimation"]
     testAccCorr = Tomo_Object.conf["DoAccidentalCorrection"]
     test2Det = Tomo_Object.conf["NDetectors"]
-    testCrossTalk = np.any(Tomo_Object.conf["Crosstalk"] - np.eye(Tomo_Object.conf["Crosstalk"].shape[0]) > 1e-6)
+    testCrossTalk = isinstance(Tomo_Object.conf["Crosstalk"],int)
     testBell = Tomo_Object.conf["Bellstate"]
     testDrift = Tomo_Object.conf["DoDriftCorrection"]
     

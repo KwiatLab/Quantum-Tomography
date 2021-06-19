@@ -63,7 +63,7 @@ class TestQuick(unittest.TestCase):
                 numTotalErrors += 1
         self.assertEqual(numTotalErrors,0)
 
-    #     2 qubits
+    # 2 qubits
     def test_N2_e0_a0_d0_c0_b0_dr0(self):
         numTotalErrors = 0
         Tomographys = runTests(2,15)
@@ -124,12 +124,66 @@ class TestQuick(unittest.TestCase):
     # 3 qubits
     def test_N3_e0_a0_d0_c0_b0_dr0(self):
         numTotalErrors = 0
-        Tomographys = runTests(3,1)
+        Tomographys = runTests(3, 1)
         for t in Tomographys:
             [Tomo_Object, Fidelity_with_Original, Original_Purity, Total_Time] = t
             if Original_Purity < 0:
                 numTotalErrors += 1
-        self.assertEqual(numTotalErrors,0)
+        self.assertEqual(numTotalErrors, 0)
+
+    def test_N3_e3_a0_d0_c0_b0_dr0(self):
+        numTotalErrors = 0
+        Tomographys = runTests(3, 1, errBounds=3)
+        for t in Tomographys:
+            [Tomo_Object, Fidelity_with_Original, Original_Purity, Total_Time] = t
+            if Original_Purity < 0:
+                numTotalErrors += 1
+        self.assertEqual(numTotalErrors, 0)
+
+    def test_N3_e0_a1_d0_c0_b0_dr0(self):
+        numTotalErrors = 0
+        Tomographys = runTests(3, 1, testAccCorr=1)
+        for t in Tomographys:
+            [Tomo_Object, Fidelity_with_Original, Original_Purity, Total_Time] = t
+            if Original_Purity < 0:
+                numTotalErrors += 1
+        self.assertEqual(numTotalErrors, 0)
+
+    def test_N3_e0_a0_d1_c0_b0_dr0(self):
+        numTotalErrors = 0
+        Tomographys = runTests(3, 1, test2Det=1)
+        for t in Tomographys:
+            [Tomo_Object, Fidelity_with_Original, Original_Purity, Total_Time] = t
+            if Original_Purity < 0:
+                numTotalErrors += 1
+        self.assertEqual(numTotalErrors, 0)
+
+    def test_N3_e0_a0_d0_c1_b0_dr0(self):
+        numTotalErrors = 0
+        Tomographys = runTests(3, 1, testCrossTalk=1)
+        for t in Tomographys:
+            [Tomo_Object, Fidelity_with_Original, Original_Purity, Total_Time] = t
+            if Original_Purity < 0:
+                numTotalErrors += 1
+        self.assertEqual(numTotalErrors, 0)
+
+    def test_N3_e0_a0_d0_c0_b1_dr0(self):
+        numTotalErrors = 0
+        Tomographys = runTests(3, 1, testBell=1)
+        for t in Tomographys:
+            [Tomo_Object, Fidelity_with_Original, Original_Purity, Total_Time] = t
+            if Original_Purity < 0:
+                numTotalErrors += 1
+        self.assertEqual(numTotalErrors, 0)
+
+    def test_N3_e0_a0_d0_c0_b0_dr1(self):
+        numTotalErrors = 0
+        Tomographys = runTests(3, 1, testDrift=1)
+        for t in Tomographys:
+            [Tomo_Object, Fidelity_with_Original, Original_Purity, Total_Time] = t
+            if Original_Purity < 0:
+                numTotalErrors += 1
+        self.assertEqual(numTotalErrors, 0)
     
 
 if __name__ == '__main__':

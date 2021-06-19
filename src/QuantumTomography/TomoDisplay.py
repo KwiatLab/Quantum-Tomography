@@ -5,11 +5,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
 from mpl_toolkits.mplot3d import Axes3D
-import sys
 from .TomoDisplayHelpers import *
 from .TomoFunctions import removeGlobalPhase
-from .Utilities import getValidFileName
 from matplotlib.colors import LinearSegmentedColormap
+import warnings
 
 """
 Copyright 2020 University of Illinois Board of Trustees.
@@ -222,7 +221,7 @@ def saveRhoImages(p, pathToDirectory):
     """
 def printLastOutput(tomo, bounds = -1):
     p = np.array(tomo.last_rho.copy(), dtype = "O")
-    raise DeprecationWarning('As of v1.0.3.7 printLastOutput() can be called using the Tomography Object Class.')
+    warn.warning('As of v1.0.3.7 printLastOutput() can be called using the Tomography Object Class.',DeprecationWarning)
     print("State: ")
     mx = 0
     for i in range(p.shape[0]):

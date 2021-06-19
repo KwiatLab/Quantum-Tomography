@@ -92,12 +92,12 @@ class Tomography():
             The new value you want to the setting to be.
     """
     def setConfSetting(self, setting, val):
-        raise DeprecationWarning('As of v1.0.3.7 setConfSetting() is no longer needed to set a conf setting. '
-                                 'Settings can now be set directly like a normal dictionary.')
+        warnings.warn('As of v1.0.3.7 setConfSetting() is no longer needed to set a conf setting. '
+                                 'Settings can now be set directly like a normal dictionary.', DeprecationWarning)
         if (isinstance(val, str)):
-            if (valC.lower() == "yes" or val.lower() == "true"):
+            if (val.lower() == "yes" or val.lower() == "true"):
                 valC = 1
-            elif (valC.lower() == "no" or val.lower() == "false"):
+            elif (val.lower() == "no" or val.lower() == "false"):
                 valC = 0
         self.conf[setting] = valC
 
@@ -184,8 +184,7 @@ class Tomography():
         of measurements indicate poor agreement with a quantum state.
     """
     def state_tomography(self, tomo_input, intensities = -1,method="MLE",saveState=True):
-
-        # define a uniform intenstiy if not stated
+        # define a uniform intensity if not stated
         if (isinstance(intensities, int)):
             self.intensities = np.ones(tomo_input.shape[0])
         elif(len(intensities.shape) == 1 and intensities.shape[0] == tomo_input.shape[0]):
@@ -195,7 +194,7 @@ class Tomography():
 
         # filter the data
         self.last_input = tomo_input
-        [coincidences, measurements_densities, measurements_pures, accidentals] = self.filter_data(tomo_input)
+        [coincidences, measurements_densities, measurements_pures, accidentals,overall_norms] = self.filter_data(tomo_input)
         self.conf['Method'] = method
 
         # get the starting state from tomography_linear if not defined
@@ -203,7 +202,7 @@ class Tomography():
         if not isinstance(starting_matrix,np.ndarray):
             try:
                 # todo: go over linear tomography. Clean it up. Figure out why it fails on the very rare occasion.
-                [starting_matrix,inten_linear] = self.tomography_linear(coincidences, measurements_pures)
+                [starting_matrix,inten_linear] = self.tomography_linear(coincidences, measurements_pures,overall_norms)
                 # Currently linear tomography gets the phase wrong. So a temporary fix is to just transpose it.
                 starting_matrix = starting_matrix.transpose()
                 starting_matrix = make_positive(starting_matrix)
@@ -213,10 +212,9 @@ class Tomography():
 
         if method == "MLE":
             # perform MLE tomography
-            [rhog, intensity, fvalp] = self.tomography_MLE(starting_matrix, coincidences, measurements_densities, accidentals)
+            [rhog, intensity, fvalp] = self.tomography_MLE(starting_matrix, coincidences, measurements_densities, accidentals,overall_norms)
         elif method.upper() == "BME":
-            [rhog, intensity, fvalp] = self.tomography_BME(starting_matrix, coincidences, measurements_densities,
-                                                           accidentals)
+            [rhog, intensity, fvalp] = self.tomography_BME(starting_matrix, coincidences, measurements_densities,accidentals,overall_norms)
         elif method.upper() == "LINEAR":
             [rhog, intensity, fvalp] = [starting_matrix,inten_linear,0]
         else:
@@ -241,7 +239,7 @@ class Tomography():
         return self.state_tomography(tomo_input, intensities, method=method)
 
 
-
+    # todo: add overall_norms to comment block
     """
     tomography_MLE(starting_matrix, coincidences, m, acc)
     Desc: Calculates the most likely state given the data.
@@ -266,11 +264,17 @@ class Tomography():
         Final value of the internal optimization function. Values greater than the number
         of measurements indicate poor agreement with a quantum state.
     """
-    def tomography_MLE(self, starting_matrix, coincidences, m, accidentals):
-        init_intensity = np.mean(np.multiply(coincidences, 1/self.intensities)) * (starting_matrix.shape[0])
+    def tomography_MLE(self, starting_matrix, coincidences, m, accidentals,overall_norms=-1):# todo : include this in linear tomography. nad redo linear tomography
+        # If overall_norms not given then assume uniform
+        if not isinstance(overall_norms,np.ndarray):
+            overall_norms = np.ones(coincidences.shape[0])
+        elif not (len(overall_norms.shape) == 1 and overall_norms.shape[0] == coincidences.shape[0]):
+            raise ValueError("Invalid intensities array")
+
+        init_intensity = np.mean(np.multiply(coincidences, 1/overall_norms)) * (starting_matrix.shape[0])
         starting_tvals = density2t(starting_matrix)
         n_t = len(starting_tvals)
-        # np.multiply(coincidences, self.intensities)
+        # np.multiply(coincidences, overall_norms)
         # t_to_density(starting_tvals)
         starting_tvals = starting_tvals + 0.0001
         starting_tvals = starting_tvals * np.sqrt(init_intensity)
@@ -285,12 +289,12 @@ class Tomography():
         prediction = np.zeros(m.shape[2]) + 0j
 
         if bet == 0:
-            final_tvals = leastsq(self.maxlike_fitness, np.real(starting_tvals), args = (coincidences, accidentals, m, prediction))[0]
-            fvalp = np.sum(self.maxlike_fitness(final_tvals, coincidences, accidentals, m, prediction) ** 2)
+            final_tvals = leastsq(self.maxlike_fitness, np.real(starting_tvals), args = (coincidences, accidentals, m, prediction,overall_norms))[0]
+            fvalp = np.sum(self.maxlike_fitness(final_tvals, coincidences, accidentals, m, prediction,overall_norms) ** 2)
         else:
             final_tvals = \
-            leastsq(self.maxlike_fitness_hedged, np.real(starting_tvals), args = (coincidences, accidentals, m, prediction, bet))[0]
-            fvalp = np.sum(self.maxlike_fitness_hedged(final_tvals, coincidences, accidentals, m, prediction, bet) ** 2)
+            leastsq(self.maxlike_fitness_hedged, np.real(starting_tvals), args = (coincidences, accidentals, m, prediction, bet,overall_norms))[0]
+            fvalp = np.sum(self.maxlike_fitness_hedged(final_tvals, coincidences, accidentals, m, prediction, bet,overall_norms) ** 2)
 
         final_matrix = t_to_density(final_tvals)
         intensity = np.trace(final_matrix)
@@ -300,6 +304,7 @@ class Tomography():
 
         return [final_matrix, intensity, fvalp]
 
+    # todo add overall_norms to comment block
     """
     maxlike_fitness(t, coincidences, accidentals, m, prediction)
     Desc: Calculates the diffrence between the current predicted state data and the actual data.
@@ -322,10 +327,15 @@ class Tomography():
     val : float
         value of the optimization function.
     """
-    def maxlike_fitness(self, t, coincidences, accidentals, m, prediction):
+    def maxlike_fitness(self, t, coincidences, accidentals, m, prediction,overall_norms=-1):
+        # If overall_norms not given then assume uniform
+        if not isinstance(overall_norms,np.ndarray):
+            overall_norms = np.ones(coincidences.shape[0])
+        elif not (len(overall_norms.shape) == 1 and overall_norms.shape[0] == coincidences.shape[0]):
+            raise ValueError("Invalid intensities array")
         rhog = t_to_density(t)
         for j in range(len(prediction)):
-            prediction[j] = np.float64(np.real(self.intensities[j] * np.real(np.trace(np.dot(m[:, :, j], rhog))) + accidentals[j]))
+            prediction[j] = np.float64(np.real(overall_norms[j] * np.real(np.trace(np.dot(m[:, :, j], rhog))) + accidentals[j]))
             prediction[j] = np.max([prediction[j], 0.01])
             # Avoid dividing by zero for pure states
             if (prediction[j] == 0):
@@ -337,7 +347,7 @@ class Tomography():
 
         return val
 
-
+    # todo add overall_norms to comment block
     """
     maxlike_fitness_hedged(t, coincidences, accidentals, m, prediction, bet)
     Desc: Calculates the diffrence between the current predicted state data and the actual data using hedged maximum likelihood.
@@ -362,12 +372,16 @@ class Tomography():
     val : float
         value of the optimization function.
     """
-    def maxlike_fitness_hedged(self, t, coincidences, accidentals, m, prediction, bet):
+    def maxlike_fitness_hedged(self, t, coincidences, accidentals, m, prediction, bet,overall_norms=-1):
+        # If overall_norms not given then assume uniform
+        if not isinstance(overall_norms,np.ndarray):
+            overall_norms = np.ones(coincidences.shape[0])
+        elif not (len(overall_norms.shape) == 1 and overall_norms.shape[0] == coincidences.shape[0]):
+            raise ValueError("Invalid intensities array")
 
         rhog = t_to_density(t)
-
         for j in range(len(prediction)):
-            prediction[j] = self.intensities[j] * np.real(np.trace(np.dot(m[:, :, j], rhog))) + accidentals[j]
+            prediction[j] = overall_norms[j] * np.real(np.trace(np.dot(m[:, :, j], rhog))) + accidentals[j]
             prediction[j] = np.max([prediction[j], 0.01])
 
         hedge = np.repeat(np.real((bet * np.log(np.linalg.det(np.mat(rhog)))) / len(prediction)), len(prediction))
@@ -377,6 +391,7 @@ class Tomography():
 
         return val
 
+    # todo: comment block
     def tomography_BME(self,starting_matrix, counts, measurements, accidentals):
 
         # algorithm parameters
@@ -600,7 +615,12 @@ class Tomography():
         prob = np.exp(-1*np.sum(val),dtype=np.longdouble)
         return prob
 
-    def log_likelyhood(self, intensity, givenState, coincidences, measurements, accidentals):
+    def log_likelyhood(self, intensity, givenState, coincidences, measurements, accidentals,overall_norms=-1):
+        # If overall_norms not given then assume uniform
+        if not isinstance(overall_norms, np.ndarray):
+            overall_norms = np.ones(coincidences.shape[0])
+        elif not (len(overall_norms.shape) == 1 and overall_norms.shape[0] == coincidences.shape[0]):
+            raise ValueError("Invalid intensities array")
 
         if (len(givenState.shape) == 1):
             givenState = t_to_density(givenState)
@@ -613,7 +633,7 @@ class Tomography():
 
         Averages = np.zeros_like(coincidences, dtype=np.float)
         for j in range(len(Averages)):
-            Averages[j] = intensity * self.intensities[j] * np.real(np.trace(np.matmul(measurements[:, :, j], givenState))) + \
+            Averages[j] = intensity * overall_norms[j] * np.real(np.trace(np.matmul(measurements[:, :, j], givenState))) + \
                           accidentals[j]
 
             # Avoid dividing by zero for pure states
@@ -641,7 +661,14 @@ class Tomography():
     intensity : float
         The predicted overall intensity used to normalize the state.
     """
-    def tomography_linear(self, coincidences, measurements, m_set = ()):
+    def tomography_linear(self, coincidences, measurements, overall_norms=-1,m_set = ()):
+        # todo : include this in linear tomography. nad redo linear tomography
+        # If overall_norms not given then assume uniform
+        if not isinstance(overall_norms,np.ndarray):
+            overall_norms = np.ones(coincidences.shape[0])
+        elif not (len(overall_norms.shape) == 1 and overall_norms.shape[0] == coincidences.shape[0]):
+            raise ValueError("Invalid intensities array")
+
         if m_set == ():
             m_set = independent_set(measurements)
         if np.isscalar(m_set):
@@ -694,8 +721,10 @@ class Tomography():
         The singles values of the tomography. Used for accidental correction.
     """
     def filter_data(self, tomo_input):
-        # getting variables
+        # Check this settings
+        self.checkForInvalidSettings()
 
+        # getting variables
         nbits = self.conf['NQubits']
         ndet = self.conf['NDetectors']
 
@@ -795,9 +824,11 @@ class Tomography():
 
         # If 2det/qubit then expand intensity array
         if(ndet==2):
-            self.intensities = np.kron(self.intensities,np.ones(2**nbits))
+            overall_norms = np.kron(self.intensities,np.ones(2**nbits))
+        else:
+            overall_norms = self.intensities
 
-        return [coincidences, measurements_densities, measurements_pures, acc]
+        return [coincidences, measurements_densities, measurements_pures, acc,overall_norms]
 
     """
         buildTomoInput(tomo_input, intensities)
@@ -919,6 +950,14 @@ class Tomography():
 
         return tomo_input
 
+    # todo:this comment block
+    def checkForInvalidSettings(self):
+        if self.conf['nqubits'] == 1:
+            if self.conf['DoAccidentalCorrection']:
+                raise ValueError('Invalid Conf settings. Accidental Correction can not be done for single qubit tomography')
+
+
+
     # # # # # # # # # #
     '''Get Functions'''
     # # # # # # # # # #
@@ -960,9 +999,9 @@ class Tomography():
     """
     def getSingles(self):
         if (self.conf['NDetectors'] == 2):
-            return self.last_input[:, np.arange(1, 2*self.conf['NQubits']+1)]
+            return np.real(self.last_input[:, np.arange(1, 2*self.conf['NQubits']+1)])
         else:
-            return self.last_input[:, np.arange(1, self.conf['NQubits']+1)]
+            return np.real(self.last_input[:, np.arange(1, self.conf['NQubits']+1)])
 
     """
     getTimes()
@@ -1134,7 +1173,7 @@ class Tomography():
         # generate states if needed
         if bounds > len(self.mont_carlo_states)-1:
             self.tomography_states_generator(bounds-len(self.mont_carlo_states)+1)
-        states = np.array(self.mont_carlo_states)[:bounds+1,:]
+        states = np.array(self.mont_carlo_states,dtype="O")[:bounds + 1, :]
         if states.shape[0] == 1:
             vals1 = np.array([["intensity",np.mean(states[:,1]),"NA"],
                               ["fval", np.mean(states[:,2]),"NA"]])
@@ -1177,31 +1216,15 @@ class Tomography():
         meas = self.getMeasurements()
         singles = self.getSingles()
         counts = self.getCoincidences()
+
+        # Re-sample counts and singles
+        test_counts = np.random.poisson(counts)
+        test_singles = np.random.poisson(singles)
         for j in range(n):
             if ndet == 1:
-                test_counts = np.zeros_like(counts)
-                for k in range(len(counts)):
-                        test_counts[k] = np.random.poisson(counts[k])
-                if acc:
-                    test_singles = np.zeros_like(singles)
-                    for k in range(len(singles)):
-                        test_singles[k] = np.random.poisson(singles[k])
-                else:
-                    test_singles = singles
-                test_data = np.concatenate((np.array([time]).T, test_singles,np.array([test_counts]).T, meas), axis = 1)
-                [rhop, intenp, fvalp] = self.state_tomography(test_data, self.intensities,saveState=False)
-            elif ndet == 2:
-                test_counts = np.zeros_like(counts)
-                for k in range(len(counts)):
-                    test_counts[k] = np.random.poisson(counts[k])
-                if acc:
-                    test_singles = np.zeros_like(singles)
-                    for k in range(len(singles)):
-                        test_singles[k] = np.random.poisson(singles[k])
-                else:
-                    test_singles = singles
-                test_data = np.concatenate((np.array([time]).T, test_singles, np.array([test_counts]).T, meas), axis=1)
-                [rhop, intenp, fvalp] = self.state_tomography(test_data, self.intensities,saveState=False)
+                test_counts = np.array([test_counts]).T
+            test_data = np.concatenate((np.array([time]).T, test_singles, test_counts, meas), axis = 1)
+            [rhop, intenp, fvalp] = self.state_tomography(test_data, self.intensities,saveState=False)
             self.mont_carlo_states.append([rhop, intenp, fvalp])
         # Restore the last tomo_input matrix to the original one
         self.last_input = last_input
@@ -1230,6 +1253,9 @@ class Tomography():
             The third col is the error bound on the detector settings.
         """
     def getBellSettings(self, rho, partsize_init = 9, partsize = 5, t = 3, bounds = -1):
+        if self.conf['nqubits'] != 2:
+            raise ValueError('Invalid Conf settings. Bell state can only be found for 2 qubit tomography')
+
         # if bounds not set use the conf settings
         if bounds == -1:
             bounds = self.conf['DoErrorEstimation']
@@ -1237,7 +1263,7 @@ class Tomography():
         # generate states if needed
         if bounds > len(self.mont_carlo_states) - 1:
             self.tomography_states_generator(bounds - len(self.mont_carlo_states) + 1)
-        states = np.array(self.mont_carlo_states)[:bounds + 1, :]
+        states = np.array(self.mont_carlo_states,dtype="O")[:bounds + 1, :]
 
         if (bounds > 0):
             return getBellSettings_helper_bounds(states[:,0], rho, partsize_init, partsize, t, bounds)

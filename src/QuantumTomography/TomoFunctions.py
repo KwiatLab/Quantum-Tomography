@@ -329,9 +329,9 @@ def fidelity(state1, state2):
         The calculated concurrence.
     """
 def concurrence(rhog):
-    if isStateVector(rhog):
-        rhog = toDensity(rhog)
     if rhog.shape[0] == 4:
+        if isStateVector(rhog):
+            rhog = toDensity(rhog)
         if min(rhog.shape) == 1:
             rhog = np.dot(rhog.conj(), rhog.transpose())
 
@@ -365,12 +365,11 @@ def concurrence(rhog):
         The calculated tangle.
     """
 def tangle(rhog):
-    if isStateVector(rhog):
-        rhog = toDensity(rhog)
-    if(rhog.shape[0]>2):
+    if rhog.shape[0] == 4:
+        if isStateVector(rhog):
+            rhog = toDensity(rhog)
         c = concurrence(rhog)
         val = c ** 2
-
         return val
     else:
         return 'NA'
