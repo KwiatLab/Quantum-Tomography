@@ -1,0 +1,22 @@
+---
+title: "Stat Model"
+output:
+    pdf_document:
+        extra_dependencies: ["braket","amsmath","mathtools","amssymb","multicol"]
+---
+\newcommand{\Like}{\mathcal{L}}
+\newcommand{\EX}{\mathbb{E}}
+
+# Introduction
+Accidentals
+$$A_{i,j} = \frac{ S_{i,j,0}S_{i,j,1} W_j}{T_i}$$
+
+- $T_i$ Is the time of measurement i given as an input. Default is 1
+- $W_j$ Is the coincidence window duration as an input. Default is 0
+- i,j corresponds to a detector pair A-B. $S_{i,j,0}$ Is the singles count on detector A. $S_{i,j,I}$ Is the singles count on detector B.
+
+Here is how the detector are paired up
+
+\begin{center}
+    \includegraphics{DetectorPairs}
+\end{center}

@@ -14,19 +14,19 @@ library(fields)
 library(here)
 
 # RUN THIS RMD SCRIPT FROM THE HEAD OF THE REPO FOLDER
-total_data <- read_csv(file = here("Tests/Results/simulatedTomographyData.csv"))
+total_data <- read_csv(file = here("Tests/Results/results_GeneralData.csv"))
 ```
 ### Head of data:
 ```{r, echo = FALSE}
 # if time is over 30 minutes for 1qubit then error
 total_data <- total_data %>%
-              mutate(errorOccurred = case_when(total_time>=60*30 & nqubits == 1 ~ TRUE,
-                                               TRUE ~ errorOccurred))
+              mutate(error_occurred = case_when(total_time>=60*30 & nqubits == 1 ~ TRUE,
+                                               TRUE ~ error_occurred))
 
 head(total_data)
 
 cat(nrow(total_data)," Data Samples\n",
-    nrow(filter(total_data,errorOccurred==1))," Errors",
+    nrow(filter(total_data,error_occurred==1))," Errors",
     sep="")
 ```
 ### Summary:
@@ -38,24 +38,24 @@ stderr <- function(x, na.rm=FALSE) {
 summary_stats <- total_data %>%
          group_by(method,nqubits) %>%
          summarise(num_samples = length(fid_with_actual),
-                   num_errors = sum(errorOccurred),
+                   num_errors = sum(error_occurred),
                    avg_fid = mean(fid_with_actual),
                    se_fid = stderr(fid_with_actual),
                    avg_time = mean(total_time),
                    se_time = stderr(total_time))
 
 total_data <- total_data %>%
-                filter(errorOccurred==0)
+                filter(error_occurred==0)
 summary_stats
 ```
 
 ```{r, echo = FALSE}
-df_mle_1 = total_data %>%   filter(method == "MLE",nqubits==1,errorOccurred==0)
-df_bme_1 = total_data %>%   filter(method == "BME",nqubits==1,errorOccurred==0)
-df_mle_2 = total_data %>%   filter(method == "MLE",nqubits==2,errorOccurred==0)
-df_bme_2 = total_data %>%   filter(method == "BME",nqubits==2,errorOccurred==0)
-df_mle_3 = total_data %>%   filter(method == "MLE",nqubits==3,errorOccurred==0)
-df_bme_3 = total_data %>%   filter(method == "BME",nqubits==3,errorOccurred==0)
+df_mle_1 = total_data %>%   filter(method == "MLE",nqubits==1,error_occurred==0)
+df_bme_1 = total_data %>%   filter(method == "BME",nqubits==1,error_occurred==0)
+df_mle_2 = total_data %>%   filter(method == "MLE",nqubits==2,error_occurred==0)
+df_bme_2 = total_data %>%   filter(method == "BME",nqubits==2,error_occurred==0)
+df_mle_3 = total_data %>%   filter(method == "MLE",nqubits==3,error_occurred==0)
+df_bme_3 = total_data %>%   filter(method == "BME",nqubits==3,error_occurred==0)
 ```
 
 # Fid vs Counts

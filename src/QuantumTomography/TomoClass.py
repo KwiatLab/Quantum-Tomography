@@ -200,15 +200,17 @@ class Tomography():
             self.intensities = intensities
         else:
             raise ValueError("Invalid intensities array")
+        if any(self.intensities-np.ones_like(self.intensities))>10**-6:
+            self.conf['DoDriftCorrection'] = 1
 
         # filter the data
         self.last_input = tomo_input
-        [coincidences, measurements_densities, measurements_pures, accidentals,overall_norms] = self.filter_data(tomo_input)
         self.conf['Method'] = method
+        [coincidences, measurements_densities, measurements_pures, accidentals,overall_norms] = self.filter_data(tomo_input)
 
         # get the starting state from tomography_linear if not defined
         starting_matrix = self.conf['RhoStart']
-        if not isinstance(starting_matrix,np.ndarray):
+        if method.upper() == "LINEAR" or not isinstance(starting_matrix,np.ndarray):
             try:
                 # todo: go over linear tomography. Clean it up. Figure out why it fails on the very rare occasion.
                 [starting_matrix,inten_linear] = self.tomography_linear(coincidences, measurements_pures,overall_norms)
@@ -219,6 +221,8 @@ class Tomography():
             except:
                 raise RuntimeError('Failed to run linear Tomography')
 
+
+        # Run tomography and find an estimate for the state
         if method == "MLE":
             # perform MLE tomography
             [rhog, intensity, fvalp] = self.tomography_MLE(starting_matrix, coincidences, measurements_densities, accidentals,overall_norms)
@@ -345,7 +349,7 @@ class Tomography():
 
         # estimate the state intensity for the guess state
         norm = sum(counts / (len(counts) * d))
-        minimization_output = minimize(self.log_likelyhood, norm,
+        minimization_output = minimize(log_likelyhood, norm,
                               args=(density2t(starting_matrix), counts, measurements, accidentals))
         norm = minimization_output.x[0]
         base_loglike = minimization_output.fun
@@ -363,7 +367,7 @@ class Tomography():
             # Sample from the ginibre distribution
             random_rho = random_density_state(self.conf['NQubits'])
             random_tvals = density2t(random_rho)
-            random_loglike = self.log_likelyhood(norm, random_rho, counts, measurements, accidentals)
+            random_loglike = log_likelyhood(norm, random_rho, counts, measurements, accidentals)
 
             # Store sample state, tval, and its loglikelyhood
             sampleStates_rho[:, :, i] = random_rho
@@ -378,7 +382,7 @@ class Tomography():
                     sampleStates_loglike[:i+1] = sampleStates_loglike[:i+1] - base_loglike
 
                     # find the most optimal intensity for this best state
-                    minimization_output = minimize(self.log_likelyhood, norm,
+                    minimization_output = minimize(log_likelyhood, norm,
                                           args=(random_rho, counts, measurements, accidentals))
                     norm = minimization_output.x[0]
 
@@ -434,7 +438,7 @@ class Tomography():
             # Draws by sampling the tVals from a multivariate normal distro
             random_tvals = rand.multivariate_normal(mean_tvals, cov_tvals)
             random_rho = t_to_density(random_tvals)
-            random_loglike = self.log_likelyhood(norm, random_rho, counts, measurements, accidentals)
+            random_loglike = log_likelyhood(norm, random_rho, counts, measurements, accidentals)
 
             # Store sample state, tval, and its likelyhood
             sampleStates_loglike[i] = random_loglike - base_loglike
@@ -459,7 +463,7 @@ class Tomography():
                     unNormedMean_rho = np.dot(sampleStates_rho[:, :, :i], np.exp(-1 * sampleStates_loglike[:i]))
 
                     # find the most optimal intensity for this best state
-                    minimization_output = minimize(self.log_likelyhood, norm,
+                    minimization_output = minimize(log_likelyhood, norm,
                                                    args=(random_rho, counts, measurements, accidentals))
                     norm = minimization_output.x[0]
 
@@ -606,23 +610,19 @@ class Tomography():
 
         # getting variables
         nbits = self.conf['NQubits']
-        ndet = self.conf['NDetectors']
         times = self.getTimes()
         sings = self.getSingles()
-        n_singles = self.getNumSingles()
         coinc = self.getCoincidences()
         n_coinc = self.getNumCoinc()
-        MeasBasis = self.getMeasurements()
-        # Window
-        wind = self.conf['Window']
+        window = self.conf['Window']
         eff = self.conf['Efficiency']
-
+        crosstalk = self.conf['Crosstalk']
+        overall_norms = np.kron(self.intensities, eff)
+        
+        
         # Accidental Correction
         acc = np.zeros_like(coinc)
         if(self.conf['DoAccidentalCorrection'] == 1):
-            window = self.conf['Window']
-            if np.isscalar(window):
-                window = window*np.ones(n_coinc)
             scalerIndex = np.concatenate((np.ones(nbits - 2), [2, 2]))
             additiveIndex = np.array([0, 1])
             for j in range(2, nbits):
@@ -635,26 +635,14 @@ class Tomography():
                 index = [int(char) for char in index]
                 index = index*scalerIndex + additiveIndex
                 index = np.array(index, dtype = int)
-                acc[:, j] = np.prod(np.real(sings[:, tuple(index)]), axis = 1) * (window[j] * 1e-9 / np.real(t)) ** (nbits - 1)
+                acc[:, j] = np.prod(np.real(sings[:, tuple(index)]), axis = 1) * (window[j] * 1e-9 / np.real(times)) ** (nbits - 1)
             if (acc.shape != coinc.shape):
                 acc = acc[:, 0]
-
-        # crosstalk
-        ctalk = np.array(self.conf['Crosstalk'])[0:2 ** nbits, 0:2 ** nbits]
-
-        # This chunk of code handles edge cases of the input of the crosstalk matrix.
-        # The important crosstalk matrix is the big_crosstalk
-        # Todo : this could use some clean up
-        crosstalk = ctalk
-        if np.ndim(ctalk) >= 3:
-            for j in range(ctalk.shape[2]):
-                crosstalk[j] = ctalk[:, :, j]
-        big_crosstalk = crosstalk[:]
-        big_crosstalk = big_crosstalk * np.outer(eff, np.ones(n_coinc))
 
         # Get measurements
         # Todo: this is very messy but works...? At some point it can be cleaned up, so that toDensity is used
         # and the shapes are similar. The axis of the measuremennts_densities is kinda wonky. Not similar to measurements_pures
+        MeasBasis = self.getMeasurements()
         measurements_densities = np.zeros([2 ** nbits, 2 ** nbits, np.prod(coinc.shape)],dtype=complex)
         measurements_pures = np.zeros([np.prod(coinc.shape), 2 ** nbits],dtype=complex)
         for j in range(coinc.shape[0]):
@@ -668,14 +656,14 @@ class Tomography():
                 u_k = np.outer((np.array([1, 0])), psi_k) + np.outer((np.array([0, 1])), psip_k)
                 # Changed from tensor_product to np.kron
                 u = np.kron(u, u_k)
-            if (ndet == 1):
+            if (self.conf['NDetectors'] == 1):
                 for k in range(0, 2 ** nbits):
                     m_twiddle[k, :, :] = np.outer(u[:, k].conj().transpose(), u[:, k])
 
                 measurements_pures[j * n_coinc, :] = u[:, 0].conj().transpose()
                 for k in range(1):
                     for l in range(2 ** nbits):
-                        measurements_densities[:, :, j + k] = measurements_densities[:, :, j + k] + m_twiddle[l, :, :] * big_crosstalk[k, l]
+                        measurements_densities[:, :, j + k] = measurements_densities[:, :, j + k] + m_twiddle[l, :, :] * crosstalk[k, l]
                 coincidences = coinc
 
             else:
@@ -685,17 +673,10 @@ class Tomography():
                 for k in range(2 ** nbits):
                     for l in range(2 ** nbits):
                         measurements_densities[:, :, j * (2 ** nbits) + k] = measurements_densities[:, :, j * (2 ** nbits) + k] + m_twiddle[l, :, :] * \
-                                                        big_crosstalk[k, l]
+                                                        crosstalk[k, l]
 
                 coincidences = coinc.reshape((np.prod(coinc.shape), 1))
                 acc = acc.reshape((np.prod(acc.shape), 1))
-
-
-        # If 2det/qubit then expand intensity array
-        if(ndet==2):
-            overall_norms = np.kron(self.intensities,np.ones(2**nbits))
-        else:
-            overall_norms = self.intensities
 
         return [coincidences, measurements_densities, measurements_pures, acc,overall_norms]
 
@@ -836,12 +817,38 @@ class Tomography():
             raise ValueError('Invalid Conf settings. NDetectors can be either 1 or 2, corresponding to the number of detectors per qubit.')
         else:
             try:
-                eff = np.array(self.conf['Efficiency'], dtype=float)
-                if len(win.shape) != 1 or len(win) != self.getNumCoinc():
+                eff = self.conf['Efficiency']
+                if isinstance(eff,int):
+                    eff = np.ones(self.getNumCoinc())
+                if len(eff.shape) != 1 or len(eff) != self.getNumCoinc():
                     raise
                 self.conf['Efficiency'] = eff
             except:
                 raise ValueError('Invalid Conf settings. Efficiency should have length ' +str(self.getNumOfDetectorsTotal()) + " with the given settings.")
+        try:
+            correctSize = int(np.floor(2**self.getNumQubits()+.01))
+            c = self.conf['crosstalk']
+            if isinstance(c,int):
+                c = np.eye(correctSize)
+            else:
+                c = np.array(c)
+            # make sure it has the right shape
+            if len(c.shape) != 2 or c.shape[0] != c.shape[1]:
+                raise ValueError('Invalid Conf settings. Crosstalk should be an array with shape (' +
+                                 str(correctSize)+","+str(correctSize)+ ") with the given settings.")
+            # make sure it has the right size
+            if c.shape[0] != correctSize:
+                if any(c-np.eye(correctSize)>10**-6):
+                    # Throw error if not the right size
+                    raise ValueError('Invalid Conf settings. Crosstalk should be an array with shape (' +
+                                     str(correctSize) + "," + str(correctSize) + ") with the given settings.")
+                else:
+                    # If the given cross talk is an identity matrix just fix the size.
+                    c = np.eye(correctSize)
+            self.conf['crosstalk'] = c
+        except:
+            raise ValueError('Invalid Conf settings. Crosstalk should be an array with shape (' +
+                             str(correctSize) + "," + str(correctSize) + ") with the given settings.")
 
     # # # # # # # # # #
     '''Get Functions'''

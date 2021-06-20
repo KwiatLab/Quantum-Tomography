@@ -15,8 +15,9 @@ http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
 analyze_General.rmd in the results folder"""
 
 if __name__ == '__main__':
-    saveRunsGeneral(numQubits=1, nStates=100,method='MLE')
-    saveRunsGeneral(numQubits=2, nStates=100,method='MLE')
-    saveRunsGeneral(numQubits=3, nStates=100,method='MLE')
+    # saveRunsGeneral(numQubits=1, nStates=100,method='MLE')
+    # saveRunsGeneral(numQubits=2, nStates=100,method='MLE')
+    # saveRunsGeneral(numQubits=3, nStates=100,method='MLE')
     saveRunsGeneral(numQubits=1, nStates=100,method='BME')
-    saveRunsGeneral(numQubits=2, nStates=100,method='BME')
+    # saveRunsGeneral(numQubits=2, nStates=100,method='BME')
+    # saveRunsGeneral(numQubits=3, nStates=100,method='BME')

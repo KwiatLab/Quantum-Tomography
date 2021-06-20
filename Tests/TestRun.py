@@ -69,6 +69,7 @@ def runTests(numQubits, nStates,
             Tomo_Object.conf['DoAccidentalCorrection'] = "nO"
         if (test2Det):
             Tomo_Object.conf['NDetectors'] = 2
+            Tomo_Object.conf['Efficiency'] = np.ones(2 ** numQubits)
         else:
             Tomo_Object.conf['NDetectors'] = 1
         if testCrossTalk:
@@ -83,10 +84,9 @@ def runTests(numQubits, nStates,
         else:
             Tomo_Object.conf['DoDriftCorrection'] = "F"
         Tomo_Object.conf['Window'] = 1
-        Tomo_Object.conf['Efficiency'] = np.ones(2 ** numQubits)
         Tomo_Object.conf["Method"] = method
-
-        print("Running Test " + uniqueID(Tomo_Object),end=" .")
+        if(TomographyNumber ==0):
+            print("Running Test " + uniqueID(Tomo_Object),end=" .")
 
         tomo_input = Tomo_Object.getTomoInputTemplate()
         intensities = np.ones(tomo_input.shape[0])
@@ -150,8 +150,8 @@ def runTests(numQubits, nStates,
                 for j in range(1, len(mStates[i])):
                     temp = np.kron(temp, mStates[i][j])
                 measurements[i] = temp
-
-        print(".", end="")
+        if (TomographyNumber == 0):
+            print(".", end="")
 
         ####################################
         # CREATE STATE AND SIM PROJECTIONS #
@@ -271,7 +271,8 @@ def runTests(numQubits, nStates,
             for k in range(tomo_input.shape[0]):
                 tomo_input[k, coinc_range] = (intensities[k] * tomo_input[k, coinc_range]).real.astype(int)
 
-        print(".")
+        if (TomographyNumber == 0):
+            print(".")
 
         # Do tomography with settings
         try:
@@ -302,7 +303,7 @@ def runTests(numQubits, nStates,
 
     if (numErrors > 0):
         print("-----------------------------")
-        print('At least 1 out of ' + str(nStates) + ' tomographys failed\n\n')
+        print('numErrors out of ' + str(nStates) + ' tomographys failed\n\n')
     else:
         print('No Issues!\n\n')
     return BigListOfTomographies
@@ -311,7 +312,7 @@ def runTests(numQubits, nStates,
 # Returns 1 if success
 def saveRunsGeneral(numQubits, nStates,resultsFilePath="Results/results_GeneralData.csv",
                  randomStateDist="density", errBounds=0, testAccCorr=False, test2Det=False, testCrossTalk=False,
-                 testBell=False, testDrift=False, saveData=False, method='MLE'):
+                 testBell=False, testDrift=False, saveData=True, method='MLE'):
 
     Tomographys = runTests(numQubits, nStates,randomStateDist=randomStateDist, errBounds=errBounds, testAccCorr=testAccCorr, 
                            test2Det=test2Det, testCrossTalk=testCrossTalk,testBell=testBell, testDrift=testDrift, method=method)
@@ -334,19 +335,19 @@ def saveRunsGeneral(numQubits, nStates,resultsFilePath="Results/results_GeneralD
         if saveData:
             # Set up dictionary
             dataRow = dict()
-            dataRow['numQubits'] = Tomo_Object.conf["NQubits"]
+            dataRow['nqubits'] = Tomo_Object.conf["NQubits"]
             dataRow['method'] = Tomo_Object.conf["Method"]
-            dataRow['Fidelity_with_Original'] = Fidelity_with_Original
-            dataRow['avgCoincPerMeas'] = np.average(Tomo_Object.getCoincidences())
-            dataRow['Total_Time'] = Total_Time
-            dataRow['errorOccurred'] = Fidelity_with_Original == -1
+            dataRow['fid_with_actual'] = Fidelity_with_Original
+            dataRow['avg_coinc_per_meas'] = np.average(Tomo_Object.getCoincidences())
+            dataRow['total_time'] = Total_Time
+            dataRow['error_occurred'] = Original_Purity == -1
             dataRow['test_error'] = Tomo_Object.conf["DoErrorEstimation"]
             dataRow['test_acc'] = Tomo_Object.conf["DoAccidentalCorrection"]
             dataRow['test_det'] = Tomo_Object.conf["NDetectors"]
             dataRow['test_cross'] = np.any(Tomo_Object.conf["Crosstalk"] - np.eye(Tomo_Object.conf["Crosstalk"].shape[0]) > 1e-6)
             dataRow['test_bell'] = Tomo_Object.conf["Bellstate"]
             dataRow['test_drift'] = Tomo_Object.conf["DoDriftCorrection"]
-            dataRow['Original_Purity'] = Original_Purity
+            dataRow['purity'] = Original_Purity
 
             if printHeader:
                 TORREPLACE = ""
@@ -363,8 +364,9 @@ def saveRunsGeneral(numQubits, nStates,resultsFilePath="Results/results_GeneralD
 
             # Append at the end of file
             file_object.write(TORREPLACE)
-    # Close the file
-    file_object.close()
+    if saveData:
+        # Close the file
+        file_object.close()
     return numTotalErrors
 
 def uniqueID(Tomo_Object):
@@ -372,7 +374,7 @@ def uniqueID(Tomo_Object):
     method = Tomo_Object.conf["Method"]
     errBounds = Tomo_Object.conf["DoErrorEstimation"]
     testAccCorr = Tomo_Object.conf["DoAccidentalCorrection"]
-    test2Det = Tomo_Object.conf["NDetectors"]
+    numDet = Tomo_Object.conf["NDetectors"]
     testCrossTalk = isinstance(Tomo_Object.conf["Crosstalk"],int)
     testBell = Tomo_Object.conf["Bellstate"]
     testDrift = Tomo_Object.conf["DoDriftCorrection"]
@@ -383,7 +385,7 @@ def uniqueID(Tomo_Object):
         s+="a1-"
     else:
         s += "a0-"
-    if (test2Det):
+    if numDet == 2:
         s+="d1-"
     else:
         s += "d0-"

@@ -15,6 +15,87 @@ http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
 # These are various helper functions used in other main functions
 
 
+
+###############
+# LIKELYHOODS #
+###############
+
+# todo add overall_norms to comment block
+"""
+maxlike_fitness(t, coincidences, accidentals, m, prediction)
+Desc: Calculates the diffrence between the current predicted state data and the actual data.
+
+Parameters
+----------
+t : ndarray
+    T values of the current predicted state.
+coincidences : ndarray with length = number of measurements or shape = (number of measurements, 2^numQubits) for 2 det/qubit
+    The counts of the tomography.
+accidentals : ndarray with length = number of measurements or shape = (number of measurements, 2^numQubits) for 2 det/qubit
+    The singles values of the tomography. Used for accidental correction.
+m : ndarray with shape = (2^numQubits, 2^numQubits, number of measurements)
+    The measurements of the tomography in density matrix form.
+prediction : ndarray
+    Predicted counts from the predicted state.
+
+Returns
+-------
+val : float
+    value of the optimization function.
+"""
+def maxlike_fitness(t, coincidences, accidentals, m, prediction,overall_norms=-1):
+    rhog = t_to_density(t)
+    for j in range(len(prediction)):
+        prediction[j] = np.float64(np.real(overall_norms[j] * np.real(np.trace(np.dot(m[:, :, j], rhog))) + accidentals[j]))
+        prediction[j] = np.max([prediction[j], 0.01])
+    val = (prediction - coincidences) / np.sqrt(prediction)
+    val = np.float64(np.real(val))
+    return val
+
+# todo add overall_norms to comment block
+"""
+maxlike_fitness_hedged(t, coincidences, accidentals, m, prediction, bet)
+Desc: Calculates the diffrence between the current predicted state data and the actual data using hedged maximum likelihood.
+
+Parameters
+----------
+t : ndarray
+    T values of the current predicted state.
+coincidences : ndarray with length = number of measurements or shape = (number of measurements, 2^numQubits) for 2 det/qubit
+    The counts of the tomography.
+accidentals : ndarray with length = number of measurements or shape = (number of measurements, 2^numQubits) for 2 det/qubit
+    The singles values of the tomography. Used for accidental correction.
+m : ndarray with shape = (2^numQubits, 2^numQubits, number of measurements)
+    The measurements of the tomography in density matrix form .
+prediction : ndarray
+    Predicted counts from the predicted state.
+bet : float 0 to .5
+    The beta value used.
+
+Returns
+-------
+val : float
+    value of the optimization function.
+"""
+def maxlike_fitness_hedged(t, coincidences, accidentals, m, prediction, bet,overall_norms=-1):
+    # If overall_norms not given then assume uniform
+    if not isinstance(overall_norms,np.ndarray):
+        overall_norms = np.ones(coincidences.shape[0])
+    elif not (len(overall_norms.shape) == 1 and overall_norms.shape[0] == coincidences.shape[0]):
+        raise ValueError("Invalid intensities array")
+
+    rhog = t_to_density(t)
+    for j in range(len(prediction)):
+        prediction[j] = overall_norms[j] * np.real(np.trace(np.dot(m[:, :, j], rhog))) + accidentals[j]
+        prediction[j] = np.max([prediction[j], 0.01])
+
+    hedge = np.repeat(np.real((bet * np.log(np.linalg.det(np.mat(rhog)))) / len(prediction)), len(prediction))
+    val = np.sqrt(np.real((((prediction - coincidences) ** 2) / (2 * prediction)) - hedge) + 1000)
+
+    val = np.float64(np.real(val))
+
+    return val
+
 # helper function used in linear tomography
 def independent_set(measurements):
     m = measurements[0, :].conj().transpose()
@@ -43,6 +124,57 @@ def independent_set(measurements):
             break
 
     return s
+
+# This function converts a list of loglikelihoods to normalized likelihoods
+def normalizeExponentLikelihood(likelihoods):
+    nFactor = min(likelihoods)
+    likelihoods = likelihoods - nFactor
+    likelihoods = np.exp(-1 * likelihoods)
+    likelihoods /= sum(likelihoods)
+    return likelihoods
+
+
+
+"""
+log_likelyhood(t, coincidences, accidentals, m, prediction)
+Desc: This is the log 
+Parameters
+----------
+t : ndarray
+    T values of the current predicted state.
+coincidences : ndarray with length = number of measurements or shape = (number of measurements, 2^numQubits) for 2 det/qubit
+    The counts of the tomography.
+accidentals : ndarray with length = number of measurements or shape = (number of measurements, 2^numQubits) for 2 det/qubit
+    The singles values of the tomography. Used for accidental correction.
+m : ndarray with shape = (2^numQubits, 2^numQubits, number of measurements)
+    The measurements of the tomography in density matrix form.
+prediction : ndarray
+    Predicted counts from the predicted state.
+
+Returns
+-------
+val : float
+    value of the optimization function.
+"""
+def log_likelyhood(intensity, givenState, coincidences, measurements, accidentals, overall_norms=-1):
+    # If overall_norms not given then assume uniform
+    if not isinstance(overall_norms, np.ndarray):
+        overall_norms = np.ones(coincidences.shape[0])
+    elif not (len(overall_norms.shape) == 1 and overall_norms.shape[0] == coincidences.shape[0]):
+        raise ValueError("Invalid intensities array")
+    if (len(givenState.shape) == 1):
+        givenState = t_to_density(givenState)
+    Averages = np.zeros_like(coincidences, dtype=np.float)
+    for j in range(len(Averages)):
+        Averages[j] = intensity * overall_norms[j] * np.real(
+            np.trace(np.matmul(measurements[:, :, j], givenState))) + \
+                      accidentals[j]
+        # Avoid dividing by zero for pure states
+        if (Averages[j] == 0):
+            Averages[j] == 1
+    val = (Averages - coincidences) ** 2 / (2 * Averages)
+    return sum(val)
+
 
 # helper function that formats the projects into a single matrix
 def b_matrix(projectors):
@@ -296,7 +428,6 @@ def getBellSettings_helper_bounds(rhop, rho, partsize_init, partsize, t, n):
 
 # Calculates the weighted covariance. Used in bayesian tomography
 def weightedcov(samples,weights):
-
     mean = np.zeros_like(samples[0])
     for i in range(len(weights)):
         mean += weights[i] * samples[i]
@@ -304,13 +435,4 @@ def weightedcov(samples,weights):
     covariance = np.zeros_like(np.outer(mean, mean))
     for i in range(len(weights)):
         covariance += weights[i] * np.outer(mean - samples[i], mean - samples[i])
-
     return [mean,covariance]
-
-# This function converts a list of loglikelihoods to normalized likelihoods
-def normalizeExponentLikelihood(likelihoods):
-    nFactor = min(likelihoods)
-    likelihoods = likelihoods - nFactor
-    likelihoods = np.exp(-1 * likelihoods)
-    likelihoods /= sum(likelihoods)
-    return likelihoods
