@@ -1,4 +1,7 @@
 # Testing Folder
+
+[comment]: <> (TODO : Edit comments in this file)
+
 This folder is used to run tests on the src code to ensure
 it is working right. It also contains scripts to run random tomography and save results
 
