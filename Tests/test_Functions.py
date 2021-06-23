@@ -103,6 +103,9 @@ class FunctionTesting(unittest.TestCase):
             self.assertTrue((tomoObj1.getTimes() == randTime1).all())
             self.assertTrue((tomoObj2.getTimes() == randTime2).all())
 
-
+    def test_buildTomoInput(self):
+        [times1, singles1, coincidences1, measurements11, measurements12] = self.tomoinp1.transpose()
+        # built_input1 = qlib.buildTomoInput()
+        # started working on testing this, but I don't know the default values for crosstalk, efficiency, etc.
 if __name__ == '__main__':
     unittest.main()
