@@ -3,6 +3,18 @@ import QuantumTomography as qLib
 import numpy as np
 import numpy.testing as tests
 
+
+"""
+Copyright 2020 University of Illinois Board of Trustees.
+Licensed under the terms of an MIT license
+"""
+
+__author__ = 'Quoleon/Turro'
+"""CHECK OUT THE REFERENCE PAGE ON OUR WEBSITE :
+http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
+
+"Attention! These tests run on the version that your environment uses. See readme for details"
+
 class Test_Properties(unittest.TestCase):
     # Test linear entropy and purity
     def test_purity(self):

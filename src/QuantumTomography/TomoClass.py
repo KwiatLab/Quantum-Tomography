@@ -165,7 +165,29 @@ class Tomography():
 
     """
         StateTomography(measurements, counts)
-        todo:comment
+        Desc: Main function that runs tomography. This function requires a set of measurments and a set of counts.
+		The number of qubits and then number of measurements will be assumed from the inputs.
+
+		Parameters
+	    ----------      (10 hyphens, one for each letter)
+	    measurements : ndarray shape ( N , 2*NQubits )
+	    	Each row in the matrix is a set of independent measurments.
+	    counts : ndarray shape ( N, NDetectors**NQubits )
+			Each row in the matrix is a set of independent measurments.
+	    description
+	                    (make sure the white spaces between are deleted all the way to the left side of the screen)
+	    Returns
+	    -------
+	    returnValue 1 : type
+	    description
+	    returnValue 2 : type
+	    description
+		2
+	    See Also
+	     -------
+	    function1;function2;function2      (these should be the functionTitle without parentheses, as it appears on the Table of Contents
+	'''
+
         """
     def StateTomography(self, measurements, counts, crosstalk=-1, efficiency=0, time=-1, singles=-1, window=0, error=0,
                         intensities=-1, method="MLE"):
@@ -618,8 +640,8 @@ class Tomography():
         eff = self.conf['Efficiency']
         crosstalk = self.conf['Crosstalk']
         overall_norms = np.kron(self.intensities, eff)
-        
-        
+
+
         # Accidental Correction
         acc = np.zeros_like(coinc)
         if(self.conf['DoAccidentalCorrection'] == 1):
@@ -640,7 +662,7 @@ class Tomography():
                 acc = acc[:, 0]
 
         # Get measurements
-        # Todo: this is very messy but works...? At some point it can be cleaned up, so that toDensity is used
+        # Todo: this is very messy. At some point it can be cleaned up, so that toDensity is used
         # and the shapes are similar. The axis of the measuremennts_densities is kinda wonky. Not similar to measurements_pures
         MeasBasis = self.getMeasurements()
         measurements_densities = np.zeros([2 ** nbits, 2 ** nbits, np.prod(coinc.shape)],dtype=complex)

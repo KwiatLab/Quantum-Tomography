@@ -62,4 +62,4 @@ def runFull(nStates=1,saveStates = True):
     return totalErrors
 
 if __name__ == '__main__':
-    runFull()
+    runFull(100)

@@ -72,8 +72,14 @@ def runTests(numQubits, nStates,
             Tomo_Object.conf['Efficiency'] = np.ones(2 ** numQubits)
         else:
             Tomo_Object.conf['NDetectors'] = 1
-        if testCrossTalk:
-            Tomo_Object.conf['Crosstalk'] = 1
+        if isinstance(testCrossTalk,bool) and testCrossTalk:
+            cTalkMat = np.random.rand(2 ** numQubits, 2 ** numQubits)
+            for i in range(2 ** numQubits):
+                cTalkMat[:, i] = cTalkMat[:, i] / (sum(cTalkMat[:, i] + 0 * np.random.random()))
+            Tomo_Object.conf['Crosstalk'] = cTalkMat
+        elif isinstance(testCrossTalk,np.ndarray):
+            Tomo_Object.conf['Crosstalk'] = testCrossTalk
+            testCrossTalk = True
         else:
             Tomo_Object.conf['Crosstalk'] = np.identity(2 ** numQubits)
         Tomo_Object.conf['UseDerivative'] = "TrUe"
@@ -178,13 +184,6 @@ def runTests(numQubits, nStates,
                     raise ValueError('"' + str(randomStateDist) + '" does not have the right dimensions for '+str(numQubits)+' Qubits.')
         else:
             raise ValueError('"' + str(randomStateDist) + '" is not a valid state distribution.')
-        # crosstalk
-        cTalkMat = 0
-        if (testCrossTalk):
-            cTalkMat = np.random.rand(2 ** numQubits, 2 ** numQubits)
-            for i in range(2 ** numQubits):
-                cTalkMat[:, i] = cTalkMat[:, i] / (sum(cTalkMat[:, i] + 0 * np.random.random()))
-            Tomo_Object.conf['Crosstalk'] = cTalkMat
 
         # counts
         numCounts = int(np.random.randint(np.ceil(5 * 2 ** numQubits), np.floor(50 * 2 ** numQubits)))
@@ -194,8 +193,7 @@ def runTests(numQubits, nStates,
             # state goes through wave plates
             newState = qLib.densityOperation(startingRho, wavePlateArray[i])
             # state goes through beam splitter and we measure the H counts
-            if (testCrossTalk):
-                newState = qLib.densityOperation(startingRho, cTalkMat)
+            newState = qLib.densityOperation(newState, Tomo_Object.conf['Crosstalk'])
             h_state = np.zeros((2 ** numQubits, 2 ** numQubits), dtype=complex)
             h_state[0, 0] = 1
             if (test2Det):
@@ -206,8 +204,7 @@ def runTests(numQubits, nStates,
                     prob[j] = np.trace(np.matmul(h_state, newState))
                     prob[j] = min(np.real(prob[j]), .99999999)
                 prob = np.real(prob)
-                tomo_input[i,
-                2 * numQubits + 1: 2 ** numQubits + 2 * numQubits + 1] = np.random.multinomial(
+                tomo_input[i,2 * numQubits + 1: 2 ** numQubits + 2 * numQubits + 1] = np.random.multinomial(
                     numCounts, prob)
             else:
                 prob = np.trace(np.matmul(h_state, newState))
@@ -375,7 +372,12 @@ def uniqueID(Tomo_Object):
     errBounds = Tomo_Object.conf["DoErrorEstimation"]
     testAccCorr = Tomo_Object.conf["DoAccidentalCorrection"]
     numDet = Tomo_Object.conf["NDetectors"]
-    testCrossTalk = isinstance(Tomo_Object.conf["Crosstalk"],int)
+
+    if np.any(Tomo_Object.conf["Crosstalk"] - np.eye(Tomo_Object.conf["Crosstalk"].shape[0]) > 10 ** -6):
+        testCrossTalk = True
+    else:
+        testCrossTalk = False
+
     testBell = Tomo_Object.conf["Bellstate"]
     testDrift = Tomo_Object.conf["DoDriftCorrection"]
     
