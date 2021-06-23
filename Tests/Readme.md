@@ -4,7 +4,7 @@ This folder is used to run tests on the src code to ensure
 it is working right. It also contains scripts to run random tomography and save results
 
 #  Test on the src code
-You should create a virtual environment. It's diffrent depending on your operating system but the command
+You should create a virtual environment. It's different depending on your operating system but the command
 should be something similar to "py -m venv env"  Once you've done this you'll want to install the local code
 as a python package. To do this is the command "py -m pip install -e .". Now when you run the scripts in Tests they
 will be referencing the src code in your local directory. If this is not done it's possible the

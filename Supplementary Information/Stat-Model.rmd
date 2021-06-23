@@ -28,7 +28,7 @@ For each measurement we have 1 count number. We define the following variables:
 - $n_i$: Number of counts on measurement i
     - $n_i \sim \text{Poiss}(\mu_{i}) \xrightarrow{\text{CLT}}
        n_i \sim \text{Norm}(\mu_{i},\sigma_i)$
-    - $i \in[1,m] \; \big| \; m = \text{Num Measurments}$
+    - $i \in[1,m] \; \big| \; m = \text{Num Measurements}$
 - $\sigma_i^2$: Variance for the number of counts on measurement i given $\rho$
     -  $\sigma_i^2 = \mu_i$ from assuming a poisson distribution
 - $\mu_i$: Expected number of counts on measurement i given $\rho$
@@ -69,7 +69,7 @@ For each measurement a complete number of counts on all the possible outcomes. W
 - $n_{ij}$: Number of counts on measurement i for detector j
     - $n_{ij} \sim \text{Poiss}(\mu_{ij}) \xrightarrow{\text{CLT}}
        n_{ij} \sim \text{Norm}(\mu_{ij},\sigma_{ij})$
-    - $i \in[1,m] \; \big| \; m = \text{Num Measurments}$
+    - $i \in[1,m] \; \big| \; m = \text{Num Measurements}$
     - $j \in[1,k] \; \big| \; k = \text{Num Detector Pairs}$
 
 - $\sigma_{ij}^2$: Variance for the number of counts on measurement i, detector j given $\rho$
