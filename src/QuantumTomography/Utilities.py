@@ -39,6 +39,7 @@ class ConfDict(MutableMapping):
                 value = 0
             elif(value.upper() == "LINEAR" or
                 value.upper() == "MLE" or
+                value.upper() == "HMLE" or
                 value.upper() == "BME"):
                 return value.upper()
             else:

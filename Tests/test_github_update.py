@@ -1,6 +1,7 @@
 from __future__ import print_function
 from TestRun import runTests
 from test_properties import Test_Properties
+from test_functions import Test_Functions
 import unittest
 import warnings
 warnings.filterwarnings("ignore")
@@ -188,4 +189,5 @@ class TestQuick(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.TestLoader().loadTestsFromTestCase(Test_Properties)
+    unittest.TestLoader().loadTestsFromTestCase(Test_Functions)
     unittest.main()

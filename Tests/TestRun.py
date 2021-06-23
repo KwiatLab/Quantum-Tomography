@@ -43,13 +43,13 @@ def runTests(numQubits, nStates,
     BigListOfTomographies = list()
 
     # If invalid conf settings then don't run
-    if numQubits == 1:
+    if numQubits != 2:
         if testAccCorr:
             print('Run skipped. Invalid Conf settings code: n1-a1')
             return BigListOfTomographies
-    if testBell and numQubits != 2:
-        print('Run skipped. Invalid Conf settings code: n1-b1')
-        return BigListOfTomographies
+        if testBell:
+            print('Run skipped. Invalid Conf settings code: n'+str(numQubits)+'-b1')
+            return BigListOfTomographies
 
     numErrors = 0
     for TomographyNumber in range(nStates):
@@ -62,7 +62,6 @@ def runTests(numQubits, nStates,
         Tomo_Object = qLib.Tomography()
         # set up settings for tomography class
         Tomo_Object.conf['NQubits'] = numQubits
-        Tomo_Object.conf['Properties'] = ['concurrence', 'tangle', 'entanglement', 'entropy', 'linear_entropy', 'negativity']
         if (testAccCorr):
             Tomo_Object.conf['DoAccidentalCorrection'] = 'yEs'
         else:
@@ -91,6 +90,8 @@ def runTests(numQubits, nStates,
             Tomo_Object.conf['DoDriftCorrection'] = "F"
         Tomo_Object.conf['Window'] = 1
         Tomo_Object.conf["Method"] = method
+        if method.upper() == "HMLE":
+            Tomo_Object.conf["Beta"] = 1/2
         if(TomographyNumber ==0):
             print("Running Test " + uniqueID(Tomo_Object),end=" .")
 
@@ -99,63 +100,83 @@ def runTests(numQubits, nStates,
 
         # set up measurements
         # measurements is an array of all the measurements for both classes mStates is only to help calculate Measurements
-        if (test2Det):
-            measurements = np.zeros((len(tomo_input), 2 ** numQubits, 2 ** (numQubits)), dtype=complex)
-        else:
-            measurements = np.zeros((len(tomo_input), 2 ** numQubits), dtype=complex)
         if (Tomo_Object.getNumDetPerQubit() == 1):
             # input[:, np.arange(n_qubit+ 2, 3*n_qubit+ 2)]: measurements
-            mStates = tomo_input[:, np.arange(numQubits + 2, 3 * numQubits + 2)]
+            measurements_raw = tomo_input[:, np.arange(numQubits + 2, 3 * numQubits + 2)]
         else:
             # input[:, np.arange(2**n_qubit+ 2*n_qubit+ 1, 2**n_qubit+ 4*n_qubit+ 1)]: measurements
-            mStates = tomo_input[:, np.arange(2 ** numQubits + 2 * numQubits + 1,
+            measurements_raw = tomo_input[:, np.arange(2 ** numQubits + 2 * numQubits + 1,
                                               2 ** numQubits + 4 * numQubits + 1)]
-        mStates = np.reshape(mStates, (mStates.shape[0], int(mStates.shape[1] / 2), 2))
-        if (test2Det):
-            wavePlateArraysBasis = np.zeros((3, 2, 2), dtype=complex)
-            wavePlateArraysBasis[0] = np.identity(2, dtype=complex)
-            wavePlateArraysBasis[1] = np.array([[.7071, .7071], [.7071, -.7071]], dtype=complex)
-            wavePlateArraysBasis[2] = np.array([[.7071, -.7071j], [.7071, .7071j]], dtype=complex)
-            wavePlateArray = np.array([1], dtype=complex)
-        else:
-            wavePlateArraysBasis = np.zeros((6, 2, 2), dtype=complex)
-            wavePlateArraysBasis[0] = np.identity(2, dtype=complex)
-            wavePlateArraysBasis[1] = np.array([[0, 1], [1, 0]], dtype=complex)
-            wavePlateArraysBasis[2] = np.array([[.7071, .7071], [.7071, -.7071]], dtype=complex)
-            wavePlateArraysBasis[3] = np.array([[.7071, -.7071], [.7071, .7071]], dtype=complex)
-            wavePlateArraysBasis[4] = np.array([[.7071, -.7071j], [.7071, .7071j]], dtype=complex)
-            wavePlateArraysBasis[5] = np.array([[.7071, .7071j], [.7071, -.7071j]], dtype=complex)
-            wavePlateArray = np.array([1], dtype=complex)
-        for i in range(numQubits):
-            wavePlateArray = np.kron(wavePlateArray, wavePlateArraysBasis)
+        crosstalk = Tomo_Object.conf['Crosstalk']
 
-        for i in range(len(mStates)):
-            if (test2Det):
-                for x in range(0, 2 ** (numQubits)):
-                    if (x == 1):
-                        try:
-                            mStates[i][1] = getOppositeState(mStates[i][1])
-                        except:
-                            mStates[i][0] = getOppositeState(mStates[i][0])
-                    elif (x == 2):
-                        mStates[i][1] = getOppositeState(mStates[i][1])
-                        mStates[i][0] = getOppositeState(mStates[i][0])
-                    elif (x == 3):
-                        mStates[i][1] = getOppositeState(mStates[i][1])
-                    temp = mStates[i][0]
-                    for j in range(1, len(mStates[i])):
-                        temp = np.kron(temp, mStates[i][j])
-                    measurements[i][x] = temp
-                try:
-                    mStates[i][1] = getOppositeState(mStates[i][1])
-                except:
-                    mStates[i][0] = getOppositeState(mStates[i][0])
-                mStates[i][0] = getOppositeState(mStates[i][0])
-            else:
-                temp = mStates[i][0]
-                for j in range(1, len(mStates[i])):
-                    temp = np.kron(temp, mStates[i][j])
-                measurements[i] = temp
+
+        # NEW WAY
+        measurements_densities = np.zeros((tomo_input.shape[0], Tomo_Object.getNumCoinc(), 2 ** numQubits, 2 ** numQubits), dtype=complex)
+        for j in range(tomo_input.shape[0]):
+            meas_basis_densities = np.zeros([2 ** numQubits, 2 ** numQubits, 2 ** numQubits]) + 0j
+            meas_basis_pures = 1
+            for k in range(numQubits):
+                alpha = measurements_raw[j][2 * k]
+                beta = measurements_raw[j][2 * k + 1]
+                psi_transmit = np.array([alpha, beta])
+                psi_reflect = np.array([np.conj(beta), np.conj(-alpha)])
+                meas_pure = np.outer((np.array([1, 0])), psi_transmit) + np.outer((np.array([0, 1])), psi_reflect)
+                # Changed from tensor_product to np.kron
+                meas_basis_pures = np.kron(meas_basis_pures, meas_pure)
+            for k in range(2 ** numQubits):
+                meas_basis_densities[k, :, :] = np.outer(meas_basis_pures[:, k].conj().transpose(),
+                                                         meas_basis_pures[:, k])
+            for k in range(Tomo_Object.getNumCoinc()):
+                for l in range(2 ** numQubits):
+                    measurements_densities[j, k, :, :] = measurements_densities[j, k, :, :] + meas_basis_densities[l, :,
+                                                                                              :] * crosstalk[k, l]
+        # The old way of simulating the measurement
+        # mStates = np.reshape(mStates, (mStates.shape[0], int(mStates.shape[1] / 2), 2))
+        # if (test2Det):
+        #     wavePlateArraysBasis = np.zeros((3, 2, 2), dtype=complex)
+        #     wavePlateArraysBasis[0] = np.identity(2, dtype=complex)
+        #     wavePlateArraysBasis[1] = np.array([[.7071, .7071], [.7071, -.7071]], dtype=complex)
+        #     wavePlateArraysBasis[2] = np.array([[.7071, -.7071j], [.7071, .7071j]], dtype=complex)
+        #     wavePlateArray = np.array([1], dtype=complex)
+        # else:
+        #     wavePlateArraysBasis = np.zeros((6, 2, 2), dtype=complex)
+        #     wavePlateArraysBasis[0] = np.identity(2, dtype=complex)
+        #     wavePlateArraysBasis[1] = np.array([[0, 1], [1, 0]], dtype=complex)
+        #     wavePlateArraysBasis[2] = np.array([[.7071, .7071], [.7071, -.7071]], dtype=complex)
+        #     wavePlateArraysBasis[3] = np.array([[.7071, -.7071], [.7071, .7071]], dtype=complex)
+        #     wavePlateArraysBasis[4] = np.array([[.7071, -.7071j], [.7071, .7071j]], dtype=complex)
+        #     wavePlateArraysBasis[5] = np.array([[.7071, .7071j], [.7071, -.7071j]], dtype=complex)
+        #     wavePlateArray = np.array([1], dtype=complex)
+        # for i in range(numQubits):
+        #     wavePlateArray = np.kron(wavePlateArray, wavePlateArraysBasis)
+        #
+        # for i in range(len(mStates)):
+        #     if (test2Det):
+        #         for x in range(0, 2 ** (numQubits)):
+        #             if (x == 1):
+        #                 try:
+        #                     mStates[i][1] = getOppositeState(mStates[i][1])
+        #                 except:
+        #                     mStates[i][0] = getOppositeState(mStates[i][0])
+        #             elif (x == 2):
+        #                 mStates[i][1] = getOppositeState(mStates[i][1])
+        #                 mStates[i][0] = getOppositeState(mStates[i][0])
+        #             elif (x == 3):
+        #                 mStates[i][1] = getOppositeState(mStates[i][1])
+        #             temp = mStates[i][0]
+        #             for j in range(1, len(mStates[i])):
+        #                 temp = np.kron(temp, mStates[i][j])
+        #             measurements[i][x] = temp
+        #         try:
+        #             mStates[i][1] = getOppositeState(mStates[i][1])
+        #         except:
+        #             mStates[i][0] = getOppositeState(mStates[i][0])
+        #         mStates[i][0] = getOppositeState(mStates[i][0])
+        #     else:
+        #         temp = mStates[i][0]
+        #         for j in range(1, len(mStates[i])):
+        #             temp = np.kron(temp, mStates[i][j])
+        #         measurements[i] = temp
         if (TomographyNumber == 0):
             print(".", end="")
 
@@ -190,29 +211,19 @@ def runTests(numQubits, nStates,
 
         # Testing setting
         for i in range(len(tomo_input)):
-            # state goes through wave plates
-            newState = qLib.densityOperation(startingRho, wavePlateArray[i])
-            # state goes through beam splitter and we measure the H counts
-            newState = qLib.densityOperation(newState, Tomo_Object.conf['Crosstalk'])
-            h_state = np.zeros((2 ** numQubits, 2 ** numQubits), dtype=complex)
-            h_state[0, 0] = 1
             if (test2Det):
                 prob = np.zeros(2 ** numQubits, complex)
                 for j in range(0, 2 * numQubits):
-                    h_state = np.zeros((2 ** numQubits, 2 ** numQubits), dtype=complex)
-                    h_state[j, j] = 1
-                    prob[j] = np.trace(np.matmul(h_state, newState))
+                    prob[j] = np.trace(np.matmul(measurements_densities[i,j], startingRho))
                     prob[j] = min(np.real(prob[j]), .99999999)
                 prob = np.real(prob)
                 tomo_input[i,2 * numQubits + 1: 2 ** numQubits + 2 * numQubits + 1] = np.random.multinomial(
                     numCounts, prob)
             else:
-                prob = np.trace(np.matmul(h_state, newState))
+                prob = np.trace(np.matmul(measurements_densities[i,0], startingRho))
                 prob = np.real(prob)
                 tomo_input[i, numQubits + 1] = np.random.binomial(numCounts, min(prob, .99999999))
-            # input[:, np.arange(2*n_qubit+ 1, 2**n_qubit+ 2*n_qubit+ 1)]: coincidences
 
-        # todo : redo this thing. It doesnt work for 3 qubits.
         if (testAccCorr and numQubits<3):
             # acc[:, j] = np.prod(np.real(sings[:, idx]), axis=1) * (window[j] * 1e-9 / np.real(t)) ** (nbits - 1)
             if (test2Det):

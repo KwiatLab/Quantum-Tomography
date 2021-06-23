@@ -20,7 +20,6 @@ http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
 # LIKELYHOODS #
 ###############
 
-# todo add overall_norms to comment block
 """
 maxlike_fitness(t, coincidences, accidentals, m, prediction)
 Desc: Calculates the diffrence between the current predicted state data and the actual data.
@@ -37,24 +36,26 @@ m : ndarray with shape = (2^numQubits, 2^numQubits, number of measurements)
     The measurements of the tomography in density matrix form.
 prediction : ndarray
     Predicted counts from the predicted state.
-
+overall_norms : 1darray with length = number of measurements or length = number of measurements * 2^numQubits for 2 det/qubit
+    The relative weights of each measurment. Used for drift correction.
+    
 Returns
 -------
 val : float
     value of the optimization function.
 """
-def maxlike_fitness(t, coincidences, accidentals, m, prediction,overall_norms=-1):
+def maxlike_fitness(t, coincidences, accidentals, measurements, overall_norms):
     rhog = t_to_density(t)
+    prediction = np.zeros_like(coincidences)
     for j in range(len(prediction)):
-        prediction[j] = np.float64(np.real(overall_norms[j] * np.real(np.trace(np.dot(m[:, :, j], rhog))) + accidentals[j]))
+        prediction[j] = overall_norms[j] * np.real(np.trace(np.dot(measurements[j, :, :], rhog))) + accidentals[j]
         prediction[j] = np.max([prediction[j], 0.01])
-    val = (prediction - coincidences) / np.sqrt(prediction)
-    val = np.float64(np.real(val))
-    return val
+    log_like = (prediction - coincidences) / np.sqrt(prediction)
+    return np.real(log_like)
 
-# todo add overall_norms to comment block
+
 """
-maxlike_fitness_hedged(t, coincidences, accidentals, m, prediction, bet)
+maxlike_fitness_hedged(t, coincidences, accidentals, measurements, prediction, bet)
 Desc: Calculates the diffrence between the current predicted state data and the actual data using hedged maximum likelihood.
 
 Parameters
@@ -65,36 +66,110 @@ coincidences : ndarray with length = number of measurements or shape = (number o
     The counts of the tomography.
 accidentals : ndarray with length = number of measurements or shape = (number of measurements, 2^numQubits) for 2 det/qubit
     The singles values of the tomography. Used for accidental correction.
-m : ndarray with shape = (2^numQubits, 2^numQubits, number of measurements)
+measurements : ndarray with shape = (2^numQubits, 2^numQubits, number of measurements)
     The measurements of the tomography in density matrix form .
 prediction : ndarray
     Predicted counts from the predicted state.
 bet : float 0 to .5
     The beta value used.
+overall_norms : 1darray with length = number of measurements or length = number of measurements * 2^numQubits for 2 det/qubit
+    The relative weights of each measurment. Used for drift correction.
 
 Returns
 -------
 val : float
     value of the optimization function.
 """
-def maxlike_fitness_hedged(t, coincidences, accidentals, m, prediction, bet,overall_norms=-1):
-    # If overall_norms not given then assume uniform
-    if not isinstance(overall_norms,np.ndarray):
-        overall_norms = np.ones(coincidences.shape[0])
-    elif not (len(overall_norms.shape) == 1 and overall_norms.shape[0] == coincidences.shape[0]):
-        raise ValueError("Invalid intensities array")
-
+def maxlike_fitness_hedged(t, coincidences, accidentals, measurements, bet,overall_norms):
+    prediction = np.zeros_like(coincidences)
     rhog = t_to_density(t)
     for j in range(len(prediction)):
-        prediction[j] = overall_norms[j] * np.real(np.trace(np.dot(m[:, :, j], rhog))) + accidentals[j]
+        prediction[j] = overall_norms[j] * np.real(np.trace(np.dot(measurements[j,:,:], rhog))) + accidentals[j]
         prediction[j] = np.max([prediction[j], 0.01])
-
-    hedge = np.repeat(np.real((bet * np.log(np.linalg.det(np.mat(rhog)))) / len(prediction)), len(prediction))
+    hedge = np.repeat(np.real((bet * np.log(np.linalg.det(rhog))) / len(prediction)), len(prediction))
     val = np.sqrt(np.real((((prediction - coincidences) ** 2) / (2 * prediction)) - hedge) + 1000)
+    return np.real(val)
 
-    val = np.float64(np.real(val))
-
-    return val
+# This are some old functions that have since been reworked.
+#
+# """
+# maxlike_fitness_old(t, coincidences, accidentals, m, prediction)
+# Desc: Calculates the diffrence between the current predicted state data and the actual data
+#
+# Parameters
+# ----------
+# t : ndarray
+#     T values of the current predicted state.
+# coincidences : ndarray with length = number of measurements or shape = (number of measurements, 2^numQubits) for 2 det/qubit
+#     The counts of the tomography.
+# accidentals : ndarray with length = number of measurements or shape = (number of measurements, 2^numQubits) for 2 det/qubit
+#     The singles values of the tomography. Used for accidental correction.
+# m : ndarray with shape = (2^numQubits, 2^numQubits, number of measurements)
+#     The measurements of the tomography in density matrix form.
+# prediction : ndarray
+#     Predicted counts from the predicted state.
+# overall_norms : 1darray with length = number of measurements or length = number of measurements * 2^numQubits for 2 det/qubit
+#     The relative weights of each measurment. Used for drift correction.
+#
+# Returns
+# -------
+# val : float
+#     value of the optimization function.
+# """
+# def maxlike_fitness_old(t, coincidences, accidentals, m, prediction,overall_norms=-1):
+#     rhog = t_to_density(t)
+#     for j in range(len(prediction)):
+#         prediction[j] = np.float64(np.real(overall_norms[j] * np.real(np.trace(np.dot(m[:, :, j], rhog))) + accidentals[j]))
+#         prediction[j] = np.max([prediction[j], 0.01])
+#     val = (prediction - coincidences) / np.sqrt(prediction)
+#     val = np.float64(np.real(val))
+#     return val
+#
+#
+# """
+# maxlike_fitness_hedged_old(t, coincidences, accidentals, m, prediction, bet)
+# Desc: Calculates the diffrence between the current predicted state data and the actual data using hedged maximum likelihood.
+#
+# Parameters
+# ----------
+# t : ndarray
+#     T values of the current predicted state.
+# coincidences : ndarray with length = number of measurements or shape = (number of measurements, 2^numQubits) for 2 det/qubit
+#     The counts of the tomography.
+# accidentals : ndarray with length = number of measurements or shape = (number of measurements, 2^numQubits) for 2 det/qubit
+#     The singles values of the tomography. Used for accidental correction.
+# m : ndarray with shape = (2^numQubits, 2^numQubits, number of measurements)
+#     The measurements of the tomography in density matrix form .
+# prediction : ndarray
+#     Predicted counts from the predicted state.
+# bet : float 0 to .5
+#     The beta value used.
+# overall_norms : 1darray with length = number of measurements or length = number of measurements * 2^numQubits for 2 det/qubit
+#     The relative weights of each measurment. Used for drift correction.
+#
+# Returns
+# -------
+# val : float
+#     value of the optimization function.
+# """
+# def maxlike_fitness_hedged_old(t, coincidences, accidentals, m, prediction, bet,overall_norms=-1):
+#     # If overall_norms not given then assume uniform
+#     if not isinstance(overall_norms,np.ndarray):
+#         overall_norms = np.ones(coincidences.shape[0])
+#     elif not (len(overall_norms.shape) == 1 and overall_norms.shape[0] == coincidences.shape[0]):
+#         raise ValueError("Invalid intensities array")
+#
+#     rhog = t_to_density(t)
+#     for j in range(len(prediction)):
+#         prediction[j] = overall_norms[j] * np.real(np.trace(np.dot(m[:, :, j], rhog))) + accidentals[j]
+#         prediction[j] = np.max([prediction[j], 0.01])
+#
+#     hedge = np.repeat(np.real((bet * np.log(np.linalg.det(np.mat(rhog)))) / len(prediction)), len(prediction))
+#     val = np.sqrt(np.real((((prediction - coincidences) ** 2) / (2 * prediction)) - hedge) + 1000)
+#
+#     val = np.float64(np.real(val))
+#
+#     return val
 
 # helper function used in linear tomography
 def independent_set(measurements):

@@ -18,6 +18,6 @@ if __name__ == '__main__':
     saveRunsGeneral(numQubits=1, nStates=100,method='MLE')
     saveRunsGeneral(numQubits=2, nStates=100,method='MLE')
     saveRunsGeneral(numQubits=3, nStates=100,method='MLE')
-    saveRunsGeneral(numQubits=1, nStates=100,method='BME')
+    # saveRunsGeneral(numQubits=1, nStates=100,method='BME')
     # saveRunsGeneral(numQubits=2, nStates=100,method='BME')
     # saveRunsGeneral(numQubits=3, nStates=100,method='BME')

@@ -206,22 +206,19 @@ def saveRhoImages(p, pathToDirectory):
 
     plt.savefig(pathToDirectory + "/rhobarImag.png", bbox_inches = 'tight', pad_inches = 0)
 
-"""
-    printLastOutput(tomo, bounds)
-    Desc: Prints the properties of the last tomography to the console. Properties are defined in tomography conf settings.
-          Using bounds will not change the conf settings. The calculated properties are determined by self.err_functions.
+    """
+    printLastOutput(tomo,bounds)
+    Desc: Prints the properties of the last tomography to the console. Properties are defined in tomography conf settings. The calculated properties are determined by self.err_functions.
 
     Parameters
     ----------
-    tomo : Tomography() Object
-        This is the main tomography object. It will get the data from it's last tomography and print it.
-    bounds : boolean
-        Set this to true if you want error bounds on your estimated property values. Default is False.
-        These are determined with monte carlo simulation and the states are saved under self.mont_carl_states
+    tomo : Tomography
+        The tomography object you want to see the output of.
+    bounds : int (optional)
+        The number of monte carlo runs you want to perform to get a better estimate of each property. Default will use whatever is set in the conf settings.
     """
 def printLastOutput(tomo, bounds = -1):
     p = np.array(tomo.last_rho.copy(), dtype = "O")
-    warn.warning('As of v1.0.3.7 printLastOutput() can be called using the Tomography Object Class.',DeprecationWarning)
     print("State: ")
     mx = 0
     for i in range(p.shape[0]):
@@ -323,7 +320,15 @@ def propertiesToHTML(vals):
     return f
 
 
-# todo : this comment block
-def stateToString(x):
-    x = removeGlobalPhase(x)
-    return floatToString(x[0])+"|H> + "+floatToString(x[1])+"|V>"
+"""
+    stateToString(vals)
+    Desc: Creates a string of the 1d pure state.
+
+    Parameters
+    ----------    
+    pure_state : 1darray with length = 2
+        The state in ket form.
+    """
+def stateToString(state):
+    state = removeGlobalPhase(state)
+    return floatToString(state[0])+"|H> + "+floatToString(state[1])+"|V>"

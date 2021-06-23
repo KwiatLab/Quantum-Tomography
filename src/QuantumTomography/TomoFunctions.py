@@ -52,12 +52,6 @@ def log_likelyhood(intensity, givenState, coincidences, measurements, accidental
     if (len(givenState.shape) == 1):
         givenState = t_to_density(givenState)
 
-    # # todo : currently the intensity is sometimes being passed in as a 1x1 array
-    # try:
-    #     intensity = intensity[0]
-    # except:
-    #     pass
-
     Averages = np.zeros_like(coincidences, dtype=np.float)
     for j in range(len(Averages)):
         Averages[j] = intensity * overall_norms[j] * np.real(
@@ -671,24 +665,69 @@ def random_ginibre(D=2):
 
     return mat
 
-# todo : this comment block
+"""
+    densityOperation(D)
+    Desc: Performs the operation on the density matrix
+
+    Parameters
+    ----------
+    psi : ndarray with shape = (2^nQubits, 2^nQubits)
+        The state to apply the operation to in density form.
+    gate : ndarray with shape = (2^nQubits, 2^nQubits)
+        The operation to apply to the state.
+
+    Returns
+    -------
+    psi : ndarray with shape = (2^nQubits, 2^nQubits)
+        The state with the operation applied.
+    """
 # performs the operation on the density matrix
 def densityOperation(psi, gate):
     return np.matmul(np.matmul(gate, psi), np.conjugate(np.transpose(gate)))
 
-# todo : this comment block
-# performs the operation on the ket state
+"""
+    ketOperation(D)
+    Desc: Performs the operation on the pure state.
+
+    Parameters
+    ----------
+    psi : 1darray with length = 2^nQubits
+        The state to apply the operation to in ket form.
+    gate : ndarray with shape = (2^nQubits, 2^nQubits)
+        The operation to apply to the state.
+
+    Returns
+    -------
+    psi : ndarray with shape = (2^nQubits, 2^nQubits)
+        The state with the operation applied.
+    """
 def ketOperation(psi, gate):
     return np.matmul(gate, psi)
 
-# todo : this comment block
+"""
+    quarterWavePlate(D)
+    Desc: returns the quantum gate associated with a quarter wave plate.
+
+    Parameters
+    ----------
+    theta : float
+        The angle of the wave plate with respect to horizontal.
+    """
 def quarterWavePlate(theta):
     return np.array([
         [np.cos(theta)**2+1j*np.sin(theta)**2   ,   (1-1j)*np.cos(theta)*np.sin(theta)  ],
         [(1-1j)*np.cos(theta)*np.sin(theta)     ,   np.sin(theta)**2+1j*np.cos(theta)**2]
     ],dtype=complex)
 
-# todo : this comment block
+"""
+    halfWavePlate(D)
+    Desc: returns the quantum gate associated with a half wave plate.
+
+    Parameters
+    ----------
+    theta : float
+        The angle of the wave plate with respect to horizontal.
+    """
 def halfWavePlate(theta):
     return np.array([
         [np.cos(theta)**2-np.sin(theta)**2      ,   2*np.cos(theta)*np.sin(theta)  ],
@@ -725,7 +764,20 @@ def getWavePlateBasis(theta_qwp,theta_hwp,flipPBS=False):
     # no need to do conj, its just a reordering of the numbers
     return basis.T
 
-# todo: this comment block
+"""
+    removeGlobalPhase(D)
+    Desc: Factors out the global phase of the given state by dividing the entire state by the phase of the first component.
+
+    Parameters
+    ----------
+    pure_state : 1darray with length = 2^nQubits
+        The state in ket form.
+
+    Returns
+    -------
+    psi : ndarray with shape = (2^nQubits, 2^nQubits)
+        The state with global phase factored out.
+    """
 def removeGlobalPhase(pure_state):
     # Normalize
     norm = np.dot(pure_state.conj(), pure_state)

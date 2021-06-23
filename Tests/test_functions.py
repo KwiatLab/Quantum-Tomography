@@ -2,8 +2,9 @@ import unittest
 import QuantumTomography as qLib
 import numpy as np
 import numpy.testing as tests
+from TestRun import runTests
 
-class MyTestCase(unittest.TestCase):
+class Test_Functions(unittest.TestCase):
 
     # This tests phaserToComplex,complexToPhaser,removeGlobalPhase and stateToString
     def test_stateToString(self):
@@ -24,6 +25,17 @@ class MyTestCase(unittest.TestCase):
         state = np.array([-.5 + .5j, -.5 - .5j])
 
         self.assertEqual('0.707|H> + i0.707|V>',qLib.stateToString(state))
+
+    # Error bounds is not specified, then getProperties(5) is run after
+    # then do getProperties(3) is run and should not increase the number of monte carlo states.
+    def test_getProperties(self):
+        for i in [1, 2]:
+            tomo = runTests(numQubits=i, nStates=1)[0][0]
+            self.assertEqual(len(tomo.mont_carlo_states), 1)
+            tomo.getProperties(5)
+            self.assertEqual(len(tomo.mont_carlo_states), 6)
+            tomo.getProperties(3)
+            self.assertEqual(len(tomo.mont_carlo_states), 6)
 
 
 if __name__ == '__main__':
