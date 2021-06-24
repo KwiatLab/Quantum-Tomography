@@ -197,7 +197,6 @@ def independent_set(measurements):
             s[j] = 0
         if cur_rank == max_rank:
             break
-
     return s
 
 # This function converts a list of loglikelihoods to normalized likelihoods

@@ -679,7 +679,6 @@ class Tomography():
             n = len(coincidences)
             linear_measurements = measurements
             linear_data = coincidences
-
         else:
             n = int(np.sum(m_set))
             linear_measurements = measurements[(np.rot90(m_set == 1.0)[0])]
@@ -690,10 +689,10 @@ class Tomography():
         b = b_matrix(linear_measurements)
         b_inv = np.linalg.inv(b)
 
-        measurements = np.zeros([measurements.shape[1], measurements.shape[1], n]) + 0j
+        m = np.zeros([measurements.shape[1], measurements.shape[1], n]) + 0j
         for j in range(n):
-            measurements[:, :, j] = m_matrix(j, linear_measurements, b_inv)
-            linear_rhog = linear_rhog + linear_data[j] * measurements[:, :, j]
+            m[:, :, j] = m_matrix(j, linear_measurements, b_inv)
+            linear_rhog = linear_rhog + linear_data[j] * m[:, :, j]
 
         intensity = np.trace(linear_rhog)
         rhog = linear_rhog / intensity
