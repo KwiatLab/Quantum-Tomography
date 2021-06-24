@@ -816,7 +816,7 @@ class Tomography():
         else:
             tomo_input = np.zeros((measurements.shape[0], 2 ** n_qubit + 4 * n_qubit + 1), dtype=complex)
             # times
-            tomo_input[:, 0] = times
+            tomo_input[:, 0] = time
             # singles
             tomo_input[:, 1: 2 * n_qubit + 1] = singles
             # counts
