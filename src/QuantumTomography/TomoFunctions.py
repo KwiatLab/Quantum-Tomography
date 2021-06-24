@@ -614,7 +614,7 @@ def random_density_state(N=1):
 random_bell_state(N)
 Desc: Randomly returns one of the 4 bell state. 
 For 1 qubits on of the standard basis states is returned. For states with dimension
-greater then 2 the Greenberger–Horne–Zeilinger state is returned with a random phase.
+greater then 2 the Greenberger-Horne-Zeilingerstate is returned with a random phase.
 
 Parameters
 ----------
