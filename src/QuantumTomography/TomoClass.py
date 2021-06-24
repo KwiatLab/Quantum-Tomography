@@ -748,9 +748,27 @@ class Tomography():
                 ValueError("Invalid time array")
             # Check if singles has right dimensions
             if (isinstance(singles, int)):
-                singles = np.zeros((measurements.shape[0],2*self.conf["NQubits"]))
-            elif not (len(singles.shape) == 2 and singles.shape[0] == measurements.shape[0] and singles.shape[1] == 2*self.conf["NQubits"]):
-                raise ValueError("Invalid singles matrix")
+                if self.conf['NDetectors'] == 1:
+                    singles = np.zeros((measurements.shape[0],self.conf['NQubits']))
+                elif self.conf['NDetectors'] == 2:
+                    singles = np.zeros((measurements.shape[0],2*self.conf["NQubits"]))
+            else:
+                if self.conf['NDetectors'] == 1 and self.conf['NQubits'] == 1:
+                    if singles.shape != (measurements.shape[0],) and singles.shape != (measurements.shape[0],1):
+                        raise ValueError("Invalid singles matrix")
+
+                    # if the singles vector has the form (x,), this changes it to (x,1)
+                    if np.ndim(singles) == 1:
+                        singles = np.atleast_2d(singles).transpose()
+
+                elif self.conf['NDetectors'] == 1 and self.conf['NQubits'] != 1:
+                    if singles.shape != (measurements.shape[0], self.conf['NQubits']):
+                        raise ValueError("Invalid singles matrix")
+                elif self.conf['NDetectors'] == 2:
+                    if singles.shape != (measurements.shape[0], 2*self.conf['NQubits']):
+                        raise ValueError("Invalid Singles matrix")
+
+                # raise ValueError("Invalid singles matrix")
             # Check if window has right length
             if (isinstance(window, int)):
                 self.conf['Window'] = window
