@@ -67,43 +67,19 @@ def log_likelyhood(intensity, givenState, coincidences, measurements, accidental
 
 
 """
-    Function()
-    Desc: short desc
+density2tm(rhog)
+Desc: Converts a density matrix into a lower t matrix.
 
-    Parameters
-    ----------
-    x1, x2 : ndarray
-        Input arrays to be multiplied. If ``x1.shape != x2.shape``, they must be broadcastable to a common shape (which becomes the shape of the output).
+Parameters
+----------
+rhog : ndarray
+    Array to be converted.
 
-    Returns
-    -------
-    y : ndarray
-        The product of `x1` and `x2`, element-wise.
-    """
-def make_positive(rhog_in):
-    d, v = np.linalg.eig(rhog_in)
-    rhog = np.zeros(rhog_in.shape)
-    for j in range(len(d)):
-        rhog = rhog + np.abs(d[j])*np.outer(v[:, j], v[:, j].conj().transpose())
-    rhog = (rhog + rhog.conj().transpose())/2.0
-
-    return rhog
-
-
+Returns
+-------
+tm : ndarray
+    Lower t matrix defining the input matrix.
 """
-    density2tm(rhog)
-    Desc: Converts a density matrix into a lower t matrix.
-
-    Parameters
-    ----------
-    rhog : ndarray
-        Array to be converted.
-
-    Returns
-    -------
-    tm : ndarray
-        Lower t matrix defining the input matrix.
-    """
 def density2tm(rhog):
     d = rhog.shape[0]
     if d == 1:
@@ -127,19 +103,19 @@ def density2tm(rhog):
     return tm
 
 """
-    density2t(rhog)
-    Desc: Converts a density matrix into a list of t values
+density2t(rhog)
+Desc: Converts a density matrix into a list of t values
 
-    Parameters
-    ----------
-    rhog : ndarray
-        Array to be converted.
+Parameters
+----------
+rhog : ndarray
+    Array to be converted.
 
-    Returns
-    -------
-    t : ndarray
-        List of t values defining the input matrix.
-    """
+Returns
+-------
+t : ndarray
+    List of t values defining the input matrix.
+"""
 def density2t(rhog):
     tm = density2tm(rhog)
     d = len(tm)
@@ -159,18 +135,18 @@ def density2t(rhog):
     return t
 
 """
-    toDensity(psiMat)
-    Desc: Converts a pure state into a density matrix.
+toDensity(psiMat)
+Desc: Converts a pure state into a density matrix.
 
-    Parameters
-    ----------
-    psiMat : ndarray
-        Pure state to be converted.
+Parameters
+----------
+psiMat : ndarray
+    Pure state to be converted.
 
-    Returns
-    -------
-    rhog: ndarray
-        Density Matrix of the input state.
+Returns
+-------
+rhog: ndarray
+    Density Matrix of the input state.
     """
 def toDensity(psiMat):
     if not isStateVector(psiMat):
@@ -178,27 +154,20 @@ def toDensity(psiMat):
     psiMat = np.outer(psiMat, psiMat.conj())
     return psiMat / np.trace(psiMat)
 
-#
-# def one_in(idx, length):
-#     val = np.zeros(length)
-#     val[idx] = 1
-#
-#     return val
-
 
 """
-    t_matrix(t)
-    Desc: Converts a list of t values to an lower t matrix.
+t_matrix(t)
+Desc: Converts a list of t values to an lower t matrix.
 
-    Parameters
-    ----------
-    t : ndarray
-        List of t values converted.
+Parameters
+----------
+t : ndarray
+    List of t values converted.
 
-    Returns
-    -------
-    tm : ndarray
-        Lower t matrix.
+Returns
+-------
+tm : ndarray
+    Lower t matrix.
     """
 def t_matrix(t):
     d = int(np.sqrt(len(t)))
@@ -220,18 +189,18 @@ def t_matrix(t):
     return tm
 
 """
-    t_to_density(t)
-    Desc: Converts a list of t values to a density matrix.
+t_to_density(t)
+Desc: Converts a list of t values to a density matrix.
 
-    Parameters
-    ----------
-    t : ndarray
-        List of t values converted.
+Parameters
+----------
+t : ndarray
+    List of t values converted.
 
-    Returns
-    -------
-    rhog : ndarray
-        Density Matrix.
+Returns
+-------
+rhog : ndarray
+    Density Matrix.
     """
 def t_to_density(t):
     tm = t_matrix(t)
@@ -239,26 +208,20 @@ def t_to_density(t):
 
     return rhog
 
-
-# # # # # # # # # #
-# ERROR ESTIMATE  #
-# # # # # # # # # #
-
-
 """
-    fidelity(state1, state2)
-    Desc: Calculates the fidelity between the two input states.
+fidelity(state1, state2)
+Desc: Calculates the fidelity between the two input states.
 
-    Parameters
-    ----------
-    state1, state2 : ndarray
-        Input arrays to calculate the fidelity between. Can be pure states or density matrices.
+Parameters
+----------
+state1, state2 : ndarray
+    Input arrays to calculate the fidelity between. Can be pure states or density matrices.
 
-    Returns
-    -------
-    val : float
-        The calculated fidelity.
-    """
+Returns
+-------
+val : float
+    The calculated fidelity.
+"""
 def fidelity(state1, state2):
     rho1 = state1
     rho2 = state2
@@ -300,28 +263,33 @@ def fidelity(state1, state2):
     return val
 
 
+# # # # # # # #
+# PROPERTIES  #
+# # # # # # # #
+
+
 """
-    concurrence(rhog)
-    Desc: Calculates the concurrence of the input state.
+concurrence(rhog)
+Desc: Calculates the concurrence of the input state.
 
-    Parameters
-    ----------
-    rhog : ndarray
-        Density Matrix of the desired state.
+Parameters
+----------
+rhog : ndarray
+    Density Matrix of the desired state.
 
-    Returns
-    -------
-    val : float
-        The calculated concurrence.
-       
-    Other Properties
-     -------------- 
-    entropy;linear_entropy;negativity;purity;tangle
+Returns
+-------
+val : float
+    The calculated concurrence.
+   
+Other Properties
+ -------------- 
+entropy;linear_entropy;negativity;purity;tangle
 
-    See Also
-     ------ 
-    err_functions;getProperties
-    """
+See Also
+ ------ 
+err_functions;getProperties
+"""
 def concurrence(rhog):
     if rhog.shape[0] == 4:
         if isStateVector(rhog):
@@ -345,27 +313,27 @@ def concurrence(rhog):
 
 
 """
-    tangle(rhog)
-    Desc: Calculates the tangle of the input state.
+tangle(rhog)
+Desc: Calculates the tangle of the input state.
 
-    Parameters
-    ----------
-    rhog : ndarray
-        Density Matrix of the desired state. Tangle is calculated by squaring the concurrence.
+Parameters
+----------
+rhog : ndarray
+    Density Matrix of the desired state. Tangle is calculated by squaring the concurrence.
 
-    Returns
-    -------
-    val : float
-        The calculated tangle.
-    
-    Other Properties
-     -------------- 
-    entropy;linear_entropy;negativity;purity;concurrence
-    
-    See Also
-     ------ 
-    err_functions;getProperties
-    """
+Returns
+-------
+val : float
+    The calculated tangle.
+
+Other Properties
+ -------------- 
+entropy;linear_entropy;negativity;purity;concurrence
+
+See Also
+ ------ 
+err_functions;getProperties
+"""
 def tangle(rhog):
     if rhog.shape[0] == 4:
         if isStateVector(rhog):
@@ -377,27 +345,27 @@ def tangle(rhog):
         return 'NA'
 
 """
-    entropy(rhog)
-    Desc: Calculates the Von Neumann Entropy of the input state.
+entropy(rhog)
+Desc: Calculates the Von Neumann Entropy of the input state.
 
-    Parameters
-    ----------
-    rhog : ndarray
-        Density Matrix of the desired state.
+Parameters
+----------
+rhog : ndarray
+    Density Matrix of the desired state.
 
-    Returns
-    -------
-    val : float
-        The calculated entropy.
-        
-    Other Properties
-     -------------- 
-    concurrence;linear_entropy;negativity;purity;tangle
-    
-    See Also
-     ------ 
-    err_functions;getProperties
-    """
+Returns
+-------
+val : float
+    The calculated entropy.
+
+Other Properties
+ -------------- 
+concurrence;linear_entropy;negativity;purity;tangle
+
+See Also
+ ------ 
+err_functions;getProperties
+"""
 def entropy(rhog):
     if isStateVector(rhog):
         rhog = toDensity(rhog)
@@ -410,28 +378,28 @@ def entropy(rhog):
     return val
 
 """
-    linear_entropy(rhog)
-    Desc: Calculates the linear entropy of the input state.
+linear_entropy(rhog)
+Desc: Calculates the linear entropy of the input state.
 
-    Parameters
-    ----------
-    rhog : ndarray
-        Density Matrix of the desired state.
+Parameters
+----------
+rhog : ndarray
+    Density Matrix of the desired state.
 
-    Returns
-    -------
-    val : float
-        The calculated linear entropy ranging from 0 to 1/(2^numQubits).
-        A value of zero corresponds to a completly pure state.
-    
-    Other Properties
-     -------------- 
-    entropy;concurrence;negativity;purity;tangle
+Returns
+-------
+val : float
+    The calculated linear entropy ranging from 0 to 1/(2^numQubits).
+    A value of zero corresponds to a completly pure state.
 
-    See Also
-     ------ 
-    err_functions;getProperties
-    """
+Other Properties
+ -------------- 
+entropy;concurrence;negativity;purity;tangle
+
+See Also
+ ------ 
+err_functions;getProperties
+"""
 def linear_entropy(rhog):
     if isStateVector(rhog):
         rhog = toDensity(rhog)
@@ -439,27 +407,27 @@ def linear_entropy(rhog):
 
 
 """
-    negativity(rhog)
-    Desc: Calculates the negativity of the input state.
+negativity(rhog)
+Desc: Calculates the negativity of the input state.
 
-    Parameters
-    ----------
-    rhog : ndarray
-        Density Matrix of the desired state.
+Parameters
+----------
+rhog : ndarray
+    Density Matrix of the desired state.
 
-    Returns
-    -------
-    val : float
-        The calculated negativity.
-    
-    Other Properties
-     -------------- 
-    entropy;linear_entropy;concurrence;purity;tangle
-    
-    See Also
-     ------ 
-    err_functions;getProperties
-    """
+Returns
+-------
+val : float
+    The calculated negativity.
+
+Other Properties
+ -------------- 
+entropy;linear_entropy;concurrence;purity;tangle
+
+See Also
+ ------ 
+err_functions;getProperties
+"""
 def negativity(rhog):
     if isStateVector(rhog):
         rhog = toDensity(rhog)
@@ -472,46 +440,45 @@ def negativity(rhog):
         return 'NA'
 
 """
-    purity(rhog)
-    Desc: Calculates the purity of the input state.
+purity(rhog)
+Desc: Calculates the purity of the input state.
 
-    Parameters
-    ----------
-    rhog : ndarray
-        Density Matrix of the desired state.
+Parameters
+----------
+rhog : ndarray
+    Density Matrix of the desired state.
 
-    Returns
-    -------
-    val : float
-        The calculated purity ranging from 1/(2^numQubits) to 1.
-        A value of one corresponds to a completly pure state.
+Returns
+-------
+val : float
+    The calculated purity ranging from 1/(2^numQubits) to 1.
+    A value of one corresponds to a completly pure state.
 
-    Other Properties
-     -------------- 
-    entropy;linear_entropy;negativity;concurrence;tangle
-    
-    See Also
-     ------ 
-    err_functions;getProperties
-    """
+Other Properties
+ -------------- 
+entropy;linear_entropy;negativity;concurrence;tangle
+
+See Also
+ ------ 
+err_functions;getProperties
+"""
 def purity(rhog):
     return np.real(np.trace(np.dot(rhog, rhog)))
 
 """
-    partial_transpose(rhog)
-    Desc: Returns the partial transpose of the input density matrix.
-    DISCLAIMER : Tests in progress
+partial_transpose(rhog)
+Desc: Returns the partial transpose of the input density matrix. DISCLAIMER : Tests in progress
 
-    Parameters
-    ----------
-    rhog : ndarray
-        Input arrays find the partial transpose of.
+Parameters
+----------
+rhog : ndarray
+    Input arrays find the partial transpose of.
 
-    Returns
-    -------
-    rv : ndarray
-        Partial transpose of rhog.
-    """
+Returns
+-------
+rv : ndarray
+    Partial transpose of rhog.
+"""
 def partial_transpose(rhog, n = 0, d = np.nan):
     if min(rhog.shape) == 1:
             rhog = np.dot(rhog, rhog.conj().transpose())
@@ -566,21 +533,21 @@ def partial_transpose(rhog, n = 0, d = np.nan):
     return rv
 
 """
-    performOperation(psi, g)
-    Desc: Performs the operations on the input State.
+performOperation(psi, g)
+Desc: Performs the operations on the input State.
 
-    Parameters
-    ----------
-    psi : ndarray
-        The input state to do the operation on. Can be a pure state or a density matrix.
-    g : ndarray with shape = (num operations, 2^numQubits, 2^numQubits)
-        The operations you would like to be done. Can be one operation or an array of operations.
+Parameters
+----------
+psi : ndarray
+    The input state to do the operation on. Can be a pure state or a density matrix.
+g : ndarray with shape = (num operations, 2^numQubits, 2^numQubits)
+    The operations you would like to be done. Can be one operation or an array of operations.
 
-    Returns
-    -------
-    p : ndarray
-        The output state after the operations. Will retain the input form.
-    """
+Returns
+-------
+p : ndarray
+    The output state after the operations. Will retain the input form.
+"""
 def performOperation(psi, g):
     p = psi
     if(len(g.shape) == 3):
@@ -596,19 +563,19 @@ def performOperation(psi, g):
 
 
 """
-    random_pure_state(N)
-    Desc: Returns a random quantum state from a uniform distribution across the space.
+random_pure_state(N)
+Desc: Returns a random quantum state from a uniform distribution across the space.
 
-    Parameters
-    ----------
-    N : int
-        The dimension of the quantum state
+Parameters
+----------
+N : int
+    The dimension of the quantum state
 
-    Returns
-    -------
-    pure_state : ndarray with length = 2^N
-        The random quantum state.
-    """
+Returns
+-------
+pure_state : ndarray with length = 2^N
+    The random quantum state.
+"""
 def random_pure_state(N = 1):
     pure_state = np.zeros(2**N,dtype=complex)
     for x in range(len(pure_state)):
@@ -620,19 +587,19 @@ def random_pure_state(N = 1):
 
 
 """
-    random_density_state(N)
-    Desc: Returns a random quantum density from an approximate uniform distribution across the space.
+random_density_state(N)
+Desc: Returns a random quantum density from an approximate uniform distribution across the space.
 
-    Parameters
-    ----------
-    N :int
-        The dimension of the quantum state
+Parameters
+----------
+N :int
+    The dimension of the quantum state
 
-    Returns
-    -------
-    density : ndarray with shape = (2^N, 2^N)
-        The random quantum state.
-    """
+Returns
+-------
+density : ndarray with shape = (2^N, 2^N)
+    The random quantum state.
+"""
 def random_density_state(N=1):
     density = random_ginibre(2 ** N)
     density = np.matmul(density, density.T.conj())
@@ -644,21 +611,21 @@ def random_density_state(N=1):
     return density
 
 """
-    random_bell_state(N)
-    Desc: Randomly returns one of the 4 bell state. 
-    For 1 qubits on of the standard basis states is returned. For states with dimension
-    greater then 2 the Greenberger–Horne–Zeilinger state is returned with a random phase.
+random_bell_state(N)
+Desc: Randomly returns one of the 4 bell state. 
+For 1 qubits on of the standard basis states is returned. For states with dimension
+greater then 2 the Greenberger–Horne–Zeilinger state is returned with a random phase.
 
-    Parameters
-    ----------
-    N :int
-        The dimension of the quantum state
+Parameters
+----------
+N :int
+    The dimension of the quantum state
 
-    Returns
-    -------
-    pure_state : ndarray with shape = (2^N, 2^N)
-        The random quantum state.
-    """
+Returns
+-------
+pure_state : ndarray with shape = (2^N, 2^N)
+    The random quantum state.
+"""
 def random_bell_state(N=2):
     if N ==1:
         whichState = rand.randint(0,6)
@@ -691,20 +658,20 @@ def random_bell_state(N=2):
 
 
 """
-    random_ginibre(D)
-    Desc: Returns a random matrix from the Ginibre ensemble of size DxD. 
-    This is a complex matrix whos elements are a+ib | a,b iid. Norm(0,1)
+random_ginibre(D)
+Desc: Returns a random matrix from the Ginibre ensemble of size DxD. 
+This is a complex matrix whos elements are a+ib | a,b iid. Norm(0,1)
 
-    Parameters
-    ----------
-    D :int
-        The dimension of the Matrix
+Parameters
+----------
+D :int
+    The dimension of the Matrix
 
-    Returns
-    -------
-    mat : ndarray with shape = (2^N, 2^N)
-        The random matrix
-    """
+Returns
+-------
+mat : ndarray with shape = (2^N, 2^N)
+    The random matrix
+"""
 def random_ginibre(D=2):
     mat = np.zeros((D, D), dtype=complex)
     for i in range(D):
@@ -714,53 +681,52 @@ def random_ginibre(D=2):
     return mat
 
 """
-    densityOperation(D)
-    Desc: Performs the operation on the density matrix
+densityOperation(D)
+Desc: Performs the operation on the density matrix
 
-    Parameters
-    ----------
-    psi : ndarray with shape = (2^nQubits, 2^nQubits)
-        The state to apply the operation to in density form.
-    gate : ndarray with shape = (2^nQubits, 2^nQubits)
-        The operation to apply to the state.
+Parameters
+----------
+psi : ndarray with shape = (2^nQubits, 2^nQubits)
+    The state to apply the operation to in density form.
+gate : ndarray with shape = (2^nQubits, 2^nQubits)
+    The operation to apply to the state.
 
-    Returns
-    -------
-    psi : ndarray with shape = (2^nQubits, 2^nQubits)
-        The state with the operation applied.
-    """
-# performs the operation on the density matrix
+Returns
+-------
+psi : ndarray with shape = (2^nQubits, 2^nQubits)
+    The state with the operation applied.
+"""
 def densityOperation(psi, gate):
     return np.matmul(np.matmul(gate, psi), np.conjugate(np.transpose(gate)))
 
 """
-    ketOperation(D)
-    Desc: Performs the operation on the pure state.
+ketOperation(D)
+Desc: Performs the operation on the pure state.
 
-    Parameters
-    ----------
-    psi : 1darray with length = 2^nQubits
-        The state to apply the operation to in ket form.
-    gate : ndarray with shape = (2^nQubits, 2^nQubits)
-        The operation to apply to the state.
+Parameters
+----------
+psi : 1darray with length = 2^nQubits
+    The state to apply the operation to in ket form.
+gate : ndarray with shape = (2^nQubits, 2^nQubits)
+    The operation to apply to the state.
 
-    Returns
-    -------
-    psi : ndarray with shape = (2^nQubits, 2^nQubits)
-        The state with the operation applied.
-    """
+Returns
+-------
+psi : ndarray with shape = (2^nQubits, 2^nQubits)
+    The state with the operation applied.
+"""
 def ketOperation(psi, gate):
     return np.matmul(gate, psi)
 
 """
-    quarterWavePlate(D)
-    Desc: returns the quantum gate associated with a quarter wave plate.
+quarterWavePlate(D)
+Desc: returns the quantum gate associated with a quarter wave plate.
 
-    Parameters
-    ----------
-    theta : float
-        The angle of the wave plate with respect to horizontal.
-    """
+Parameters
+----------
+theta : float
+    The angle of the wave plate with respect to horizontal.
+"""
 def quarterWavePlate(theta):
     return np.array([
         [np.cos(theta)**2+1j*np.sin(theta)**2   ,   (1-1j)*np.cos(theta)*np.sin(theta)  ],
@@ -768,14 +734,14 @@ def quarterWavePlate(theta):
     ],dtype=complex)
 
 """
-    halfWavePlate(D)
-    Desc: returns the quantum gate associated with a half wave plate.
+halfWavePlate(D)
+Desc: returns the quantum gate associated with a half wave plate.
 
-    Parameters
-    ----------
-    theta : float
-        The angle of the wave plate with respect to horizontal.
-    """
+Parameters
+----------
+theta : float
+    The angle of the wave plate with respect to horizontal.
+"""
 def halfWavePlate(theta):
     return np.array([
         [np.cos(theta)**2-np.sin(theta)**2      ,   2*np.cos(theta)*np.sin(theta)  ],
@@ -784,23 +750,23 @@ def halfWavePlate(theta):
 
 """
 getWavePlateBasis(theta_qwp,theta_hwp,flipPBS)
-    Desc: Given the angles for the QWP and HWP plate find the measurement basis. PBS is assumed to transmit 
-    Horizontally polarized light and reflect vertical. This function does not take into account crosstalk.
+Desc: Given the angles for the QWP and HWP plate find the measurement basis. PBS is assumed to transmit 
+Horizontally polarized light and reflect vertical. This function does not take into account crosstalk.
 
-    Parameters
-    ----------
-    theta_qwp : string
-        The angle with respect to horizontal for the quarter wave plate.
-    theta_hwp : string
-        The angle with respect to horizontal for the quarter wave plate.    
-    flipPBS: bool
-            Set this to true to assume the PBS transmits V and reflects H
-    
-    Returns
-    -------
-    basis : ndarray with shape (2,2)
-        Top row : State the original state was projected onto given that it transmitted through the PBS,
-        Bottom row : State the original state was projected onto given that it reflected off the PBS
+Parameters
+----------
+theta_qwp : string
+    The angle with respect to horizontal for the quarter wave plate.
+theta_hwp : string
+    The angle with respect to horizontal for the quarter wave plate.    
+flipPBS: bool
+        Set this to true to assume the PBS transmits V and reflects H
+
+Returns
+-------
+basis : ndarray with shape (2,2)
+    Top row : State the original state was projected onto given that it transmitted through the PBS,
+    Bottom row : State the original state was projected onto given that it reflected off the PBS
 """
 def getWavePlateBasis(theta_qwp,theta_hwp,flipPBS=False):
     basis = np.eye(2,dtype=complex)
@@ -813,19 +779,19 @@ def getWavePlateBasis(theta_qwp,theta_hwp,flipPBS=False):
     return basis.T
 
 """
-    removeGlobalPhase(D)
-    Desc: Factors out the global phase of the given state by dividing the entire state by the phase of the first component.
+removeGlobalPhase(D)
+Desc: Factors out the global phase of the given state by dividing the entire state by the phase of the first component.
 
-    Parameters
-    ----------
-    pure_state : 1darray with length = 2^nQubits
-        The state in ket form.
+Parameters
+----------
+pure_state : 1darray with length = 2^nQubits
+    The state in ket form.
 
-    Returns
-    -------
-    psi : ndarray with shape = (2^nQubits, 2^nQubits)
-        The state with global phase factored out.
-    """
+Returns
+-------
+psi : ndarray with shape = (2^nQubits, 2^nQubits)
+    The state with global phase factored out.
+"""
 def removeGlobalPhase(pure_state):
     # Normalize
     norm = np.dot(pure_state.conj(), pure_state)

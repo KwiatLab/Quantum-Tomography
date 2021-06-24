@@ -172,41 +172,41 @@ class Tomography():
 
 
     """
-        StateTomography(measurements, counts)
-        Desc: Main function that runs tomography. This function requires a set of measurements and a set of counts.
+    StateTomography(measurements, counts)
+    Desc: Main function that runs tomography. This function requires a set of measurements and a set of counts.
 
-        Parameters
-        ----------
-        measurements : ndarray shape = ( Number of measurements , 2*NQubits )
-            Each row in the matrix is a set of independent measurements.
-        counts : ndarray shape = (Number of measurements, NDetectors**NQubits )
-            Each row in the matrix is a set of independent measurements.
-        crosstalk : ndarray shape = ( Number of measurements , 2**NQubits,2**NQubits ) (optional)
-            The crosstalk matrix to compensate for inefficentcies in your beam splitter.
-        efficiency : 1darray with length = NQubits*NDetectors (optional)
-            The relative efficienies between your detector pairs.
-        time :  1darray with length = Number of measurements (optional)
-            The total duration of each measurment.
-        singles : ndarray shape = ( Number of measurements , 2*NQubits ) (optional)
-            The singles counts on each detector.
-        window : 1darray with length = NQubits*NDetectors (optional)
-            The coincidence window duration for each detector pair.
-        error : int (optional)
-            The number of monte carlo states used to estimate the properties of the state.
-        intensities : 1darray with length = Number of measurements (optional)
-            The relative intensity of each measurement. Used for drift correction.
-        method : ['MLE','HMLE','BME','LINER'] (optional)
-            Which method to use to run tomography. Default is MLE
+    Parameters
+    ----------
+    measurements : ndarray shape = ( Number of measurements , 2*NQubits )
+        Each row in the matrix is a set of independent measurements.
+    counts : ndarray shape = (Number of measurements, NDetectors**NQubits )
+        Each row in the matrix is a set of independent measurements.
+    crosstalk : ndarray shape = ( Number of measurements , 2**NQubits,2**NQubits ) (optional)
+        The crosstalk matrix to compensate for inefficentcies in your beam splitter.
+    efficiency : 1darray with length = NQubits*NDetectors (optional)
+        The relative efficienies between your detector pairs.
+    time :  1darray with length = Number of measurements (optional)
+        The total duration of each measurment.
+    singles : ndarray shape = ( Number of measurements , 2*NQubits ) (optional)
+        The singles counts on each detector.
+    window : 1darray with length = NQubits*NDetectors (optional)
+        The coincidence window duration for each detector pair.
+    error : int (optional)
+        The number of monte carlo states used to estimate the properties of the state.
+    intensities : 1darray with length = Number of measurements (optional)
+        The relative intensity of each measurement. Used for drift correction.
+    method : ['MLE','HMLE','BME','LINER'] (optional)
+        Which method to use to run tomography. Default is MLE
 
-        Returns
-        -------
-        rhog : ndarray with shape = (2^numQubits, 2^numQubits)
-            The predicted density matrix.
-        intensity : The predicted overall intensity used to normalize the state.
-            The predicted overall intensity used to normalize the state.
-        fvalp : float
-            Final value of the internal optimization function. Values greater than the number
-            of measurements indicate poor agreement with a quantum state.
+    Returns
+    -------
+    rhog : ndarray with shape = (2^numQubits, 2^numQubits)
+        The predicted density matrix.
+    intensity : The predicted overall intensity used to normalize the state.
+        The predicted overall intensity used to normalize the state.
+    fvalp : float
+        Final value of the internal optimization function. Values greater than the number
+        of measurements indicate poor agreement with a quantum state.
     """
     def StateTomography(self, measurements, counts, crosstalk=-1, efficiency=0, time=-1, singles=-1, window=0, error=0,
                         intensities=-1, method="MLE"):
@@ -828,7 +828,7 @@ class Tomography():
     """
     buildTomoInput(tomo_input, intensities)
     desc : This function build an input matrix based on a variety of inputs.
-    
+
     Parameters
     ----------
     measurements : ndarray shape = ( Number of measurements , 2*NQubits )
@@ -851,7 +851,7 @@ class Tomography():
         The relative intensity of each measurement. Used for drift correction.
     method : ['MLE','HMLE','BME','LINER'] (optional)
         Which method to use to run tomography. Default is MLE
-    
+
     Returns
     -------
     tomo_input : ndarray
@@ -1169,7 +1169,7 @@ class Tomography():
     """
     getTomoInputTemplate()
     Desc: returns a standard template for tomo_input for the given number of qubits.
-    
+
     Parameters
     ----------
     numBits : int
@@ -1236,7 +1236,7 @@ class Tomography():
     ----------
     bounds : int (optional)
         The number of monte carlo runs you want to perform to get a better estimate of each property. Default will use whatever is set in the conf settings.
-    
+
     Returns
     -------
     vals : ndarray with shape = (length of self.err_functions, 2)
@@ -1275,6 +1275,7 @@ class Tomography():
     n : int
         Number of approximate states you want to create.
         If no value is given it will use the conf settings.
+
     Returns
     -------
     rhop : ndarray with shape = (n, 2^numQubits, 2^numQubits)
@@ -1370,7 +1371,7 @@ class Tomography():
     ----------
     filePath : str (optional)
         The file name you want the data saved to.
-        
+
     See Also
      ------ 
         importEval

@@ -214,17 +214,18 @@ def saveRhoImages(p, pathToDirectory):
 
     plt.savefig(pathToDirectory + "/rhobarImag.png", bbox_inches = 'tight', pad_inches = 0)
 
-    """
-    printLastOutput(tomo,bounds)
-    Desc: Prints the properties of the last tomography to the console. Properties are defined in tomography conf settings. The calculated properties are determined by self.err_functions.
 
-    Parameters
-    ----------
-    tomo : Tomography
-        The tomography object you want to see the output of.
-    bounds : int (optional)
-        The number of monte carlo runs you want to perform to get a better estimate of each property. Default will use whatever is set in the conf settings.
-    """
+"""
+printLastOutput(tomo,bounds)
+Desc: Prints the properties of the last tomography to the console. Properties are defined in tomography conf settings. The calculated properties are determined by self.err_functions.
+
+Parameters
+----------
+tomo : Tomography
+    The tomography object you want to see the output of.
+bounds : int (optional)
+    The number of monte carlo runs you want to perform to get a better estimate of each property. Default will use whatever is set in the conf settings.
+"""
 def printLastOutput(tomo, bounds = -1):
     p = np.array(tomo.last_rho.copy(), dtype = "O")
     print("State: ")

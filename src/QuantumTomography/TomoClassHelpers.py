@@ -287,6 +287,13 @@ def m_matrix(mu, projectors, b_inv):
 #
 #     return ind
 
+def make_positive(rhog_in):
+    d, v = np.linalg.eig(rhog_in)
+    rhog = np.zeros(rhog_in.shape)
+    for j in range(len(d)):
+        rhog = rhog + np.abs(d[j])*np.outer(v[:, j], v[:, j].conj().transpose())
+    rhog = (rhog + rhog.conj().transpose())/2.0
+    return rhog
 
 # helper function for re formatting matrices
 def sigma_n(j, nn):
