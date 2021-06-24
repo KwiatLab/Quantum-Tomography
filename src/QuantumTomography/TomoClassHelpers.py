@@ -293,8 +293,8 @@ def sigma_n(j, nn):
     if j < 0 or j > nn**2-1:
         print('sigma_N: j out of range for SU(N)')
 
-    m = np.int(np.fix(j/nn))
-    n = np.int(j % nn)
+    m = int(np.fix(j/nn))
+    n = int(j % nn)
     tmp1 = np.zeros([nn, 1])
     tmp2 = np.zeros([nn, 1])
     tmp1[m] = 1

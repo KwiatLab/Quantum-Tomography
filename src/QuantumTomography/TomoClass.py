@@ -1,6 +1,6 @@
 from __future__ import print_function
 from .TomoFunctions import *
-from TomoDisplay import floatToString
+from .TomoDisplay import floatToString
 from .TomoClassHelpers import *
 from .Utilities import ConfDict,getValidFileName
 import numpy as np
@@ -19,8 +19,12 @@ http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
 
 """
     class Tomography()
-    Desc: This is the main tomography object that the library is built around. The goal is to only have one tomography object and edit the
-    configuration settings as you go.
+    Desc: This is the main tomography object that the library is built around. If you are looking to perform multiple tomographies
+          it is advised to create multiple Tomography objects.
+
+    See Also
+     ------ 
+    importEval;importConf;importData
     """
 class Tomography():
 
@@ -88,7 +92,7 @@ class Tomography():
     setting : string
         The setting you want to update.
         Possible values are ['NQubits', 'NDetectors', 'Crosstalk', 'Bellstate', 'DoDriftCorrection', 'DoAccidentalCorrection', 'DoErrorEstimation', 'Window', 'Efficiency', 'RhoStart', 'Beta']
-    val: ndarray, int, or string
+    val : ndarray, int, or string
             The new value you want to the setting to be.
     """
     def setConfSetting(self, setting, val):
@@ -122,6 +126,7 @@ class Tomography():
     ----------
     datatxt : string
        path to data file
+
     Returns
     -------
     rhog : ndarray with shape = (2^numQubits, 2^numQubits)
@@ -144,6 +149,7 @@ class Tomography():
     ----------
     evaltxt : string
         path to eval file
+
     Returns
     -------
     rhog : ndarray with shape = (2^numQubits, 2^numQubits)
@@ -158,6 +164,7 @@ class Tomography():
         conf = self.conf
         exec(compile(open(evaltxt, "rb").read(), evaltxt, 'exec'))
         return self.StateTomography_Matrix(locals().get('tomo_input'), locals().get('intensity'))
+
 
     # # # # # # # # # # # # # #
     '''Tomography Functions'''
@@ -190,7 +197,7 @@ class Tomography():
             The relative intensity of each measurement. Used for drift correction.
         method : ['MLE','HMLE','BME','LINER'] (optional)
             Which method to use to run tomography. Default is MLE
-            
+
         Returns
         -------
         rhog : ndarray with shape = (2^numQubits, 2^numQubits)
@@ -209,7 +216,7 @@ class Tomography():
     """
     StateTomography_Matrix(tomo_input, intensities)
     Desc: Main function that runs tomography.
-    
+
     Parameters
     ----------
     tomo_input : ndarray
@@ -218,7 +225,7 @@ class Tomography():
         Relative pump power (arb. units) during measurement; used for drift correction. Default will be an array of ones
     method : ['MLE','HMLE','BME','LINER'] (optional)
             Which method to use to run tomography. Default is MLE
-        
+
     Returns
     -------
     rhog : ndarray with shape = (2^numQubits, 2^numQubits)
@@ -674,7 +681,7 @@ class Tomography():
             linear_data = coincidences
 
         else:
-            n = np.int(np.sum(m_set))
+            n = int(np.sum(m_set))
             linear_measurements = measurements[(np.rot90(m_set == 1.0)[0])]
             linear_data = coincidences[(np.rot90(m_set == 1.0)[0])]
 
@@ -908,9 +915,23 @@ class Tomography():
                 ValueError("Invalid time array")
             # Check if singles has right dimensions
             if (isinstance(singles, int)):
-                singles = np.zeros((measurements.shape[0],2*self.conf["NQubits"]))
-            elif not (len(singles.shape) == 2 and singles.shape[0] == measurements.shape[0] and singles.shape[1] == 2*self.conf["NQubits"]):
-                raise ValueError("Invalid singles matrix")
+                if self.conf['NDetectors'] == 1:
+                    singles = np.zeros((measurements.shape[0], self.conf['NQubits']))
+                elif self.conf['NDetectors'] == 2:
+                    singles = np.zeros((measurements.shape[0], 2 * self.conf["NQubits"]))
+            else:
+                if self.conf['NDetectors'] == 1 and self.conf['NQubits'] == 1:
+                    if singles.shape != (measurements.shape[0],) and singles.shape != (measurements.shape[0], 1):
+                        raise ValueError("Invalid singles matrix")
+                    # if the singles vector has the form (x,), this changes it to (x,1)
+                    if np.ndim(singles) == 1:
+                        singles = np.atleast_2d(singles).transpose()
+                elif self.conf['NDetectors'] == 1 and self.conf['NQubits'] != 1:
+                    if singles.shape != (measurements.shape[0], self.conf['NQubits']):
+                        raise ValueError("Invalid singles matrix")
+                elif self.conf['NDetectors'] == 2:
+                    if singles.shape != (measurements.shape[0], 2 * self.conf['NQubits']):
+                        raise ValueError("Invalid Singles matrix")
             # Check if window has right length
             if (isinstance(window, int)):
                 self.conf['Window'] = window
@@ -973,6 +994,7 @@ class Tomography():
     desc : Checks the current settings and throws errors if any are invalid.
     """
     def checkForInvalidSettings(self):
+        # Check Accidentals
         if self.conf['nqubits'] == 1:
             if self.conf['DoAccidentalCorrection']:
                 raise ValueError('Invalid Conf settings. Accidental Correction can not be done for single qubit tomography')
@@ -995,7 +1017,7 @@ class Tomography():
                     raise
                 self.conf['Efficiency'] = eff
             except:
-                raise ValueError('Invalid Conf settings. Efficiency should have length ' +str(self.getNumOfDetectorsTotal()) + " with the given settings.")
+                raise ValueError('Invalid Conf settings. Efficiency should have length ' +str(self.getNumCoinc()) + " with the given settings.")
         try:
             correctSize = int(np.floor(2**self.getNumQubits()+.01))
             c = self.conf['crosstalk']
@@ -1009,7 +1031,7 @@ class Tomography():
                                  str(correctSize)+","+str(correctSize)+ ") with the given settings.")
             # make sure it has the right size
             if c.shape[0] != correctSize:
-                if any(c-np.eye(correctSize)>10**-6):
+                if np.any(c-np.eye(c.shape[0])>10**-6):
                     # Throw error if not the right size
                     raise ValueError('Invalid Conf settings. Crosstalk should be an array with shape (' +
                                      str(correctSize) + "," + str(correctSize) + ") with the given settings.")
@@ -1024,27 +1046,6 @@ class Tomography():
     # # # # # # # # # #
     '''Get Functions'''
     # # # # # # # # # #
-
-
-    """
-    getNumCoinc()
-    Desc: Returns the number of coincidences per measurement for the current configurations.
-    """
-    def getNumCoinc(self):
-        if (self.conf['NDetectors'] == 2):
-            return 2 ** self.conf['NQubits']
-        else:
-            return 1
-
-    """
-    getNumSingles()
-    Desc: Returns the number of singles per measurement for the current configurations.
-    """
-    def getNumSingles(self):
-        if (self.conf['NDetectors'] == 2):
-            return 2 * self.conf['NQubits']
-        else:
-           return self.conf['NQubits']
 
     """
     getCoincidences()
@@ -1074,9 +1075,9 @@ class Tomography():
         return self.last_input[:, 0]
 
     """
-        getMeasurements()
-        Desc: Returns an array of measurements in pure state form for all the measurements.
-        """
+    getMeasurements()
+    Desc: Returns an array of measurements in pure state form for all the measurements.
+    """
     def getMeasurements(self):
         if (self.conf['NDetectors'] == 2):
             return self.last_input[:, np.arange(2**self.conf['NQubits']+2*self.conf['NQubits']+1, 2**self.conf['NQubits']+4*self.conf['NQubits']+1)]
@@ -1091,21 +1092,35 @@ class Tomography():
         return self.conf['NQubits']
 
     """
+    getNumCoinc()
+    Desc: Returns the number of coincidences per measurement for the current configurations.
+    """
+    def getNumCoinc(self):
+        if (self.conf['NDetectors'] == 2):
+            return 2 ** self.conf['NQubits']
+        else:
+            return 1
+
+    """
+    getNumSingles()
+    Desc: Returns the number of singles per measurement for the current configurations.
+    """
+    def getNumSingles(self):
+        if (self.conf['NDetectors'] == 2):
+            return 2 * self.conf['NQubits']
+        else:
+            return self.conf['NQubits']
+
+    """
     getNumDetPerQubit()
     Desc: returns the number of detectors per qubit for the current configurations.
     """
     def getNumDetPerQubit(self):
         return self.conf['NDetectors']
 
-    """
-    getNumOfDetectorsTotal()
-    Desc: Returns the total number of detectors for the current configurations.
-    """
-    def getNumOfDetectorsTotal(self):
-        return self.getNumDetPerQubit()*self.getNumQubits()
 
     """
-    getBasisMeas(numBit,numDet = -1)
+    getStandardBasis(numBit,numDet = -1)
     Desc: Returns an array of standard measurements in separated pure state form for the given number of qubits. It is the same format used in the tomo_input matrix.
 
     Parameters
@@ -1115,7 +1130,7 @@ class Tomography():
     numDet : 1 or 2
         Number of detectors for each measurement Default will use the number of qubits in the current configurations.   
     """
-    def getBasisMeas(self, numBits = -1,numDet = -1):
+    def getStandardBasis(self, numBits = -1,numDet = -1):
         # check if numBits is an int
         if not (isinstance(numBits, int)):
             raise ValueError("numBits must be an integer")
@@ -1163,7 +1178,7 @@ class Tomography():
         Number of detectors for each measurement Default will use the number of qubits in the current configurations.   
 
     Returns
-    ----------
+    -------
     Tomoinput : ndarray
         The input data for the current tomography.Example can be seen at top of page.
     """
@@ -1180,7 +1195,7 @@ class Tomography():
         if (numDet < 1):
             numDet = self.getNumDetPerQubit()
 
-        measurements = self.getBasisMeas(numBits,numDet)
+        measurements = self.getStandardBasis(numBits,numDet)
 
         if(numDet == 1):
             # For n detectors:
@@ -1408,7 +1423,7 @@ class Tomography():
 
     See Also
      ------ 
-        exportToData,importConf,importData
+        exportToData;importConf;importData
     """
     def exportToConf(self, filePath="pythonConf.txt"):
         TORREPLACE = ""
@@ -1440,7 +1455,7 @@ class Tomography():
 
      See Also
       ------ 
-         exportToConf,importConf,importData
+         exportToConf;importConf;importData
      """
     def exportToData(self, filePath="pythonData.txt"):
         TORREPLACE = ""

@@ -21,18 +21,22 @@ http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
 
 
 """
-    makeRhoImages(p, plt_given, customColor)
-    Desc: Creates matlab plots of the density matrix.
+makeRhoImages(p, plt_given, customColor)
+Desc: Creates matlab plots of the density matrix.
 
-    Parameters
-    ----------
-    p : ndarray with shape = (n, 2^numQubits, 2^numQubits)
-        The density matrix you want to create plots of.
-    plt_given : matplotlib.pyplot
-        Input pyplot for which the figures will be saved on to.
-    customColor : boolean
-        Specify if you want our custom colorMap. Default is true
-    """
+Parameters
+----------
+p : ndarray with shape = (n, 2^numQubits, 2^numQubits)
+    The density matrix you want to create plots of.
+plt_given : matplotlib.pyplot
+    Input pyplot for which the figures will be saved on to.
+customColor : boolean
+    Specify if you want our custom colorMap. Default is true
+
+See Also
+ ------ 
+saveRhoImages
+"""
 def makeRhoImages(p, plt_given, customColor = True):
     # Set up
     numQubits = int(np.log2(p.shape[0]))
@@ -117,16 +121,20 @@ def makeRhoImages(p, plt_given, customColor = True):
                                     orientation = 'horizontal')
 
 """
-    saveRhoImages(p, pathToDirectory, customColor)
-    Desc: Creates and saves matlab plots of the density matrix.
+saveRhoImages(p, pathToDirectory, customColor)
+Desc: Creates and saves matlab plots of the density matrix.
 
-    Parameters
-    ----------
-    p : ndarray with shape = (n, 2^numQubits, 2^numQubits)
-        The density matrix you want to create plots of.
-    pathToDirectory : string
-        Path to where you want your images to be saved.
-    """
+Parameters
+----------
+p : ndarray with shape = (n, 2^numQubits, 2^numQubits)
+    The density matrix you want to create plots of.
+pathToDirectory : string
+    Path to where you want your images to be saved.
+
+See Also
+ ------ 
+makeRhoImages
+"""
 def saveRhoImages(p, pathToDirectory):
     # Set up
     numQubits = int(np.log2(p.shape[0]))
@@ -241,20 +249,24 @@ def printLastOutput(tomo, bounds = -1):
             print(prop[0] + " : " + floatToString(prop[1]))
 
 """
-    matrixToHTML(M)
-    Desc: Creates an HTML table based on the given matrix.
+matrixToHTML(M)
+Desc: Creates an HTML table based on the given matrix.
 
-    Parameters
-    ----------
-    M : 2d numpy array with shape = (2^numQubits, 2^numQubits)
-        Matrix you would like to display on your html page.
-    printEigenVals : boolean
-        Specify if you want eigen values to be calculated and displayed at the bottom of the table.
-    Returns
-    -------
-    res : string
-        HTML code of the created table.
-    """
+Parameters
+----------
+M : 2d numpy array with shape = (2^numQubits, 2^numQubits)
+    Matrix you would like to display on your html page.
+printEigenVals : boolean
+    Specify if you want eigen values to be calculated and displayed at the bottom of the table.
+Returns
+-------
+res : string
+    HTML code of the created table.
+
+See Also
+ ------ 
+propertiesToHTML
+"""
 def matrixToHTML(M, printEigenVals = False):
     s = np.shape(M)
     res = '<table class="KwiatDataMatrix" style = \"border: 1px solid black;border-collapse: collapse;font-size: 15px; table-layout:fixed;width:100%;margin-top: 25px;\">'
@@ -285,21 +297,25 @@ def matrixToHTML(M, printEigenVals = False):
 
 
 """
-    propertiesToHTML(vals)
-    Desc: Creates an HTML table based on the given property values.
+propertiesToHTML(vals)
+Desc: Creates an HTML table based on the given property values.
 
-    Parameters
-    ----------
-    vals : ndarray with shape = (length of self.err_functions, 2)
-        The first col is the name of the property.
-        The second col is the value of the property.
-        The third col is the error bound on the property.
+Parameters
+----------
+vals : ndarray with shape = (length of self.err_functions, 2)
+    The first col is the name of the property.
+    The second col is the value of the property.
+    The third col is the error bound on the property.
 
-    Returns
-    -------
-    res : string
-        HTML code of the created table.
-    """
+Returns
+-------
+res : string
+    HTML code of the created table.
+
+See Also
+ ------ 
+matrixToHTML
+"""
 def propertiesToHTML(vals):
     f = '<h3 >Properties of Rho</h3><table style = \"width:60%;margin-top:10px;font-size: 15px;padding-bottom:5px;float:none;\"><tr><td style = "font-size: 20;font-weight: 1000;color: rebeccapurple;">Property</td><td  style = "font-size: 20;font-weight: 1000;color: rebeccapurple;padding-bottom:5px;">Value</td>'
     if(vals.shape[1] < 3):
@@ -321,14 +337,14 @@ def propertiesToHTML(vals):
 
 
 """
-    stateToString(vals)
-    Desc: Creates a string of the 1d pure state.
+stateToString(vals)
+Desc: Creates a string of the 1d pure state.
 
-    Parameters
-    ----------    
-    pure_state : 1darray with length = 2
-        The state in ket form.
-    """
+Parameters
+----------    
+pure_state : 1darray with length = 2
+    The state in ket form.
+"""
 def stateToString(state):
     state = removeGlobalPhase(state)
     return floatToString(state[0])+"|H> + "+floatToString(state[1])+"|V>"
