@@ -104,8 +104,25 @@ class FunctionTesting(unittest.TestCase):
             self.assertTrue((tomoObj2.getTimes() == randTime2).all())
 
     def test_buildTomoInput(self):
+        tomoObj1 = qlib.Tomography(1)
+        tomoObj2 = qlib.Tomography(2)
+
         [times1, singles1, coincidences1, measurements11, measurements12] = self.tomoinp1.transpose()
-        # built_input1 = qlib.buildTomoInput()
-        # started working on testing this, but I don't know the default values for crosstalk, efficiency, etc.
+
+
+
+        measurements1 = np.array([measurements11,measurements12]).transpose()
+        built_input1 = tomoObj1.buildTomoInput(measurements1,coincidences1,crosstalk=-1,efficiency=0,time=times1,singles=singles1,window=0,error=0)
+        self.assertTrue((built_input1==self.tomoinp1).all())
+
+
+        [times2, singles21, singles22, coincidences2, measurements211, measurements212, measurements221, measurements222] = self.tomoinp2.transpose()
+        singles2 = np.array([singles21, singles22]).transpose()
+
+        measurements2 = np.array([measurements211,measurements212,measurements221,measurements222]).transpose()
+        built_input2 = tomoObj2.buildTomoInput(measurements2, coincidences2, crosstalk=-1,efficiency=0,time=times2,singles=singles2,window=0,error=0)
+
+        self.assertTrue((built_input2 == self.tomoinp2).all())
+
 if __name__ == '__main__':
     unittest.main()
