@@ -1355,7 +1355,7 @@ class Tomography():
             print("")
 
         # print(p)
-        properties = self.getProperties(self.last_rho, bounds)
+        properties = self.getProperties(bounds)
         for prop in properties:
             if(len(prop) >3):
                 print(prop[0] + " : " + floatToString(prop[1]) + " +/- " + floatToString(prop[2]))

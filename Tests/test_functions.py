@@ -4,6 +4,7 @@ import numpy as np
 import numpy.testing as tests
 from TestRun import runTests
 
+
 class Test_Functions(unittest.TestCase):
 
     def __init__(self, *args, **kwargs):
@@ -144,6 +145,18 @@ class Test_Functions(unittest.TestCase):
             self.assertEqual(len(tomo.mont_carlo_states), 6)
             tomo.getProperties(3)
             self.assertEqual(len(tomo.mont_carlo_states), 6)
+
+    def test_printLastOutput(self):
+        for i in [1,2]:
+            tomo = runTests(numQubits=i, nStates=1)[0][0]
+            self.assertTrue(True)
+
+
+
+
+
+
+
 
 
 if __name__ == '__main__':
