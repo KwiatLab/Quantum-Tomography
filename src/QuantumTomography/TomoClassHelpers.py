@@ -206,7 +206,7 @@ def normalizeLikelihoods(likelihoods):
     nFactor = likelihoods[nIndex]
     likelihoods = likelihoods - nFactor
     likelihoods = np.exp(-1 * likelihoods)
-    # likelihoods /= sum(likelihoods)
+    likelihoods /= sum(likelihoods)
     return likelihoods, nIndex
 
 
