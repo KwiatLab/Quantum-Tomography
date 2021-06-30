@@ -291,7 +291,7 @@ def runTests(numQubits, nStates,
             Fidelity_with_Original = qLib.fidelity(startingRho, myDensity)
             Original_Purity = qLib.purity(startingRho)
             if (testBell):
-                Tomo_Object.getBellSettings(myDensity)
+                Tomo_Object.getBellSettings()
             if (Fidelity_with_Original < .8 and
                     not testCrossTalk and
                     np.average(Tomo_Object.getCoincidences()) > 10 and
