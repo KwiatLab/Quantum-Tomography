@@ -989,7 +989,7 @@ class Tomography():
         return tomo_input
 
     """
-    buildTomoInput(tomo_input, intensities)
+    checkForInvalidSettings()
     desc : Checks the current settings and throws errors if any are invalid.
     """
     def checkForInvalidSettings(self):
