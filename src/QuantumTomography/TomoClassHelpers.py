@@ -204,10 +204,10 @@ def independent_set(measurements):
 def normalizeLikelihoods(likelihoods):
     nIndex = np.argmin(likelihoods)
     nFactor = likelihoods[nIndex]
-    likelihoods = likelihoods - nFactor
-    likelihoods = np.exp(-1 * likelihoods)
-    likelihoods /= sum(likelihoods)
-    return likelihoods, nIndex
+    scaled = likelihoods - nFactor
+    likelihoods = np.exp(-1 * scaled)
+    likelihoods = likelihoods/sum(likelihoods)
+    return likelihoods, nIndex,scaled
 
 
 
@@ -514,11 +514,8 @@ def getBellSettings_helper_bounds(rhop, rho, partsize_init, partsize, t, n):
 
 # Calculates the weighted covariance. Used in bayesian tomography
 def weightedcov(samples,weights):
-    mean = np.zeros_like(samples[0])
-    for i in range(len(weights)):
-        mean += weights[i] * samples[i]
-
-    covariance = np.zeros_like(np.outer(mean, mean))
-    for i in range(len(weights)):
-        covariance += weights[i] * np.outer(mean - samples[i], mean - samples[i])
+    mean = np.dot(weights,samples)
+    diff = samples-mean
+    covariance = np.array([np.outer(d, d) for d in diff])
+    covariance = np.dot(covariance.T,weights)
     return [mean,covariance]
