@@ -5,7 +5,6 @@ from .TomoClassHelpers import *
 from .Utilities import ConfDict,getValidFileName
 import numpy as np
 from scipy.optimize import leastsq,minimize
-from scipy.linalg import cholesky
 import warnings
 
 """
@@ -81,7 +80,7 @@ class Tomography():
                               ('DoErrorEstimation', 0),('Window', 0),('Efficiency', 0),('RhoStart', []),
                               ('Beta', 0)])
         self.err_functions = ['concurrence', 'tangle', 'entropy', 'linear_entropy', 'negativity', 'purity']
-
+        self.mont_carlo_states = list()
     """
     setConfSetting(setting, val)
     Desc: Sets a specific self.conf setting. This is no longer needed but will be kept in the class to
@@ -409,8 +408,8 @@ class Tomography():
 
         return [final_matrix, intensity, fvalp]
 
-
-    """
+    # todo: change these back to double quotes
+    '''
     tomography_BME(starting_matrix, coincidences, measurements, accidentals,overall_norms)
     Desc: Runs tomography using bayesian mean estimation. Currently in progress.
 
@@ -436,41 +435,38 @@ class Tomography():
     fvalp : float
         Final value of the internal optimization function. Values greater than the number
         of measurements indicate poor agreement with a quantum state.
-    """
+    '''
     def tomography_BME(self,starting_matrix, coincidences, measurements, accidentals,overall_norms):
 
         # algorithm parameters
         preallocationSize = 100000  # preallocate memory for speed
-        changeThreshold = 10 ** -9  # stopping condition threshold
-        numberOfPriorSamples = 5000  # number of samples to sample from the inital prior
+        changeThreshold = 10 ** -9 # stopping condition threshold
+        numberOfPriorSamples = 30000  # min number of samples to sample from the inital prior
         updateFrequency = 1000  # controls how often the estimate of the posterior is updated, and how often stability is checked
-        max_iterations = 150  # The maximum number of times we update the posterior
+        max_iterations = 150  # The maximum number of iterations(updates)
 
-        # initialize and preallocatememory
+        # initialize
         d = starting_matrix.shape[0]
-        sectionLikelihood = 0
-        cumLikelihood = 0
         i = 0
-        samplesToSC = 0
         iterationCounter = 0
         eps = 2.2204e-16
+        prevMean_rho = np.zeros((d,d))
+        prev_minIndex = -1
+        mean_tvals = -1
+        cov_tvals = -1
 
         # Lists that are evaluated periodically
-        stabilityHistory = np.zeros(max_iterations+1)
-        # stoppingConditionTestLocations = np.zeros_like(stabilityHistory)
+        stabilityHistory = np.zeros(max_iterations*3)
 
         # List of Sample States
-        sampleStates_rho = np.zeros((d, d, preallocationSize), dtype=complex)
+        sampleStates_rho = np.zeros((d,d,preallocationSize), dtype=complex)
         sampleStates_loglike = np.zeros(preallocationSize)
         sampleStates_tvals = np.zeros((preallocationSize, d ** 2))
 
-        # Current best guess for posterior parameters
-        mean_tvals = np.zeros(d ** 2)
-
-        # estimate the state intensity for the guess state
+        # estimate the counts intensity
         norm = sum(coincidences / (len(coincidences) * d))
         minimization_output = minimize(log_likelyhood, norm,
-                              args=(density2t(starting_matrix), coincidences, measurements, accidentals))
+                              args=(density2t(starting_matrix), coincidences, measurements, accidentals,overall_norms))
         norm = minimization_output.x[0]
         base_loglike = minimization_output.fun
 
@@ -480,7 +476,7 @@ class Tomography():
         while stillUsingPrior:
             # expand memory in chunks if preallocation size is exceeded
             if (i >= len(sampleStates_loglike)):
-                sampleStates_rho = np.concatenate((sampleStates_rho, np.zeros((d, d, i))), axis=2)
+                sampleStates_rho = np.concatenate((sampleStates_rho, np.zeros((d,d,i))), axis=2)
                 sampleStates_loglike = np.concatenate((sampleStates_loglike, np.zeros(i)))
                 sampleStates_tvals = np.concatenate((sampleStates_tvals, np.zeros((i, d ** 2))), axis=0)
 
@@ -489,61 +485,96 @@ class Tomography():
             random_tvals = density2t(random_rho)
             random_loglike = log_likelyhood(norm, random_rho, coincidences, measurements, accidentals)
 
+            # estimate the counts intensity
+            if random_loglike < base_loglike:
+                norm = sum(coincidences / (len(coincidences) * d))
+                base_loglike_prev = base_loglike
+                minimization_output = minimize(log_likelyhood, norm,
+                                               args=(random_rho, coincidences, measurements,
+                                                     accidentals,
+                                                     overall_norms))
+                norm = minimization_output.x[0]
+                base_loglike = random_loglike
+                sampleStates_loglike[:i] += base_loglike_prev-base_loglike
+
             # Store sample state, tval, and its loglikelyhood
-            sampleStates_rho[:, :, i] = random_rho
-            sampleStates_tvals[i, :] = random_tvals
+            sampleStates_rho[:,:,i] = random_rho
+            sampleStates_tvals[i] = random_tvals
             sampleStates_loglike[i] = random_loglike - base_loglike
 
-            # If we have met the min required amount of prior samples try to switching to the posterior estimate
-            if i >= numberOfPriorSamples:
-                # if the range of likelihoods becomes toolarge, rescale
-                if min(sampleStates_loglike[:i+1])<0:
-                    base_loglike = min(sampleStates_loglike[:i+1])
-                    sampleStates_loglike[:i+1] = sampleStates_loglike[:i+1] - base_loglike
 
-                    # find the most optimal intensity for this best state
-                    minimization_output = minimize(log_likelyhood, norm,
-                                          args=(random_rho, coincidences, measurements, accidentals))
-                    norm = minimization_output.x[0]
+            # Periodically perform the following tasks
+            if i % updateFrequency == 0 and i !=0:
+                # Normalize the likelihoods
+                [sampleStates_normlike, minIndex,sampleStates_scaledloglike] = normalizeLikelihoods(sampleStates_loglike[:i + 1])
+                unNormedMean_rho = np.dot(sampleStates_rho[:, :, :i + 1], np.exp(-1*sampleStates_scaledloglike))
 
-                # Calculate the covariance matrix for the posterior
-                sampleStates_like = normalizeExponentLikelihood(sampleStates_loglike[:i+1])
-                contributingParams = sampleStates_like > 0
-                firstMax_like = max(sampleStates_like)
-                secondMax_like = max(sampleStates_like[sampleStates_like < firstMax_like])
-                [mean_tvals, cov_tvals] = weightedcov(sampleStates_tvals[:i + 1][contributingParams, :],
-                                                           sampleStates_like[contributingParams])
-
-                # switch to adaptive distributions only if the covariance matrix is valid
-                # cov must be positive semi - definite
-                try:
-                    if not all(np.linalg.eigvals(cov_tvals)>=0) or (secondMax_like / firstMax_like) < .01:
-                        # Keep using the prior
-                        stillUsingPrior = 1
-                        numberOfPriorSamples = numberOfPriorSamples + updateFrequency
+                # Update the mean
+                tr = np.trace(unNormedMean_rho)
+                if tr == 0:
+                    mean_rho = np.zeros_like(prevMean_rho)
+                    stabilityHistory[iterationCounter] = float('inf')
+                else:
+                    mean_rho = unNormedMean_rho / tr
+                    if iterationCounter != 0:
+                        # Calculate the stability
+                        sectionLikelihood = sum(np.exp(-1 * sampleStates_scaledloglike[(i + 1 - updateFrequency):(i + 1)]))
+                        totalLikelihood = sum(np.exp(-1 * sampleStates_scaledloglike[1:(i + 1)]))
+                        normFactor = totalLikelihood/((iterationCounter+1)*sectionLikelihood)
+                        infidelity = (1 - np.real(fidelity(mean_rho, prevMean_rho)))
+                        # ensure rounding never leads the infidelity to be negative
+                        if infidelity < 0:
+                            infidelity = eps
+                        stabilityHistory[iterationCounter] = infidelity * normFactor
                     else:
-                        # Stop using the prior
+                        stabilityHistory[iterationCounter] = 0
+                prevMean_rho = mean_rho
+
+                # If we have met the min required amount of prior samples try to switching to the posterior estimate
+                if i >= numberOfPriorSamples:
+                    contributingParams = sampleStates_normlike > 0
+                    firstMax_like = max(sampleStates_normlike)
+                    secondMax_like = max(sampleStates_normlike[sampleStates_normlike < firstMax_like])
+
+                    # IMPOSE STOPPING CONDITION IF TOO MANY ITERATIONS REACHED
+                    if (iterationCounter > max_iterations):
+                        warnings.warn(
+                            "MAX ITER REACHED - BME (Prior). Stability: " + str(
+                                stabilityHistory[iterationCounter]))
+                        try:
+                            [mean_tvals, cov_tvals] = weightedcov(sampleStates_tvals[:i + 1][contributingParams, :],
+                                                                  sampleStates_normlike[contributingParams])
+                        except:
+                            pass
                         stillUsingPrior = 0
-                except:
-                    # Keep using the prior
-                    stillUsingPrior = 1
-                    numberOfPriorSamples = numberOfPriorSamples + updateFrequency
+                        i += 1
+                        iterationCounter = iterationCounter + 1
+                        break
 
-            # track the total likelihood and the section likelihood
-            # cumLikelihood=cumLikelihood+np.exp(-1*sampleStates_loglike[i])
-            # sectionLikelihood = sectionLikelihood + np.exp(-1*sampleStates_loglike[i])
-
-            # Increase iteration number
+                    # Switch to the posterior under the right conditions
+                    # 1.) We must ensure one of our samples does not make up majority of the contribution in estimating
+                    #     the posterior parameters
+                    # 2.) Cov must be positive semi - definite
+                    if (secondMax_like / firstMax_like) > .01:
+                        [mean_tvals, cov_tvals] = weightedcov(sampleStates_tvals[:i + 1][contributingParams, :],
+                                                              sampleStates_normlike[contributingParams])
+                        # Try to find eigenvals. If it can't then keep sampling.
+                        try:
+                            if all(np.linalg.eigvals(cov_tvals) >= 0):
+                                # Stop using the prior
+                                stillUsingPrior = 0
+                                i += 1
+                                iterationCounter = iterationCounter + 1
+                                break
+                        except:
+                            pass
+                # Increase iteration number
+                iterationCounter = iterationCounter + 1
             i = i + 1
 
-        # Calculate the running mean and likelihood with the states sampled from the prior
-        unNormedMean_rho = np.dot(sampleStates_rho[:, :, :i], np.exp(-1 * sampleStates_loglike[:i]))
-        tr = np.trace(unNormedMean_rho)
-        if tr == 0:
-            mean_rho = np.zeros(d)
-        else:
-            mean_rho = unNormedMean_rho / tr
-        prevMean_rho = mean_rho
+        # todo: get rid of this temp
+        iterPrior = iterationCounter
+        self.priorsToConverge = i-1
 
         # SAMPLE FROM POSTERIOR
         # Samples by drawing tVals from a multivariate normal distro
@@ -551,7 +582,7 @@ class Tomography():
         while stillUsingPosterior:
             # expand memory in chunks if preallocation size is exceeded
             if (i >= len(sampleStates_loglike)):
-                sampleStates_rho = np.concatenate((sampleStates_rho, np.zeros((d, d, i))), axis=2)
+                sampleStates_rho = np.concatenate((sampleStates_rho, np.zeros((d,d,i))), axis=2)
                 sampleStates_loglike = np.concatenate((sampleStates_loglike, np.zeros(i)))
                 sampleStates_tvals = np.concatenate((sampleStates_tvals, np.zeros((i, d ** 2))), axis=0)
 
@@ -560,90 +591,85 @@ class Tomography():
             random_rho = t_to_density(random_tvals)
             random_loglike = log_likelyhood(norm, random_rho, coincidences, measurements, accidentals)
 
-            # Store sample state, tval, and its likelyhood
-            sampleStates_loglike[i] = random_loglike - base_loglike
-            sampleStates_rho[:, :, i] = random_rho
-            sampleStates_tvals[i, :] = random_tvals
+            # estimate the counts intensity
+            if random_loglike < base_loglike:
+                norm = sum(coincidences / (len(coincidences) * d))
+                base_loglike_prev = base_loglike
+                minimization_output = minimize(log_likelyhood, norm,
+                                               args=(random_rho, coincidences, measurements,
+                                                     accidentals,
+                                                     overall_norms))
+                norm = minimization_output.x[0]
+                base_loglike = random_loglike
+                sampleStates_loglike[:i] += base_loglike_prev - base_loglike
 
-            # update the running mean and likelihood with the newly sampled state
-            unNormedMean_rho = unNormedMean_rho + sampleStates_rho[:, :, i] * np.exp(-1 * sampleStates_loglike[i])
-            cumLikelihood = cumLikelihood + np.exp(-1 * sampleStates_loglike[i])
-            sectionLikelihood = sectionLikelihood + np.exp(-1 * sampleStates_loglike[i])
+            # Store sample state, tval, and its loglikelyhood
+            sampleStates_rho[:, :, i] = random_rho
+            sampleStates_tvals[i] = random_tvals
+            sampleStates_loglike[i] = random_loglike - base_loglike
 
             # Periodically perform the following tasks
             if i % updateFrequency == 0:
+                # Normalize the likelihoods
+                [sampleStates_normlike, minIndex, sampleStates_scaledloglike] = normalizeLikelihoods(
+                    sampleStates_loglike[:i + 1])
+                unNormedMean_rho = np.dot(sampleStates_rho[:, :, :i + 1], np.exp(-1*sampleStates_scaledloglike))
 
-                # Update the posterior parameters
-                # -------------------------------
-
-                # if the range of likelihoods becomes toolarge, rescale
-                if min(sampleStates_loglike[:i + 1]) < 0:
-                    base_loglike = min(sampleStates_loglike[:i + 1])
-                    sampleStates_loglike[:i + 1] = sampleStates_loglike[:i + 1] - base_loglike
-                    unNormedMean_rho = np.dot(sampleStates_rho[:, :, :i], np.exp(-1 * sampleStates_loglike[:i]))
-
-                    # find the most optimal intensity for this best state
-                    minimization_output = minimize(log_likelyhood, norm,
-                                                   args=(random_rho, coincidences, measurements, accidentals))
-                    norm = minimization_output.x[0]
-
-                sampleStates_like = normalizeExponentLikelihood(sampleStates_loglike[0:i + 1])
-                contributingParams = sampleStates_like > 0
-                firstMax_like = max(sampleStates_like)
-                secondMax_like = max(sampleStates_like[sampleStates_like < firstMax_like])
-                [newMean_tvals, newCov_tvals] = weightedcov(sampleStates_tvals[:i + 1][contributingParams, :],
-                                                                 sampleStates_like[contributingParams])
-
-                # Update the posterior estimate only if the covariance matrix is valid
-                # cov must be positive semidefinite
-                try:
-                    if all(np.linalg.eigvals(cov_tvals) >= 0) and (secondMax_like / firstMax_like) > .001:
-                        cov_tvals = newCov_tvals
-                        mean_tvals = newMean_tvals
-                except:
-                    pass
-
-                # Check if the stopping condition is met
-                # --------------------------------------
-
+                # Update the mean
                 tr = np.trace(unNormedMean_rho)
                 if tr == 0:
-                    mean_rho = np.zeros(d)
+                    mean_rho = np.zeros_like(prevMean_rho)
                     stabilityHistory[iterationCounter] = float('inf')
-                    # stoppingConditionTestLocations[iterationCounter] = i
                 else:
                     mean_rho = unNormedMean_rho / tr
 
-                    # calculate the normalization factor based on the fraction
-                    # of total likelihood sampled in this iteration
-                    normFactor = np.floor(i / updateFrequency) * sectionLikelihood / cumLikelihood
+                    # Calculate the stability
+                    sectionLikelihood = sum(np.exp(-1*sampleStates_scaledloglike[(i + 1 - updateFrequency):(i + 1)]))
+                    totalLikelihood = sum(np.exp(-1*sampleStates_scaledloglike[1:(i + 1)]))
+                    normFactor = totalLikelihood / ((iterationCounter + 1) * sectionLikelihood)
                     infidelity = (1 - np.real(fidelity(mean_rho, prevMean_rho)))
                     # ensure rounding never leads the infidelity to be negative
                     if infidelity < 0:
                         infidelity = eps
+                    stabilityHistory[iterationCounter] = infidelity * normFactor
 
-                    stabilityHistory[iterationCounter] = infidelity / normFactor
-                    # stoppingConditionTestLocations[iterationCounter] = i
-
-                    # Check if this is the first time we've calculated the posterior estimate
-                    if (iterationCounter > 0) and (stabilityHistory[iterationCounter] < changeThreshold):
-                        samplesToSC = i
+                    # Check if the stopping condition is met
+                    if (iterationCounter > iterPrior) and (stabilityHistory[iterationCounter] < changeThreshold):
                         stillUsingPosterior = 0
 
-                    # IMPOSE STOPPING CONDITION IF TOO MANY ITERATIONS REACHED
-                    if (iterationCounter > max_iterations):
-                        warnings.warn("MAX ITER REACHED - BME. Stability: " + str(stabilityHistory[iterationCounter]))
-                        samplesToSC = i
-                        stillUsingPosterior = 0
+                prevMean_rho = mean_rho
 
-                    # if we haven't reached stability, set the state to compare to next
-                    # iteration, and reset the section likelihood
-                    iterationCounter = iterationCounter + 1
-                    prevMean_rho = mean_rho
-                    sectionLikelihood = 0
+                # IMPOSE STOPPING CONDITION IF TOO MANY ITERATIONS REACHED
+                if (iterationCounter > (max_iterations+iterPrior)):
+                    warnings.warn(
+                        "MAX ITER REACHED - BME (Post). Stability: " + str(stabilityHistory[iterationCounter]))
+                    stillUsingPosterior = 0
 
-            # Increase iteration number
+                contributingParams = sampleStates_normlike > 0
+                firstMax_like = max(sampleStates_normlike)
+                secondMax_like = max(sampleStates_normlike[sampleStates_normlike < firstMax_like])
+
+                # Update the posterior estimate only if:
+                # 1.) We must ensure one of our samples make up majority of the contribution in estimating
+                #     the posterior parameters
+                # 2.) Cov must be positive semi - definite
+                if (secondMax_like / firstMax_like) > .001:
+                    [newMean_tvals, newCov_tvals] = weightedcov(sampleStates_tvals[:i + 1][contributingParams, :],
+                                                                sampleStates_normlike[contributingParams])
+                    try:
+                        # Try to find eigenvals. If it can't then keep sampling.
+                        if all(np.linalg.eigvals(newCov_tvals) >= 0):
+                            cov_tvals = newCov_tvals
+                            mean_tvals = newMean_tvals
+                    except:
+                        pass
+                # Increase iteration number
+                iterationCounter = iterationCounter + 1
+            # Increase sample number
             i = i + 1
+        self.stabilityHistory = stabilityHistory
+        print("done.",end="")
+        samplesToSC = i
         return [mean_rho, norm, samplesToSC]
 
     """
@@ -1302,7 +1328,7 @@ class Tomography():
             if len(test_counts.shape) == 1:
                 test_counts = np.array([test_counts]).T
             test_data = np.concatenate((np.array([time]).T, test_singles, test_counts, meas), axis = 1)
-            [rhop, intenp, fvalp] = self.StateTomography_Matrix(test_data, self.intensities,saveState=False)
+            [rhop, intenp, fvalp] = self.StateTomography_Matrix(test_data, self.intensities,method=self.conf['method'],saveState=False)
             self.mont_carlo_states.append([rhop, intenp, fvalp])
         # Restore the last tomo_input matrix to the original one
         self.last_input = last_input
