@@ -29,5 +29,4 @@ class TestFull(unittest.TestCase):
 
 
 if __name__ == '__main__':
-    unittest.TestLoader().loadTestsFromTestCase(Test_Properties)
     unittest.main()
