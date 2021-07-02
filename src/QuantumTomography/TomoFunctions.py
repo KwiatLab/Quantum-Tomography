@@ -3,6 +3,7 @@ import scipy as sp
 import numpy as np
 from .TomoFunctionsHelpers import *
 import numpy.random as rand
+from scipy.linalg import cholesky
 
 """
 Copyright 2020 University of Illinois Board of Trustees.
@@ -81,26 +82,7 @@ tm : ndarray
     Lower t matrix defining the input matrix.
 """
 def density2tm(rhog):
-    d = rhog.shape[0]
-    if d == 1:
-        tm = np.real(np.sqrt(rhog))
-        return tm
-
-    tm = np.zeros(rhog.shape)+0j
-    last_element = rhog[d-1][d-1]
-    tm[d-1][d-1] = np.real(np.sqrt(last_element))
-    if last_element > -.00000001:
-        temp = rhog[d-1][0:(d-1)]
-        tm[d-1][0:(d-1)] = temp/np.sqrt(last_element)
-        # switched order of temp and temp.conj and transpose()
-        recurse = np.hsplit(rhog[0:(d-1)], [d-1, d])[0] - np.outer(temp.conj().transpose(), temp)/last_element
-    else:
-        tm[d-1][0:(d-1)] = np.zeros(d)
-        recurse = np.hsplit(rhog[0:(d-1)], [d-1, d])[0]
-    for i in range(d-1):
-        tm[i][0:(d-1)] = density2tm(recurse)[i][0:(d-1)]
-
-    return tm
+    return np.linalg.cholesky(rhog)
 
 """
 density2t(rhog)
@@ -119,11 +101,9 @@ t : ndarray
 def density2t(rhog):
     tm = density2tm(rhog)
     d = len(tm)
-
     idx = 0
     cur_length = d
     t = np.zeros(d**2)
-
     for j in range(d):
         t[np.arange(idx, idx+cur_length)] = np.real(np.diag(tm, -j))
         idx = idx + cur_length
@@ -131,7 +111,6 @@ def density2t(rhog):
             t[np.arange(idx, idx+cur_length)] = np.imag(np.diag(tm, -j))
             idx = idx + cur_length
         cur_length -= 1
-
     return t
 
 """
@@ -171,21 +150,16 @@ tm : ndarray
     """
 def t_matrix(t):
     d = int(np.sqrt(len(t)))
-
     idx = 0
     cur_length = d
     tm = np.zeros([d, d])
-
     for j in range(int(d)):
         tm = tm + 1*np.diag(t[np.arange(idx, idx+cur_length)], -j)
         idx = idx + cur_length
-
         if j > 0:
             tm = tm + 1j*np.diag(t[np.arange(idx, idx+cur_length)], -j)
             idx = idx + cur_length
-
         cur_length -= 1
-
     return tm
 
 """
@@ -204,8 +178,8 @@ rhog : ndarray
     """
 def t_to_density(t):
     tm = t_matrix(t)
-    rhog = np.dot(tm.conj().transpose(), tm)
-
+    rhog = np.dot(tm,tm.conj().transpose())
+    rhog = rhog / np.trace(rhog)
     return rhog
 
 """
