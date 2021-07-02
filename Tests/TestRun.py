@@ -311,7 +311,7 @@ def runTests(numQubits, nStates,
 
     if (numErrors > 0):
         print("-----------------------------")
-        print('numErrors out of ' + str(nStates) + ' tomographys failed\n\n')
+        print(str(numErrors)+' out of ' + str(nStates) + ' tomographys failed\n\n')
     else:
         print('No Issues!\n\n')
     return BigListOfTomographies
