@@ -56,8 +56,9 @@ def log_likelyhood(intensity, givenState, coincidences, measurements, accidental
         givenState = t_to_density(givenState)
     # Calculate expected averages
     Averages = np.zeros_like(coincidences, dtype=np.float)
+    givenState = intensity*givenState
     for j in range(len(Averages)):
-        Averages[j] = intensity * overall_norms[j] * np.real(np.trace(np.matmul(measurements[j], givenState))) + \
+        Averages[j] = overall_norms[j] * np.real(np.trace(np.matmul(measurements[j], givenState))) + \
                       accidentals[j]
         # Avoid dividing by zero for pure states
         if (Averages[j] == 0):

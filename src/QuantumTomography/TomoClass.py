@@ -77,7 +77,7 @@ class Tomography():
         self.conf = ConfDict([('NQubits',nQ), ('NDetectors', 1),
                               ('Crosstalk', np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])),
                               ('Bellstate', 0),('DoDriftCorrection', 0), ('DoAccidentalCorrection', 0),
-                              ('DoErrorEstimation', 0),('Window', 0),('Efficiency', 0),('RhoStart', []),
+                              ('DoErrorEstimation', 0),('Window', [1]),('Efficiency', [1]),('RhoStart', []),
                               ('Beta', 0)])
         self.err_functions = ['concurrence', 'tangle', 'entropy', 'linear_entropy', 'negativity', 'purity']
         self.mont_carlo_states = list()
@@ -439,11 +439,11 @@ class Tomography():
     def tomography_BME(self,starting_matrix, coincidences, measurements, accidentals,overall_norms):
 
         # algorithm parameters
-        preallocationSize = 100000  # preallocate memory for speed
-        changeThreshold = 10 ** -9 # stopping condition threshold
-        numberOfPriorSamples = 30000  # min number of samples to sample from the inital prior
-        updateFrequency = 1000  # controls how often the estimate of the posterior is updated, and how often stability is checked
-        max_iterations = 150  # The maximum number of iterations(updates)
+        preallocationSize = 50000  # preallocate memory for speed
+        changeThreshold = 10 ** -19 # stopping condition threshold
+        numberOfPriorSamples = 10000  # min number of samples to sample from the inital prior
+        updateFrequency = 300  # controls how often the estimate of the posterior is updated, and how often stability is checked
+        max_iterations = 98  # The maximum number of iterations(updates)
 
         # initialize
         d = starting_matrix.shape[0]
@@ -454,6 +454,12 @@ class Tomography():
         prev_minIndex = -1
         mean_tvals = -1
         cov_tvals = -1
+
+        # Todo TEMP
+        tempLogLikeMean = np.zeros(101)
+        tempLogLikeMax = np.zeros(101)
+        tempLogLikeSD = np.zeros(101)
+
 
         # Lists that are evaluated periodically
         stabilityHistory = np.zeros(max_iterations*3)
@@ -483,24 +489,22 @@ class Tomography():
             # Sample from the ginibre distribution
             random_rho = random_density_state(self.conf['NQubits'])
             random_tvals = density2t(random_rho)
-            random_loglike = log_likelyhood(norm, random_rho, coincidences, measurements, accidentals)
+            random_loglike = log_likelyhood(norm, random_rho, coincidences, measurements, accidentals,overall_norms)
 
             # estimate the counts intensity
             if random_loglike < base_loglike:
-                norm = sum(coincidences / (len(coincidences) * d))
-                base_loglike_prev = base_loglike
                 minimization_output = minimize(log_likelyhood, norm,
                                                args=(random_rho, coincidences, measurements,
                                                      accidentals,
                                                      overall_norms))
                 norm = minimization_output.x[0]
+                random_loglike = minimization_output.fun
                 base_loglike = random_loglike
-                sampleStates_loglike[:i] += base_loglike_prev-base_loglike
 
             # Store sample state, tval, and its loglikelyhood
             sampleStates_rho[:,:,i] = random_rho
             sampleStates_tvals[i] = random_tvals
-            sampleStates_loglike[i] = random_loglike - base_loglike
+            sampleStates_loglike[i] = random_loglike
 
 
             # Periodically perform the following tasks
@@ -555,7 +559,7 @@ class Tomography():
                     # 1.) We must ensure one of our samples does not make up majority of the contribution in estimating
                     #     the posterior parameters
                     # 2.) Cov must be positive semi - definite
-                    if (secondMax_like / firstMax_like) > .01:
+                    if (secondMax_like / firstMax_like) >= .01:
                         [mean_tvals, cov_tvals] = weightedcov(sampleStates_tvals[:i + 1][contributingParams, :],
                                                               sampleStates_normlike[contributingParams])
                         # Try to find eigenvals. If it can't then keep sampling.
@@ -572,9 +576,16 @@ class Tomography():
                 iterationCounter = iterationCounter + 1
             i = i + 1
 
-        # todo: get rid of this temp
+
         iterPrior = iterationCounter
         self.priorsToConverge = i-1
+
+
+        # todo TEMP
+        tempLogLikeMean[0] = np.average(normalizeLikelihoods(sampleStates_loglike[:i])[0])
+        tempLogLikeMax[0] = np.max(normalizeLikelihoods(sampleStates_loglike[:i])[0])
+        tempLogLikeSD[0] = np.std(normalizeLikelihoods(sampleStates_loglike[:i])[0])
+
 
         # SAMPLE FROM POSTERIOR
         # Samples by drawing tVals from a multivariate normal distro
@@ -589,24 +600,22 @@ class Tomography():
             # Draws by sampling the tVals from a multivariate normal distro
             random_tvals = rand.multivariate_normal(mean_tvals, cov_tvals)
             random_rho = t_to_density(random_tvals)
-            random_loglike = log_likelyhood(norm, random_rho, coincidences, measurements, accidentals)
+            random_loglike = log_likelyhood(norm, random_rho, coincidences, measurements, accidentals,overall_norms)
 
             # estimate the counts intensity
             if random_loglike < base_loglike:
-                norm = sum(coincidences / (len(coincidences) * d))
-                base_loglike_prev = base_loglike
                 minimization_output = minimize(log_likelyhood, norm,
                                                args=(random_rho, coincidences, measurements,
                                                      accidentals,
                                                      overall_norms))
                 norm = minimization_output.x[0]
+                random_loglike = minimization_output.fun
                 base_loglike = random_loglike
-                sampleStates_loglike[:i] += base_loglike_prev - base_loglike
 
             # Store sample state, tval, and its loglikelyhood
             sampleStates_rho[:, :, i] = random_rho
             sampleStates_tvals[i] = random_tvals
-            sampleStates_loglike[i] = random_loglike - base_loglike
+            sampleStates_loglike[i] = random_loglike
 
             # Periodically perform the following tasks
             if i % updateFrequency == 0:
@@ -614,6 +623,14 @@ class Tomography():
                 [sampleStates_normlike, minIndex, sampleStates_scaledloglike] = normalizeLikelihoods(
                     sampleStates_loglike[:i + 1])
                 unNormedMean_rho = np.dot(sampleStates_rho[:, :, :i + 1], np.exp(-1*sampleStates_scaledloglike))
+
+
+                # todo TEMP
+                tempLogLikeMean[iterationCounter-iterPrior+1] = np.average(sampleStates_normlike)
+                tempLogLikeMax[iterationCounter-iterPrior+1] = max(sampleStates_normlike)
+                tempLogLikeSD[iterationCounter-iterPrior+1] = np.std(sampleStates_normlike)
+
+
 
                 # Update the mean
                 tr = np.trace(unNormedMean_rho)
@@ -670,6 +687,9 @@ class Tomography():
         self.stabilityHistory = stabilityHistory
         print("done.",end="")
         samplesToSC = i
+
+
+        self.tempData = [tempLogLikeMean,tempLogLikeSD,tempLogLikeMax]
         return [mean_rho, norm, samplesToSC]
 
     """
@@ -1019,7 +1039,7 @@ class Tomography():
     desc : Checks the current settings and throws errors if any are invalid.
     """
     def checkForInvalidSettings(self):
-        # Check Accidentals
+        # Check Accidentals and window
         if self.conf['nqubits'] == 1:
             if self.conf['DoAccidentalCorrection']:
                 raise ValueError('Invalid Conf settings. Accidental Correction can not be done for single qubit tomography')
@@ -1031,18 +1051,22 @@ class Tomography():
                 self.conf['window'] = win
             except:
                 raise ValueError('Invalid Conf settings. Window should have length ' +str(self.getNumCoinc()) + " with the given settings.")
+        # Efficicieny and Ndetectors
         if not self.conf['NDetectors'] in [1,2]:
             raise ValueError('Invalid Conf settings. NDetectors can be either 1 or 2, corresponding to the number of detectors per qubit.')
-        else:
+        elif self.conf['NDetectors'] == 2:
             try:
-                eff = self.conf['Efficiency']
+                eff = np.array(self.conf['Efficiency'],dtype=float)
                 if isinstance(eff,int):
                     eff = np.ones(self.getNumCoinc())
                 if len(eff.shape) != 1 or len(eff) != self.getNumCoinc():
                     raise
-                self.conf['Efficiency'] = eff
             except:
                 raise ValueError('Invalid Conf settings. Efficiency should have length ' +str(self.getNumCoinc()) + " with the given settings.")
+        elif self.conf['NDetectors'] == 1:
+            eff = np.ones(1)
+        self.conf['Efficiency'] = eff
+        # Crosstalk
         try:
             correctSize = int(np.floor(2**self.getNumQubits()+.01))
             c = self.conf['crosstalk']
@@ -1280,10 +1304,10 @@ class Tomography():
         states = np.array(self.mont_carlo_states,dtype="O")[:bounds + 1, :]
         if states.shape[0] == 1:
             vals1 = np.array([["intensity",np.mean(states[:,1]),"NA"],
-                              ["fval", np.mean(states[:,2]),"NA"]])
+                              ["fval", np.mean(states[:,2]),"NA"]],dtype="O")
         else:
             vals1 = np.array([["intensity", np.mean(states[:, 1]), np.std(states[:, 1],ddof=1)],
-                              ["fval", np.mean(states[:, 2]), np.std(states[:, 2],ddof=1)]])
+                              ["fval", np.mean(states[:, 2]), np.std(states[:, 2],ddof=1)]],dtype="O")
         vals2 = getProperties_helper_bounds(self.err_functions, states[:,0])
 
         vals = np.concatenate((vals1, vals2))
