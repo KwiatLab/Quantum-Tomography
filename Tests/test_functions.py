@@ -146,17 +146,6 @@ class Test_Functions(unittest.TestCase):
             tomo.getProperties(3)
             self.assertEqual(len(tomo.mont_carlo_states), 6)
 
-    def test_printLastOutput(self):
-        Fixed_Tomo_Object_1 = qLib.Tomography()
-        Fixed_Tomo_Object_2 = qLib.Tomography()
-        Fixed_Tomo_Object_3 = qLib.Tomography()
-        Fixed_Tomo_Objs = [Fixed_Tomo_Object_1, Fixed_Tomo_Object_2, Fixed_Tomo_Object_3]
-
-        for i in range(len(Fixed_Tomo_Objs)):
-            Fixed_Tomo_Objs[i].importEval("Test_States/fixed_eval_"+str(i)+".txt")
-            Fixed_Tomo_Objs[i].printLastOutput()
-            qLib.printLastOutput(Fixed_Tomo_Objs[i])
-
     # This tests several functions involving going from density to tvals
     # functions include t_to_density(), t_matrix(), density2tm(), and density2t()
     def test_tvals(self):
