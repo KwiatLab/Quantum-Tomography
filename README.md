@@ -54,12 +54,11 @@ this readme.
 ```
 t.importConf('Path/To/conf.txt')
 ```
-Specific Config settings can also be set directly using the following function:
+Specific Config settings can also be set directly
 ```
-t.setConfSetting('DoAccidentalCorrection',1)
+t['DoAccidentalCorrection'] = 1
 ```
-Please refrain from setting the conf settings directly, this does not handle invalid arguments and
-can lead to errors. A list values for config is provided at the bottom of this readme and
+A list values for config is provided at the bottom of this readme and
 also in the TomoClass.py file.
 ##### Step 3. Run Tomography on The data
 This can also be done in multiple ways. The first is using the importData Function. Examples
@@ -134,6 +133,10 @@ conf settings just like you would set a python dictionary. These are the followi
     - Desc :  vector that lists the relative coincidence efficiencies of detector pairs when using 2 detectors per
     qubit. The order is detector 1-2, 1-4, 3-2, 3-4.
     - Default : 0
+ - 'Beta'
+   - Values : 0 to 0.5, depending on purity of state and total number of measurements.  
+   - Desc : The hedging value. Does nothing if hedged maximum likelihood is not used.
+   - Default : 0
 ##### Example:
 ```
 conf['NQubits'] = 2
