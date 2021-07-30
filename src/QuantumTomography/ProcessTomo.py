@@ -50,10 +50,21 @@ def ProcessTomography(coincidences, input_states=get_default_states(6), measurem
 
     return chi_matrix
 
-# TODO: finish this comment
+
 """
 MLEProcessTomography(chi_matrix), coincidences, input_densities, measurement_densities)
-Desc:
+Desc: Uses Maximum Likelihood Estimation to find the chi matrix most likely to have produced the observed measurements.
+
+Parameters
+----------
+chi_matrix : ndarray with shape = (4, 4)
+    The chi matrix to start the MLE with. Must be Hermitian.
+coincidences : ndarray with shape = (number of measurements, number of inputs)
+    A matrix holding the measured coincidences, with the inputs in each column and different measurement states in each row.
+input_densities : dictionary with keys 0-number of inputs
+    Dictionary that holds the density matrices for each input state. Order must be the same as in the columns of coincidence matrix.
+measurement_densities : dictionary with keys 0-number of measurements
+    Dictionary that holds the density matrices for each measurement state. Order must be the same as in rows of coincidence matrix.
 
 """
 def MLEProcessTomography(chi_matrix, coincidences, input_densities, measurement_densities):
