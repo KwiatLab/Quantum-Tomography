@@ -1,0 +1,13 @@
+conf.nqubits=1;
+conf.ndetectors=1;
+conf.crosstalk=[[1.,0.],[0.,1.]];
+conf.bellstate=False;
+conf.dodriftcorrection=0;
+conf.doaccidentalcorrection=0;
+conf.doerrorestimation=0;
+conf.window=1;
+conf.efficiency=[1.0];
+conf.rhostart=];
+conf.beta=0;
+conf.usederivative=1;
+conf.method=MLE;
