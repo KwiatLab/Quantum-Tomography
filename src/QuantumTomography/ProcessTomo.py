@@ -67,7 +67,7 @@ measurement_densities : dictionary with keys 0-number of measurements
     Dictionary that holds the density matrices for each measurement state. Order must be the same as in rows of coincidence matrix.
 
 """
-def MLEProcessTomography(chi_matrix, coincidences, input_densities, measurement_densities):
+def MLEProcessTomography(chi_matrix, input_densities, measurement_densities, coincidences):
     #converting the chi matrix to its t values so that there are less parameters for optimization
     chi_matrix_t_vals = density2t(chi_matrix)
     chi_matrix_t_vals += 0.0001
@@ -116,28 +116,3 @@ def StandardProcessTomography(input_densities, measurement_densities, output_den
     return chi_matrix
 
 
-"""
-post_process_ensity(chi_matrix, rho)
-Desc: Calculates the post-process density matrix of a given input rho through a process characterized by the chi matrix
-
-Parameters
-----------
-chi_matrix : ndarray with shape = (4, 4)
-    The chi matrix that characterizes the process to send the input through.
-rho : ndarray with shape = (2, 2)
-    Density matrix representing the input state to the process.
-    
-Returns
--------
-output_rho : ndarray with shape = (4, 4)
-    The density matrix output from the process.
-"""
-def post_process_density(chi_matrix, rho):
-    output_rho = np.zeros_like(rho)
-    paulis = get_paulis()
-
-    for m in range(len(paulis.keys())):
-        for n in range(len(paulis.keys())):
-            output_rho += chi_matrix[m, n] * (paulis[m] @ rho @ paulis[n].conj().transpose())
-
-    return output_rho

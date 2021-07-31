@@ -3,7 +3,7 @@ import scipy
 from .TomoClass import Tomography
 from .TomoClassHelpers import t_to_density
 from .TomoFunctions import toDensity
-from .ProcessTomo import *
+
 
 """
 Copyright 2020 University of Illinois Board of Trustees.
@@ -28,9 +28,9 @@ def process_count_differences(chi_matrix_t_vals, input_densities, measurement_de
     counts_predicted = np.zeros_like(coincidences)
 
     for i in range(n_measurements):
-        current_output_rho = post_process_density(chi_matrix, input_densities)
+        current_output_rho = post_process_density(chi_matrix, input_densities[i])
         for j in range(n_measurements):
-            counts_predicted[j,i] = max(min(np.real(np.trace(measurement_densities[j] @ current_output_rho)),1),0)
+            counts_predicted[j,i] = np.real(np.trace(measurement_densities[j] @ current_output_rho))
 
     # this is done so that the coincidences are on the same scale: so that they are all near each other.
     norm_factor = np.average(coincidences) / np.average(counts_predicted)
@@ -71,7 +71,7 @@ def get_process_densities(coincidences, input_states, measurement_states):
 
     if input_states.shape == (n_measurements, 2):
         for i in range(n_measurements):
-            input_densities = toDensity(input_states[i,:])
+            input_densities[i] = toDensity(input_states[i,:])
     elif input_states.shape == (n_measurements, n_measurements):
         for i in range(n_measurements):
             #if the input states were given as counts, the input states are the columns, and the measurement states the rows
@@ -84,7 +84,7 @@ def get_process_densities(coincidences, input_states, measurement_states):
     for i in range(n_measurements):
         measurement_densities[i] = toDensity(measurement_states[i,:])
 
-        output_densities[i] = Tomography(1).StateTomography(measurement_states, coincidences[:,i])
+        output_densities[i] = Tomography(1).StateTomography(measurement_states, coincidences[:,i])[0]
 
     return input_densities, measurement_densities, output_densities
 
@@ -104,7 +104,7 @@ def get_c_matrix(output_densities, measurement_densities):
 
     for i in range(n_measurements):
         current_output_rho_flat = np.ndarray.flatten(output_densities[i])
-        c_matrix[i,:] = np.linalg.lstsq(flattened_measurements, current_output_rho_flat)
+        c_matrix[i,:] = np.linalg.lstsq(flattened_measurements, current_output_rho_flat)[0]
 
     return c_matrix
 
@@ -130,7 +130,7 @@ def get_b_matrix(input_densities, measurement_densities):
                 current_input = paulis[m] @ input_densities[j] @ paulis[n].conj().transpose()
                 current_input_flat = np.ndarray.flatten(current_input)
 
-                b_matrix[m, n, j, :] = np.linalg.lstsq(flattened_measurements, current_input_flat)
+                b_matrix[m, n, j, :] = np.linalg.lstsq(flattened_measurements, current_input_flat)[0]
 
     return b_matrix
 
@@ -140,7 +140,7 @@ Constructs the chi matrix from the B and C matrices labeled above.
 def construct_chi(b_matrix, c_matrix):
     n_measurements = b_matrix.shape[2]
 
-    inv_b = np.pinv(b_matrix)
+    inv_b = np.linalg.pinv(b_matrix)
     chi_matrix = np.zeros((4,4), dtype=complex)
 
     for m in range(4):
@@ -151,6 +151,36 @@ def construct_chi(b_matrix, c_matrix):
 
     chi_matrix = chi_matrix / np.trace(chi_matrix)
     return chi_matrix
+
+
+"""
+post_process_ensity(chi_matrix, rho)
+Desc: Calculates the post-process density matrix of a given input rho through a process characterized by the chi matrix
+
+Parameters
+----------
+chi_matrix : ndarray with shape = (4, 4)
+    The chi matrix that characterizes the process to send the input through.
+rho : ndarray with shape = (2, 2)
+    Density matrix representing the input state to the process.
+
+Returns
+-------
+output_rho : ndarray with shape = (4, 4)
+    The density matrix output from the process.
+"""
+
+
+def post_process_density(chi_matrix, rho):
+    output_rho = np.zeros_like(rho)
+    paulis = get_paulis()
+
+    for m in range(4):
+        for n in range(4):
+            output_rho += chi_matrix[m, n] * (paulis[m] @ rho @ paulis[n].conj().transpose())
+
+    return output_rho
+
 
 """
 Returns the pauli matrices for use in Process Tomography
