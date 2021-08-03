@@ -64,26 +64,28 @@ class Test_Functions(unittest.TestCase):
             self.assertEqual(Tomo_Object.last_intensity, Tomo_Object_copy.last_intensity)
             self.assertEqual(Tomo_Object.last_fval, Tomo_Object_copy.last_fval)
 
-    def test_export_website(self):
-        Fixed_Tomo_Object_1 = qLib.Tomography()
-        Fixed_Tomo_Object_2 = qLib.Tomography()
-        Fixed_Tomo_Object_3 = qLib.Tomography()
-        Fixed_Tomo_Objs = [Fixed_Tomo_Object_1, Fixed_Tomo_Object_2, Fixed_Tomo_Object_3]
-
-        for i in range(len(Fixed_Tomo_Objs)):
-            Fixed_Tomo_Objs[i].importEval("Test_States/fixed_eval_"+str(i)+".txt")
-            Fixed_Tomo_Objs[i].exportToConf_web("Test_States/Website_Files/conf_temp.txt")
-            Fixed_Tomo_Objs[i].exportToData_web("Test_States/Website_Files/data_temp.txt")
-
-
-            Fixed_Tomo_Objs[i].printLastOutput(bounds=10)
-            print("----------------------")
-
-            self.maxDiff = None
-            self.assertEqual(open("Test_States/Website_Files/conf_"+str(i)+".txt").read(),
-                             open("Test_States/Website_Files/conf_temp.txt").read())
-            self.assertEqual(open("Test_States/Website_Files/data_" + str(i) + ".txt").read(),
-                             open("Test_States/Website_Files/data_temp.txt").read())
+    # def test_export_website(self):
+    #     # Todo : To get exportToConf_web and exportToData_web working right will require editing
+    #     #  the interface. I have commented out this test as well as those functions
+    #     Fixed_Tomo_Object_1 = qLib.Tomography()
+    #     Fixed_Tomo_Object_2 = qLib.Tomography()
+    #     Fixed_Tomo_Object_3 = qLib.Tomography()
+    #     Fixed_Tomo_Objs = [Fixed_Tomo_Object_1, Fixed_Tomo_Object_2, Fixed_Tomo_Object_3]
+    #
+    #     for i in range(len(Fixed_Tomo_Objs)):
+    #         Fixed_Tomo_Objs[i].importEval("Test_States/fixed_eval_"+str(i)+".txt")
+    #         Fixed_Tomo_Objs[i].exportToConf_web("Test_States/Website_Files/conf_temp.txt")
+    #         Fixed_Tomo_Objs[i].exportToData_web("Test_States/Website_Files/data_temp.txt")
+    #
+    #
+    #         Fixed_Tomo_Objs[i].printLastOutput(bounds=10)
+    #         print("----------------------")
+    #
+    #         self.maxDiff = None
+    #         self.assertEqual(open("Test_States/Website_Files/conf_"+str(i)+".txt").read(),
+    #                          open("Test_States/Website_Files/conf_temp.txt").read())
+    #         self.assertEqual(open("Test_States/Website_Files/data_" + str(i) + ".txt").read(),
+    #                          open("Test_States/Website_Files/data_temp.txt").read())
 
     def test_printLastOutput(self):
         Fixed_Tomo_Object_1 = qLib.Tomography()

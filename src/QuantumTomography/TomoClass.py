@@ -1556,9 +1556,11 @@ class Tomography():
         with open(filePath, 'w') as f:
             f.write(TORREPLACE)
 
-    """
+    '''
     exportToConf_web(filePath)
-    Desc: Exports the conf data to the specified file path. You can run this tomography on our tomography interface at http://tomography.web.engr.illinois.edu/TomographyDemo.php
+    Desc: Exports the conf data to the specified file path. 
+    You can run this tomography on our tomography interface at http://tomography.web.engr.illinois.edu/TomographyDemo.php
+    THIS IS A WORK IN PROGRESS.
 
     Parameters
     ----------
@@ -1568,35 +1570,49 @@ class Tomography():
     See Also
      ------ 
         exportToData_web
-    """
+    '''
     def exportToConf_web(self, filePath="Config_web.txt"):
-        TORREPLACE = ""
         # Conf settings
-        for k in self.conf.keys():
-            if (k != "IntensityMap"):
-                if isinstance(self.conf[k], np.ndarray):
-                    A = self.conf[k]
-                    TORREPLACE += "conf." + str(k) + "=["
-                    for i in range(A.shape[0]):
-                        TORREPLACE += str(A[i]).replace(" ", ",") + ","
-                    TORREPLACE = TORREPLACE[:-1] + "];\n"
-                elif isinstance(self.conf[k], list):
-                    A = self.conf[k]
-                    TORREPLACE += "conf." + str(k) + "=["
-                    for i in range(len(A)):
-                        TORREPLACE += str(A[i]).replace(" ", "") + ","
-                    TORREPLACE = TORREPLACE[:-1] + "];\n"
-                else:
-                    TORREPLACE += "conf." + str(k) + "=" + str(self.conf[k]) + ";\n"
+        TORREPLACE = "conf.NQubits="+str(self.conf['NQubits'])+";\n" \
+                     "conf.NDetectors="+str(self.conf['NQubits'])+";\n" \
+                     "conf.Crosstalk=["
+        A = self.conf["crosstalk"]
+        for i in range(len(A)):
+            TORREPLACE += "["
+            for j in range(len(A[i])):
+                TORREPLACE += str(A[i][j]).replace(" ", "") + ","
+            TORREPLACE = TORREPLACE[:-1] + "],"
+        TORREPLACE = TORREPLACE[:-1] + "];\n"
 
-            # print contents to file
-            with open(filePath, 'w') as f:
-                f.write(TORREPLACE)
+        TORREPLACE +="conf.UseDerivative=0;\n"
+        if self.conf['Bellstate']:
+            TORREPLACE +="conf.Bellstate=1;\n"
+        else:
+            TORREPLACE += "conf.Bellstate=0;\n"
+        A = self.conf["Window"]
+        if not (isinstance(A,np.ndarray) or isinstance(A,list)):
+            A = [A]
+        TORREPLACE += "conf.Window=["
+        for i in range(len(A)):
+            TORREPLACE += str(A[i]).replace(" ", "") + ","
+        TORREPLACE += TORREPLACE[:-1] + "];\n"
+        A = self.conf["Efficiency"]
+        if not (isinstance(A,np.ndarray) or isinstance(A,list)):
+            A = [A]
+        TORREPLACE += "conf.Efficiency=["
+        for i in range(len(A)):
+            TORREPLACE += str(A[i]).replace(" ", "") + ","
+        TORREPLACE += TORREPLACE[:-1] + "];\n"
+        # print contents to file
+        with open(filePath, 'w') as f:
+            f.write(TORREPLACE)
 
-    """
+    '''
     exportToData_web(filePath)
-    Desc: Exports the tomo_input matrix data to the specified file path. You can run this tomography on our tomography interface at http://tomography.web.engr.illinois.edu/TomographyDemo.php
-
+    Desc: Exports the tomo_input matrix data to the specified file path. 
+    You can run this tomography on our tomography interface at http://tomography.web.engr.illinois.edu/TomographyDemo.php
+    THIS IS A WORK IN PROGRESS.
+    
     Parameters
     ----------
     filePath : str (optional)
@@ -1605,45 +1621,45 @@ class Tomography():
     See Also
      ------ 
         exportToConf_web
-    """
-    def exportToData_web(self, filePath="pythonData.txt"):
-        TORREPLACE = ""
-
-        # Tomoinput
-        A = self.last_input.astype("O")
-        n_qubit = self.conf['NQubits']
-        if self.conf['NDetectors'] == 2:
-            # tomo_input[ :, 1 : 2 * n_qubit + 1 ]: singles
-            A[:, 1: 2 * n_qubit + 1] = self.last_input[:, 1: 2 * n_qubit + 1].real.astype(int)
-            # tomo_input[ :, 2 * n_qubit + 1 : 2 ** n_qubit + 2 * n_qubit + 1 ]: coincidences
-            A[:, 2 * n_qubit + 1: 2 ** n_qubit + 2 * n_qubit + 1] = self.last_input[:,
-                                                                    2 * n_qubit + 1: 2 ** n_qubit + 2 * n_qubit + 1].real.astype(
-                int)
-        else:
-            # tomo_input[:, 1: n_qubit + 1]: singles
-            A[:, 1: n_qubit + 1] = self.last_input[:, 1: n_qubit + 1].real.astype(int)
-            # tomo_input[:, n_qubit + 1]: coincidences
-            A[:, n_qubit + 1] = self.last_input[:, n_qubit + 1].real.astype(int)
-
-        TORREPLACE += "tomo_input=["
-        for i in range(A.shape[0]):
-            TORREPLACE += "["
-            for j in range(A.shape[1]):
-                if isinstance(A[i, j],int):
-                    TORREPLACE += str(A[i, j]) + ","
-                else:
-                    TORREPLACE += floatToString(A[i, j]) + ","
-            TORREPLACE = TORREPLACE[:-1] + "],"
-
-        TORREPLACE = TORREPLACE[:-1] + "];\n"
-
-        # intensity
-        A = self.intensities
-        TORREPLACE += "intensity=["
-        for i in range(A.shape[0]):
-            TORREPLACE += str(A[i]) + ","
-        TORREPLACE = TORREPLACE[:-1] + "];"
-
-        # print contents to file
-        with open(filePath, 'w') as f:
-            f.write(TORREPLACE)
+    '''
+    # def exportToData_web(self, filePath="pythonData.txt"):
+    #     TORREPLACE = ""
+    #
+    #     # Tomoinput
+    #     A = self.last_input.astype("O")
+    #     n_qubit = self.conf['NQubits']
+    #     if self.conf['NDetectors'] == 2:
+    #         # tomo_input[ :, 1 : 2 * n_qubit + 1 ]: singles
+    #         A[:, 1: 2 * n_qubit + 1] = self.last_input[:, 1: 2 * n_qubit + 1].real.astype(int)
+    #         # tomo_input[ :, 2 * n_qubit + 1 : 2 ** n_qubit + 2 * n_qubit + 1 ]: coincidences
+    #         A[:, 2 * n_qubit + 1: 2 ** n_qubit + 2 * n_qubit + 1] = self.last_input[:,
+    #                                                                 2 * n_qubit + 1: 2 ** n_qubit + 2 * n_qubit + 1].real.astype(
+    #             int)
+    #     else:
+    #         # tomo_input[:, 1: n_qubit + 1]: singles
+    #         A[:, 1: n_qubit + 1] = self.last_input[:, 1: n_qubit + 1].real.astype(int)
+    #         # tomo_input[:, n_qubit + 1]: coincidences
+    #         A[:, n_qubit + 1] = self.last_input[:, n_qubit + 1].real.astype(int)
+    #
+    #     TORREPLACE += "tomo_input=["
+    #     for i in range(A.shape[0]):
+    #         TORREPLACE += "["
+    #         for j in range(A.shape[1]):
+    #             if isinstance(A[i, j],int):
+    #                 TORREPLACE += str(A[i, j]) + ","
+    #             else:
+    #                 TORREPLACE += floatToString(A[i, j]) + ","
+    #         TORREPLACE = TORREPLACE[:-1] + "],"
+    #
+    #     TORREPLACE = TORREPLACE[:-1] + "];\n"
+    #
+    #     # intensity
+    #     A = self.intensities
+    #     TORREPLACE += "intensity=["
+    #     for i in range(A.shape[0]):
+    #         TORREPLACE += str(A[i]) + ","
+    #     TORREPLACE = TORREPLACE[:-1] + "];"
+    #
+    #     # print contents to file
+    #     with open(filePath, 'w') as f:
+    #         f.write(TORREPLACE)
