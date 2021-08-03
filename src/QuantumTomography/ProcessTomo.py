@@ -105,7 +105,7 @@ def StandardProcessTomography(input_densities, measurement_densities, output_den
     n_measurements = len(measurement_densities.keys())
 
     # c matrix definted in eq. 4.52 of Joe Altepeter's thesis page 69
-    c_matrix = get_c_matrix(output_densities, measurement_densities)
+    c_matrix = get_c_matrix(output_densities, measurement_densities).transpose()
 
     # B matrix defined in eq. 4.53 of Joe Altepeter's thesis page 69
     b_matrix = get_b_matrix(input_densities, measurement_densities)
@@ -116,3 +116,74 @@ def StandardProcessTomography(input_densities, measurement_densities, output_den
     return chi_matrix
 
 
+"""
+process_count_differences(chi_matrix_t_vals, input_densities, measurement_densities, coincidences)
+Desc: Produces the log likelihood function (the difference between expected and observed coincidences) given a chi matrix expressed in terms of its t values.
+
+Parameters
+----------
+chi_matrix_t_vals : array of 10 parameters
+    The 10 parameters obtained from doing the cholesky decomposition on the positive Hermitian Chi Matrix
+input_densities : dictionary with keys 0 through (number of inputs - 1)
+    A dictionary holding the density matrices for the input states to the process
+measurement_densities : dictionary with keys 0 through (number of measurements - 1)
+    A dictionary holding the density matrices for the measurement states of the process.
+coincidences : ndarray with shape = (number of measurements, number of measurements)
+    A matrix holding the coincidence counts measured, with the inputs in each column and the measurements in each row.
+
+Returns
+-------
+log_likelihood : 1-d array with (number of inputs x number of measurements) elements
+    The values to be squared and summed by the least squares used for optimization.
+"""
+def process_count_differences(chi_matrix_t_vals, input_densities, measurement_densities, coincidences):
+    n_measurements = coincidences.shape[0]
+
+    chi_matrix = t_to_density(chi_matrix_t_vals)
+    chi_matrix = chi_matrix / np.trace(chi_matrix)
+
+    counts_predicted = np.zeros_like(coincidences)
+
+    for i in range(n_measurements):
+        current_output_rho = post_process_density(chi_matrix, input_densities[i])
+        for j in range(n_measurements):
+            counts_predicted[j,i] = np.real(np.trace(measurement_densities[j] @ current_output_rho))
+
+    # this is done so that the coincidences are on the same scale: so that they are all near each other.
+    norm_factor = np.average(coincidences) / np.average(counts_predicted)
+    counts_predicted *= norm_factor
+
+    log_like = (counts_predicted - coincidences) / np.sqrt(counts_predicted)
+
+    flattened_log_like = np.ndarray.flatten(log_like)
+
+    return flattened_log_like
+
+
+"""
+post_process_density(chi_matrix, rho)
+Desc: Calculates the post-process density matrix of a given input rho through a process characterized by the chi matrix
+
+Parameters
+----------
+chi_matrix : ndarray with shape = (4, 4)
+    The chi matrix that characterizes the process to send the input through.
+rho : ndarray with shape = (2, 2)
+    Density matrix representing the input state to the process.
+
+Returns
+-------
+output_rho : ndarray with shape = (4, 4)
+    The density matrix output from the process.
+"""
+
+
+def post_process_density(chi_matrix, rho):
+    output_rho = np.zeros_like(rho)
+    paulis = get_paulis()
+
+    for m in range(4):
+        for n in range(4):
+            output_rho += chi_matrix[m, n] * (paulis[m] @ rho @ paulis[n].conj().transpose())
+
+    return output_rho / np.trace(output_rho)

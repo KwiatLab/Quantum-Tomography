@@ -15,32 +15,7 @@ __author__ = 'Quoleon/Turro'
 http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
 
 
-"""
-The function that is input for MLE Process Tomography.
-It produces the log likelihood function (before summing squares) of the count differences between observed and expected.
-"""
-def process_count_differences(chi_matrix_t_vals, input_densities, measurement_densities, coincidences):
-    n_measurements = coincidences.shape[0]
 
-    chi_matrix = t_to_density(chi_matrix_t_vals)
-    chi_matrix = chi_matrix / np.trace(chi_matrix)
-
-    counts_predicted = np.zeros_like(coincidences)
-
-    for i in range(n_measurements):
-        current_output_rho = post_process_density(chi_matrix, input_densities[i])
-        for j in range(n_measurements):
-            counts_predicted[j,i] = np.real(np.trace(measurement_densities[j] @ current_output_rho))
-
-    # this is done so that the coincidences are on the same scale: so that they are all near each other.
-    norm_factor = np.average(coincidences) / np.average(counts_predicted)
-    counts_predicted *= norm_factor
-
-    log_like = (counts_predicted - coincidences) / np.sqrt(counts_predicted)
-
-    flattened_log_like = np.ndarray.flatten(log_like)
-
-    return flattened_log_like
 
 """
 Returns the default linearly independent states that span the space for 4 measurements of 6 measurements (default).
@@ -153,33 +128,7 @@ def construct_chi(b_matrix, c_matrix):
     return chi_matrix
 
 
-"""
-post_process_ensity(chi_matrix, rho)
-Desc: Calculates the post-process density matrix of a given input rho through a process characterized by the chi matrix
 
-Parameters
-----------
-chi_matrix : ndarray with shape = (4, 4)
-    The chi matrix that characterizes the process to send the input through.
-rho : ndarray with shape = (2, 2)
-    Density matrix representing the input state to the process.
-
-Returns
--------
-output_rho : ndarray with shape = (4, 4)
-    The density matrix output from the process.
-"""
-
-
-def post_process_density(chi_matrix, rho):
-    output_rho = np.zeros_like(rho)
-    paulis = get_paulis()
-
-    for m in range(4):
-        for n in range(4):
-            output_rho += chi_matrix[m, n] * (paulis[m] @ rho @ paulis[n].conj().transpose())
-
-    return output_rho
 
 
 """
