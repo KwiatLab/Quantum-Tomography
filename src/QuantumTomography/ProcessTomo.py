@@ -105,7 +105,7 @@ def StandardProcessTomography(input_densities, measurement_densities, output_den
     n_measurements = len(measurement_densities.keys())
 
     # c matrix definted in eq. 4.52 of Joe Altepeter's thesis page 69
-    c_matrix = get_c_matrix(output_densities, measurement_densities).transpose()
+    c_matrix = get_c_matrix(output_densities, measurement_densities)
 
     # B matrix defined in eq. 4.53 of Joe Altepeter's thesis page 69
     b_matrix = get_b_matrix(input_densities, measurement_densities)
