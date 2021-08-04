@@ -13,7 +13,7 @@ Licensed under the terms of an MIT license
 
 
 """CHECK OUT THE REFERENCE PAGE ON OUR WEBSITE :
-http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
+https://quantumtomo.web.illinois.edu/Doc/"""
 
 """This script runs a multiple tomographies and does not saves the results"""
 """This script is used by test_github_publish and _update."""
