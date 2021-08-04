@@ -13,3 +13,4 @@ __pycache__
 Debugger.py
 /Tests/Results/results_*
 /Tests/test_IGNORE.py
+/Tests/Test_States/rand_*

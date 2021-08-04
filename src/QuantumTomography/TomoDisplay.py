@@ -15,7 +15,7 @@ Copyright 2020 University of Illinois Board of Trustees.
 Licensed under the terms of an MIT license
 """
 
-__author__ = 'Quoleon/Turro'
+
 """CHECK OUT THE REFERENCE PAGE ON OUR WEBSITE :
 http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
 
@@ -242,9 +242,9 @@ def printLastOutput(tomo, bounds = -1):
         print("")
 
     # print(p)
-    properties = tomo.getProperties(tomo.last_rho, bounds)
+    properties = tomo.getProperties(bounds)
     for prop in properties:
-        if(len(prop) >3):
+        if(len(prop) >=3) and prop[2] != 'NA':
             print(prop[0] + " : " + floatToString(prop[1]) + " +/- " + floatToString(prop[2]))
         else:
             print(prop[0] + " : " + floatToString(prop[1]))
