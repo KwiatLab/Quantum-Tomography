@@ -105,7 +105,8 @@ def StandardProcessTomography(input_densities, measurement_densities, output_den
     n_measurements = len(measurement_densities.keys())
 
     # c matrix definted in eq. 4.52 of Joe Altepeter's thesis page 69
-    c_matrix = get_c_matrix(output_densities, measurement_densities)
+    # TODO: Figure out why it performs better with c transposed
+    c_matrix = get_c_matrix(output_densities, measurement_densities).transpose()
 
     # B matrix defined in eq. 4.53 of Joe Altepeter's thesis page 69
     b_matrix = get_b_matrix(input_densities, measurement_densities)
@@ -147,7 +148,7 @@ def process_count_differences(chi_matrix_t_vals, input_densities, measurement_de
     for i in range(n_measurements):
         current_output_rho = post_process_density(chi_matrix, input_densities[i])
         for j in range(n_measurements):
-            counts_predicted[j,i] = np.real(np.trace(measurement_densities[j] @ current_output_rho))
+            counts_predicted[j,i] = max(min(np.real(np.trace(measurement_densities[j] @ current_output_rho)),1),0.00001)
 
     # this is done so that the coincidences are on the same scale: so that they are all near each other.
     norm_factor = np.average(coincidences) / np.average(counts_predicted)
