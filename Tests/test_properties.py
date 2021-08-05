@@ -11,7 +11,7 @@ Licensed under the terms of an MIT license
 
 
 """CHECK OUT THE REFERENCE PAGE ON OUR WEBSITE :
-http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
+https://quantumtomo.web.illinois.edu/Doc/"""
 
 "Attention! These tests run on the version that your environment uses. See readme for details"
 

@@ -14,7 +14,7 @@ Licensed under the terms of an MIT license
 
 
 """CHECK OUT THE REFERENCE PAGE ON OUR WEBSITE :
-http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
+https://quantumtomo.web.illinois.edu/Doc/"""
 
 """This test script is the one used by github when there is a pull request or push. This will automatically
 run and the results can be see in the actions tab"""
