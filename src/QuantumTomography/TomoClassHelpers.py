@@ -45,13 +45,12 @@ val : float
     value of the optimization function.
 """
 def maxlike_fitness(t, coincidences, accidentals, measurements, overall_norms):
-    rhog = t_to_density(t)
+    rhog = t_to_density(t,normalize=False)
     prediction = np.zeros_like(coincidences)
     for j in range(len(prediction)):
         prediction[j] = overall_norms[j] * np.real(np.trace(np.dot(measurements[j, :, :], rhog))) + accidentals[j]
         prediction[j] = np.max([prediction[j], 0.01])
     log_like = (prediction - coincidences) / np.sqrt(prediction)
-    return np.real(log_like)
 
 
 """
@@ -82,7 +81,7 @@ val : float
 """
 def maxlike_fitness_hedged(t, coincidences, accidentals, measurements, bet,overall_norms):
     prediction = np.zeros_like(coincidences)
-    rhog = t_to_density(t)
+    rhog = t_to_density(t,normalize=False)
     for j in range(len(prediction)):
         prediction[j] = overall_norms[j] * np.real(np.trace(np.dot(measurements[j,:,:], rhog))) + accidentals[j]
         prediction[j] = np.max([prediction[j], 0.01])
@@ -117,7 +116,7 @@ def maxlike_fitness_hedged(t, coincidences, accidentals, measurements, bet,overa
 #     value of the optimization function.
 # """
 # def maxlike_fitness_old(t, coincidences, accidentals, m, prediction,overall_norms=-1):
-#     rhog = t_to_density(t)
+#     rhog = t_to_density(t,normalize=False)
 #     for j in range(len(prediction)):
 #         prediction[j] = np.float64(np.real(overall_norms[j] * np.real(np.trace(np.dot(m[:, :, j], rhog))) + accidentals[j]))
 #         prediction[j] = np.max([prediction[j], 0.01])
@@ -159,7 +158,7 @@ def maxlike_fitness_hedged(t, coincidences, accidentals, measurements, bet,overa
 #     elif not (len(overall_norms.shape) == 1 and overall_norms.shape[0] == coincidences.shape[0]):
 #         raise ValueError("Invalid intensities array")
 #
-#     rhog = t_to_density(t)
+#     rhog = t_to_density(t,normalize=False)
 #     for j in range(len(prediction)):
 #         prediction[j] = overall_norms[j] * np.real(np.trace(np.dot(m[:, :, j], rhog))) + accidentals[j]
 #         prediction[j] = np.max([prediction[j], 0.01])

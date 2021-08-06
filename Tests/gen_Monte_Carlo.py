@@ -35,7 +35,7 @@ if __name__ == '__main__':
         for i in [0,1,2,3,4,5,10,9,8,7,6]:
             props = Tomo_Object.getProperties(i)
             dataRow = dict()
-            dataRow['num_errors'] = str(i)
+            dataRow['num_errorsbars'] = str(i)
             dataRow['intensity_mean'] = props[0,1]
             dataRow['intensity_std'] = props[0,2]
             dataRow['concurrence_mean'] = props[2,1]

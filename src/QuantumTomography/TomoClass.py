@@ -162,8 +162,10 @@ class Tomography():
     def importEval(self, evaltxt):
         conf = self.conf
         exec(compile(open(evaltxt, "rb").read(), evaltxt, 'exec'))
-        return self.StateTomography_Matrix(locals().get('tomo_input'), locals().get('intensity'),method=self.conf["method"])
-
+        if "method" in self.conf.keys():
+            return self.StateTomography_Matrix(locals().get('tomo_input'), locals().get('intensity'),method=self.conf["method"])
+        else:
+            return self.StateTomography_Matrix(locals().get('tomo_input'), locals().get('intensity'))
 
     # # # # # # # # # # # # # #
     '''Tomography Functions'''
@@ -235,7 +237,7 @@ class Tomography():
         Final value of the internal optimization function. Values greater than the number
         of measurements indicate poor agreement with a quantum state.
     """
-    def StateTomography_Matrix(self, tomo_input, intensities = -1,method="MLE",saveState=True):
+    def StateTomography_Matrix(self, tomo_input, intensities = -1,method="MLE",_saveState=True):
         # define a uniform intensity if not stated
         if (isinstance(intensities, int)):
             self.intensities = np.ones(tomo_input.shape[0])
@@ -278,7 +280,7 @@ class Tomography():
         else:
             raise ValueError("Invalid Method name: " + str(method))
 
-        if saveState:
+        if _saveState:
             # save the results
             self.last_rho = rhog.copy()
             self.last_intensity = intensity
@@ -291,9 +293,9 @@ class Tomography():
 
     # This is a temporary function. It's here in case there is old code that still uses state_tomography.
     # Eventually this should be removed in a later version
-    def state_tomography(self, tomo_input, intensities = -1,method="MLE",saveState=True):
+    def state_tomography(self, tomo_input, intensities = -1,method="MLE",_saveState=True):
         warnings.warn('state_tomography will be removed in a future version. It is replaced by StateTomography_Matrix which does the same exact thing.', DeprecationWarning)
-        return self.StateTomography_Matrix(tomo_input,intensities,method,saveState)
+        return self.StateTomography_Matrix(tomo_input,intensities,method,_saveState)
 
     """
     tomography_MLE(starting_matrix, coincidences, measurements, accidentals,overall_norms)
@@ -340,9 +342,7 @@ class Tomography():
         final_tvals = leastsq(maxlike_fitness, np.real(starting_tvals), args = (coincidences, accidentals, measurements, overall_norms))[0]
         fvalp = np.sum(maxlike_fitness(final_tvals, coincidences, accidentals, measurements, overall_norms) ** 2)
 
-        final_matrix = t_to_density(final_tvals)
-        final_matrix = t_matrix(final_tvals)
-        final_matrix = np.dot(final_matrix, final_matrix.conj().transpose())
+        final_matrix = t_to_density(final_tvals, normalize=False)
         intensity = np.trace(final_matrix)
         final_matrix = final_matrix / np.trace(final_matrix)
 
@@ -402,7 +402,7 @@ class Tomography():
         else:
             raise ValueError("To use Hedged Maximum Likelihood, Beta must be a positive number.")
 
-        final_matrix = t_to_density(final_tvals)
+        final_matrix = t_to_density(final_tvals,normalize=False)
         intensity = np.trace(final_matrix)
         final_matrix = final_matrix / np.trace(final_matrix)
 
@@ -1354,7 +1354,7 @@ class Tomography():
             if len(test_counts.shape) == 1:
                 test_counts = np.array([test_counts]).T
             test_data = np.concatenate((np.array([time]).T, test_singles, test_counts, meas), axis = 1)
-            [rhop, intenp, fvalp] = self.StateTomography_Matrix(test_data, self.intensities,method=self.conf['method'],saveState=False)
+            [rhop, intenp, fvalp] = self.StateTomography_Matrix(test_data, self.intensities,method=self.conf['method'],_saveState=False)
             self.mont_carlo_states.append([rhop, intenp, fvalp])
         # Restore the last tomo_input matrix to the original one
         self.last_input = last_input

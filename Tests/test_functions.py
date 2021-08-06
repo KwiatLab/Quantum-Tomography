@@ -162,3 +162,10 @@ class Test_Functions(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+    counts = 0
+    measurements = 0
+
+
+    Tomography_Object = qLib.Tomography()
+    [Rho,Intensity,fval] = Tomography_Object.StateTomography(counts,measurements)

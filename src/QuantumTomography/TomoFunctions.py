@@ -170,16 +170,20 @@ Parameters
 ----------
 t : ndarray
     List of t values converted.
+normalize : bool
+    Set to true if you want the density matrix to be normalized by its trace. 
+    Default is True.
 
 Returns
 -------
 rhog : ndarray
     Density Matrix.
     """
-def t_to_density(t):
+def t_to_density(t,normalize=True):
     tm = t_matrix(t)
-    rhog = np.dot(tm,tm.conj().transpose())
-    rhog = rhog / np.trace(rhog)
+    rhog = np.dot(tm.T.conj(),tm)
+    if normalize:
+        rhog = rhog / np.trace(rhog)
     return rhog
 
 """
