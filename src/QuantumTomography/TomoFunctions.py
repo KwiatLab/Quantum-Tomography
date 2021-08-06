@@ -181,7 +181,7 @@ rhog : ndarray
     """
 def t_to_density(t,normalize=True):
     tm = t_matrix(t)
-    rhog = np.dot(tm.T.conj(),tm)
+    rhog = np.dot(tm,tm.T.conj())
     if normalize:
         rhog = rhog / np.trace(rhog)
     return rhog
