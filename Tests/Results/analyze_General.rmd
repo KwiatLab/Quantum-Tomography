@@ -9,7 +9,6 @@ output: html_notebook
 knitr::opts_chunk$set(fig.width = 10, fig.height = 4,fig.align='center',echo=FALSE,warning=FALSE)
 library(tidyverse)
 library(ggplot2)
-require(gridExtra)
 library(fields)
 library(here)
 
@@ -139,38 +138,68 @@ labs(title = "3 Qubits",
 xlim(0,50)+
 ylim(lowerFidVal,1)
 ```
-# Time vs Counts. NOTE Y AXIS CHANGES
+
+# Time vs Counts (MLE)
 ```{r}
+numBins = 15
+brk<- seq( 0, 50,,numBins+1)
+
+
 # 1 qubit
-bin_stats_b1 = stats.bin(df_bme_1$avg_coinc_per_meas,df_bme_1$total_time,breaks = brk)
-ggplot(mapping=aes(x=bin_stats_b1$centers)) +
-geom_line(mapping=aes(y=bin_stats_b1$stats["mean",],color="BME")) +
-geom_point(mapping=aes(y=bin_stats_b1$stats["mean",],color="BME"))+
-geom_errorbar(mapping=aes(y=bin_stats_b1$stats["mean",],color="BME",
-ymin=bin_stats_b1$stats["mean",]-bin_stats_b1$stats["Std.Dev.",],
-ymax=bin_stats_b1$stats["mean",]+bin_stats_b1$stats["Std.Dev.",]),
+bin_stats_m1 = stats.bin(df_mle_1$avg_coinc_per_meas,df_mle_1$total_time,breaks = brk)
+ggplot(mapping=aes(x=bin_stats_m1$centers)) +
+geom_line(mapping=aes(y=bin_stats_m1$stats["mean",],color="MLE")) +
+geom_point(mapping=aes(y=bin_stats_m1$stats["mean",],color="MLE"))+
+geom_errorbar(mapping=aes(y=bin_stats_m1$stats["mean",],color="MLE",
+ymin=bin_stats_m1$stats["mean",]-bin_stats_m1$stats["Std.Dev.",],
+ymax=bin_stats_m1$stats["mean",]+bin_stats_m1$stats["Std.Dev.",]),
               width=1)+
-labs(title = "1 Qubit BME",
+labs(title = "1 qubit",
      x = "Avg Counts per Basis",
-     y = "Time(sec)",
+     y = "Time",
+     colour="Methods")+
+xlim(0,50)
+```
+
+
+```{r}
+numBins = 15
+brk<- seq( 0, 50,,numBins+1)
+
+
+# 2 qubit
+bin_stats_m1 = stats.bin(df_mle_2$avg_coinc_per_meas,df_mle_2$total_time,breaks = brk)
+ggplot(mapping=aes(x=bin_stats_m1$centers)) +
+geom_line(mapping=aes(y=bin_stats_m1$stats["mean",],color="MLE")) +
+geom_point(mapping=aes(y=bin_stats_m1$stats["mean",],color="MLE"))+
+geom_errorbar(mapping=aes(y=bin_stats_m1$stats["mean",],color="MLE",
+ymin=bin_stats_m1$stats["mean",]-bin_stats_m1$stats["Std.Dev.",],
+ymax=bin_stats_m1$stats["mean",]+bin_stats_m1$stats["Std.Dev.",]),
+              width=1)+
+labs(title = "2 qubit",
+     x = "Avg Counts per Basis",
+     y = "Time",
      colour="Methods")+
 xlim(0,50)
 ```
 
 ```{r}
-# 2 qubits
-bin_stats_b2 = stats.bin(df_bme_2$avg_coinc_per_meas,df_bme_2$total_time,breaks = brk)
-ggplot(mapping=aes(x=bin_stats_b2$centers)) +
-geom_line(mapping=aes(y=bin_stats_b2$stats["mean",],color="BME")) +
-geom_point(mapping=aes(y=bin_stats_b2$stats["mean",],color="BME"))+
-geom_errorbar(mapping=aes(y=bin_stats_b2$stats["mean",],color="BME",
-ymin=bin_stats_b2$stats["mean",]-bin_stats_b2$stats["Std.Dev.",],
-ymax=bin_stats_b2$stats["mean",]+bin_stats_b2$stats["Std.Dev.",]),
+numBins = 15
+brk<- seq( 0, 50,,numBins+1)
+
+
+# 3 qubit
+bin_stats_m1 = stats.bin(df_mle_3$avg_coinc_per_meas,df_mle_3$total_time,breaks = brk)
+ggplot(mapping=aes(x=bin_stats_m1$centers)) +
+geom_line(mapping=aes(y=bin_stats_m1$stats["mean",],color="MLE")) +
+geom_point(mapping=aes(y=bin_stats_m1$stats["mean",],color="MLE"))+
+geom_errorbar(mapping=aes(y=bin_stats_m1$stats["mean",],color="MLE",
+ymin=bin_stats_m1$stats["mean",]-bin_stats_m1$stats["Std.Dev.",],
+ymax=bin_stats_m1$stats["mean",]+bin_stats_m1$stats["Std.Dev.",]),
               width=1)+
-labs(title = "2 Qubits BME",
+labs(title = "3 qubit",
      x = "Avg Counts per Basis",
-     y = "Time(sec)",
+     y = "Time",
      colour="Methods")+
 xlim(0,50)
 ```
-

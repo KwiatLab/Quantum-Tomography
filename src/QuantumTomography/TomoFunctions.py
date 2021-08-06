@@ -10,9 +10,9 @@ Copyright 2020 University of Illinois Board of Trustees.
 Licensed under the terms of an MIT license
 """
 
-__author__ = 'Quoleon/Turro'
+
 """CHECK OUT THE REFERENCE PAGE ON OUR WEBSITE :
-http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
+https://quantumtomo.web.illinois.edu/Doc/"""
 
 
 # # # # # # # # # # # # #
@@ -37,7 +37,9 @@ m : ndarray with shape = (2^numQubits, 2^numQubits, number of measurements)
     The measurements of the tomography in density matrix form.
 prediction : ndarray
     Predicted counts from the predicted state.
-
+overall_norms : 1darray with length = number of measurements or length = number of measurements * 2^numQubits for 2 det/qubit. (optional)
+    The relative weights of each measurment. Used for drift correction.
+    
 Returns
 -------
 val : float
@@ -49,20 +51,18 @@ def log_likelyhood(intensity, givenState, coincidences, measurements, accidental
         overall_norms = np.ones(coincidences.shape[0])
     elif not (len(overall_norms.shape) == 1 and overall_norms.shape[0] == coincidences.shape[0]):
         raise ValueError("Invalid intensities array")
-
+    # Convert to densities if given tvals
     if (len(givenState.shape) == 1):
         givenState = t_to_density(givenState)
-
+    # Calculate expected averages
     Averages = np.zeros_like(coincidences, dtype=np.float)
+    givenState = intensity*givenState
     for j in range(len(Averages)):
-        Averages[j] = intensity * overall_norms[j] * np.real(
-            np.trace(np.matmul(measurements[:, :, j], givenState))) + \
+        Averages[j] = overall_norms[j] * np.real(np.trace(np.matmul(measurements[j], givenState))) + \
                       accidentals[j]
-
         # Avoid dividing by zero for pure states
         if (Averages[j] == 0):
             Averages[j] == 1
-
     val = (Averages - coincidences) ** 2 / (2 * Averages)
     return sum(val)
 
@@ -170,16 +170,20 @@ Parameters
 ----------
 t : ndarray
     List of t values converted.
+normalize : bool
+    Set to true if you want the density matrix to be normalized by its trace. 
+    Default is True.
 
 Returns
 -------
 rhog : ndarray
     Density Matrix.
     """
-def t_to_density(t):
+def t_to_density(t,normalize=True):
     tm = t_matrix(t)
-    rhog = np.dot(tm,tm.conj().transpose())
-    rhog = rhog / np.trace(rhog)
+    rhog = np.dot(tm,tm.T.conj())
+    if normalize:
+        rhog = rhog / np.trace(rhog)
     return rhog
 
 """

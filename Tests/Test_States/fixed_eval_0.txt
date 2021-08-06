@@ -1,0 +1,24 @@
+conf['nqubits'] = 1
+conf['ndetectors'] = 1
+conf['crosstalk'] = np.array([
+[1.0,0.0],
+[0.0,1.0]])
+conf['bellstate'] = False
+conf['dodriftcorrection'] = 0
+conf['doaccidentalcorrection'] = 0
+conf['doerrorestimation'] = 0
+conf['window'] = 1
+conf['efficiency'] = np.array([
+1.0])
+conf['rhostart'] = []
+conf['beta'] = 0
+conf['usederivative'] = 1
+conf['method'] = 'MLE'
+tomo_input = np.array([
+[(1+0j),0j,(55+0j),(1+0j),0j],
+[(1+0j),0j,(22+0j),0j,(1+0j)],
+[(1+0j),0j,(27+0j),(0.7071067811865476+0j),(0.7071067811865476+0j)],
+[(1+0j),0j,(52+0j),(0.7071067811865476+0j),(-0.7071067811865476+0j)],
+[(1+0j),0j,(7+0j),(0.7071067811865476+0j),0.7071067811865476j],
+[(1+0j),0j,(74+0j),(0.7071067811865476+0j),(-0-0.7071067811865476j)]])
+intensity = np.array([1.0,1.0,1.0,1.0,1.0,1.0])

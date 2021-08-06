@@ -5,9 +5,9 @@ Copyright 2020 University of Illinois Board of Trustees.
 Licensed under the terms of an MIT license
 """
 
-__author__ = 'Quoleon/Turro'
+
 """CHECK OUT THE REFERENCE PAGE ON OUR WEBSITE :
-http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
+https://quantumtomo.web.illinois.edu/Doc/"""
 
 def readme():
     with open('README.md') as f:
@@ -43,7 +43,7 @@ setup(
         ]
     },
     project_urls = {
-      'Documentation': 'http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/',
+      'Documentation': 'https://quantumtomo.web.illinois.edu/Doc/',
       'Video Tutorial': 'https://www.youtube.com/watch?v=I-214P0LOfQ&list=PLJLHMKtk5Pqy9w9aCuyowUF1p7pl2JCI9&index=3'
     }
 )

@@ -8,11 +8,11 @@ Copyright 2020 University of Illinois Board of Trustees.
 Licensed under the terms of an MIT license
 """
 
-__author__ = 'Quoleon/Turro'
+
 
 
 """CHECK OUT THE REFERENCE PAGE ON OUR WEBSITE :
-http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
+https://quantumtomo.web.illinois.edu/Doc/"""
 
 """This script is UNTRACKED by git, and can be used however. 
 By default it returns true. Most likely if you are running tests you'll want to save the
@@ -35,7 +35,7 @@ if __name__ == '__main__':
         for i in [0,1,2,3,4,5,10,9,8,7,6]:
             props = Tomo_Object.getProperties(i)
             dataRow = dict()
-            dataRow['num_errors'] = str(i)
+            dataRow['num_errorsbars'] = str(i)
             dataRow['intensity_mean'] = props[0,1]
             dataRow['intensity_std'] = props[0,2]
             dataRow['concurrence_mean'] = props[2,1]

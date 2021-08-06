@@ -7,9 +7,9 @@ Copyright 2020 University of Illinois Board of Trustees.
 Licensed under the terms of an MIT license
 """
 
-__author__ = 'Quoleon/Turro'
+
 """CHECK OUT THE REFERENCE PAGE ON OUR WEBSITE :
-http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
+https://quantumtomo.web.illinois.edu/Doc/"""
 
 
 # These are various helper functions used in other main functions
@@ -45,15 +45,13 @@ val : float
     value of the optimization function.
 """
 def maxlike_fitness(t, coincidences, accidentals, measurements, overall_norms):
-    rhog = t_to_density(t)
+    rhog = t_to_density(t,normalize=False)
     prediction = np.zeros_like(coincidences)
     for j in range(len(prediction)):
         prediction[j] = overall_norms[j] * np.real(np.trace(np.dot(measurements[j, :, :], rhog))) + accidentals[j]
         prediction[j] = np.max([prediction[j], 0.01])
     log_like = (prediction - coincidences) / np.sqrt(prediction)
     return np.real(log_like)
-
-
 """
 maxlike_fitness_hedged(t, coincidences, accidentals, measurements, prediction, bet)
 Desc: Calculates the diffrence between the current predicted state data and the actual data using hedged maximum likelihood.
@@ -82,7 +80,7 @@ val : float
 """
 def maxlike_fitness_hedged(t, coincidences, accidentals, measurements, bet,overall_norms):
     prediction = np.zeros_like(coincidences)
-    rhog = t_to_density(t)
+    rhog = t_to_density(t,normalize=False)
     for j in range(len(prediction)):
         prediction[j] = overall_norms[j] * np.real(np.trace(np.dot(measurements[j,:,:], rhog))) + accidentals[j]
         prediction[j] = np.max([prediction[j], 0.01])
@@ -117,7 +115,7 @@ def maxlike_fitness_hedged(t, coincidences, accidentals, measurements, bet,overa
 #     value of the optimization function.
 # """
 # def maxlike_fitness_old(t, coincidences, accidentals, m, prediction,overall_norms=-1):
-#     rhog = t_to_density(t)
+#     rhog = t_to_density(t,normalize=False)
 #     for j in range(len(prediction)):
 #         prediction[j] = np.float64(np.real(overall_norms[j] * np.real(np.trace(np.dot(m[:, :, j], rhog))) + accidentals[j]))
 #         prediction[j] = np.max([prediction[j], 0.01])
@@ -159,7 +157,7 @@ def maxlike_fitness_hedged(t, coincidences, accidentals, measurements, bet,overa
 #     elif not (len(overall_norms.shape) == 1 and overall_norms.shape[0] == coincidences.shape[0]):
 #         raise ValueError("Invalid intensities array")
 #
-#     rhog = t_to_density(t)
+#     rhog = t_to_density(t,normalize=False)
 #     for j in range(len(prediction)):
 #         prediction[j] = overall_norms[j] * np.real(np.trace(np.dot(m[:, :, j], rhog))) + accidentals[j]
 #         prediction[j] = np.max([prediction[j], 0.01])
@@ -208,52 +206,6 @@ def normalizeLikelihoods(likelihoods):
     likelihoods = np.exp(-1 * scaled)
     likelihoods = likelihoods/sum(likelihoods)
     return likelihoods, nIndex,scaled
-
-
-
-"""
-log_likelyhood(t, coincidences, accidentals, m, prediction)
-Desc: This is the log 
-Parameters
-----------
-intensity : float
-    The overall intensity of the measurments
-givenState : 1darray with length 2^(2*numQubits) or ndarray with shape = (2^numQubits,2^numQubits)
-    T values of the current predicted state. A density matrix can also be used.
-coincidences : ndarray with length = number of measurements or shape = (number of measurements, 2^numQubits) for 2 det/qubit
-    The counts of the tomography.
-measurements : ndarray with shape = (number of measurements,2^numQubits, 2^numQubits)
-    The measurements of the tomography in density matrix form.
-accidentals : ndarray with length = number of measurements or shape = (number of measurements, 2^numQubits) for 2 det/qubit
-    The singles values of the tomography. Used for accidental correction.
-prediction : ndarray
-    Predicted counts from the predicted state.
-overall_norms : 1darray with length = number of measurements or length = number of measurements * 2^numQubits for 2 det/qubit. (optional)
-    The relative weights of each measurment. Used for drift correction.
-    
-Returns
--------
-val : float
-    value of the optimization function.
-"""
-def log_likelyhood(intensity, givenState, coincidences, measurements, accidentals, overall_norms=-1):
-    # If overall_norms not given then assume uniform
-    if not isinstance(overall_norms, np.ndarray):
-        overall_norms = np.ones(coincidences.shape[0])
-    elif not (len(overall_norms.shape) == 1 and overall_norms.shape[0] == coincidences.shape[0]):
-        raise ValueError("Invalid intensities array")
-    # Convert to densities if given tvals
-    if (len(givenState.shape) == 1):
-        givenState = t_to_density(givenState)
-    # Calculate excpected averages
-    Averages = np.zeros_like(coincidences, dtype=np.float)
-    for j in range(len(Averages)):
-        Averages[j] = intensity * overall_norms[j] * np.real(np.trace(np.matmul(measurements[j], givenState))) + accidentals[j]
-        # Avoid dividing by zero for pure states
-        if (Averages[j] == 0):
-            Averages[j] == 1
-    val = (Averages - coincidences) ** 2 / (2 * Averages)
-    return sum(val)
 
 
 # helper function that formats the projects into a single matrix

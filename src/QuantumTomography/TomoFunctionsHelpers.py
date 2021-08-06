@@ -6,9 +6,9 @@ Copyright 2020 University of Illinois Board of Trustees.
 Licensed under the terms of an MIT license
 """
 
-__author__ = 'Quoleon/Turro'
+
 """CHECK OUT THE REFERENCE PAGE ON OUR WEBSITE :
-http://research.physics.illinois.edu/QI/Photonics/Quantum-Tomography_lib_Ref/"""
+https://quantumtomo.web.illinois.edu/Doc/"""
 
 
 
@@ -20,8 +20,8 @@ def partial_transpose_helper(m, d):
     if m.shape[0] == d:
         val = m.transpose()
     else:
-        na = np.int(d)
-        nb = np.int(len(m)/d)
+        na = int(d)
+        nb = int(len(m)/d)
         y = np.zeros([nb, nb, na, na])+0j
         val = np.zeros([len(m), len(m)])+0j
         for j in range(nb):

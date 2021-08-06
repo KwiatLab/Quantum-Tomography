@@ -146,11 +146,6 @@ class Test_Functions(unittest.TestCase):
             tomo.getProperties(3)
             self.assertEqual(len(tomo.mont_carlo_states), 6)
 
-    def test_printLastOutput(self):
-        for i in [1,2]:
-            tomo = runTests(numQubits=i, nStates=1)[0][0]
-            self.assertTrue(True)
-
     # This tests several functions involving going from density to tvals
     # functions include t_to_density(), t_matrix(), density2tm(), and density2t()
     def test_tvals(self):
@@ -167,3 +162,10 @@ class Test_Functions(unittest.TestCase):
 
 if __name__ == '__main__':
     unittest.main()
+
+    counts = 0
+    measurements = 0
+
+
+    Tomography_Object = qLib.Tomography()
+    [Rho,Intensity,fval] = Tomography_Object.StateTomography(counts,measurements)
