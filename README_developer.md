@@ -27,7 +27,7 @@ the [most recent version of python](https://www.python.org/downloads/). Tests ar
 
 4. Install the **requirements**.
 
-         pip install -r src\requirements.txt
+         pip install -r requirements.txt
          
 5. **Switch to the development branch** before making any changes
          

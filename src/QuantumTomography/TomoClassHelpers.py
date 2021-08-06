@@ -51,8 +51,7 @@ def maxlike_fitness(t, coincidences, accidentals, measurements, overall_norms):
         prediction[j] = overall_norms[j] * np.real(np.trace(np.dot(measurements[j, :, :], rhog))) + accidentals[j]
         prediction[j] = np.max([prediction[j], 0.01])
     log_like = (prediction - coincidences) / np.sqrt(prediction)
-
-
+    return np.real(log_like)
 """
 maxlike_fitness_hedged(t, coincidences, accidentals, measurements, prediction, bet)
 Desc: Calculates the diffrence between the current predicted state data and the actual data using hedged maximum likelihood.
