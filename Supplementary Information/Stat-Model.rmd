@@ -10,7 +10,7 @@ output:
 # Introduction
 Given the measurement data we wish to determine the best possible estimate for the quantum state. We can use [Bayes' theorem](https://en.wikipedia.org/wiki/Bayes%27_theorem) to define the probability of the state given the data:
 
-$$\text{Pr}(\rho|\text{Data}) = \frac{\text{Pr}(\text{Data}|\rho)\text{Pr}(\rho)}{\text{Pr}(\text{Data})}$$
+$$\text{Pr}(\rho|\text{Data}) = \frac{\text{Pr}(\text{Data}|\rho)\text{Pr}(\rho)}{\text{Pr}(\text{Data})} \;.$$
 
 We define these functions as the following
 
@@ -23,33 +23,26 @@ We define these functions as the following
 The counts of the measurements can be modeled by a [Poisson Distrobution](https://en.wikipedia.org/wiki/Poisson_distribution). With high enough counts we can approximate this with a [Normal Distrobution](https://en.wikipedia.org/wiki/Normal_distribution) using the [Central Limit Theorm](https://en.wikipedia.org/wiki/Central_limit_theorem). A important fact of the poisson distrobution is the variance is equal to the mean.
 
 # 1det/qubit
-For each measurement we have 1 count number. We define the following variables:
+For each measurement we have 1 count number. From the [Photonic State Tomography](http://research.physics.illinois.edu/QI/Photonics/tomography-files/amo_tomo_chapter.pdf) paper, the distribution of the counts follows:
 
-- $n_i$: Number of counts on measurement i
-    - $n_i \sim \text{Poiss}(\mu_{i}) \xrightarrow{\text{CLT}}
-       n_i \sim \text{Norm}(\mu_{i},\sigma_i)$
-    - $i \in[1,m] \; \big| \; m = \text{Num Measurements}$
-- $\sigma_i^2$: Variance for the number of counts on measurement i given $\rho$
-    -  $\sigma_i^2 = \mu_i$ from assuming a poisson distribution
-- $\mu_i$: Expected number of counts on measurement i given $\rho$
-
-From the [Photonic State Tomography](http://research.physics.illinois.edu/QI/Photonics/tomography-files/amo_tomo_chapter.pdf) paper:
-
-$$\mu_{i} = I_0 I_i \text{Tr}\left( M'_i \rho \right) + a_i$$
+$$n_i \sim \text{Poiss}(\mu_{i}) \xrightarrow{\text{CLT}}
+       n_i \sim \text{Norm}(\mu_{i},\sigma_i) \;,$$
+$$\mu_{i} = I_0 I_i \text{Tr}\left( M'_i \rho \right) + a_i \;.$$
 
 ### Variables:
 
+- $n_i$: Number of counts on measurement i
+- $\mu_i$: Expected number of counts on measurement i given $\rho$
+- $i \in[1,m] \; \big| \; m = \text{Number of Measurements}$
+- $\sigma_i^2$: Variance for the number of counts on measurement i given $\rho$
+    -  $\sigma_i^2 = \mu_i$ from assuming a poisson distribution
 - $I_0$: Is the overall intensity
 - $I_i$: Is the relative intensity of measurement i given as an input. Default is 1
 - $M'_i$: Is measurement i with cross talk correction
-- $M_i$: Is measurement i
-- $T_i$ Is the time of measurement i given as an input. Default is 1
-- $S_{ik}$ Is the kth single count on measurement i given as an input. Default is 0
-- $W$ Is the coincidence window duration as an input. Default is 0
-- $a_i = \frac{W\prod_{k=1}^{2}S_{ik}}{T_i}$: Is the predicted accidental counts for measurement i.
+- $a_i$ : Is the predicted accidental counts for measurement i.
 
 ### log-Likelyhood
-
+$$\Like(\rho) = \text{Pr}(\text{Data}|\rho) \;,$$
 $$\Like(\rho) = \prod_{i=1}^m \text{Pr}(n_i|\mu_i)$$
 $$\Like(\rho) = \prod_{i=1}^m \frac{1}{\sqrt{\sigma_i2\pi}}
                 \exp\left( -\frac{(n_i-\mu_i)^2}{2\sigma_i^2} \right)$$
@@ -66,35 +59,28 @@ $$\text{log}(\Like(\rho)) = \sum_{i=1}^m -\frac{(n_i-\mu_i)^2}{2\mu_i^2}$$
 # 2det/qubit
 For each measurement a complete number of counts on all the possible outcomes. We define the following variables:
 
-- $n_{ij}$: Number of counts on measurement i for detector j
-    - $n_{ij} \sim \text{Poiss}(\mu_{ij}) \xrightarrow{\text{CLT}}
-       n_{ij} \sim \text{Norm}(\mu_{ij},\sigma_{ij})$
-    - $i \in[1,m] \; \big| \; m = \text{Num Measurements}$
-    - $j \in[1,k] \; \big| \; k = \text{Num Detector Pairs}$
-
-- $\sigma_{ij}^2$: Variance for the number of counts on measurement i, detector j given $\rho$
-    -  $\sigma_{ij}^2 = \mu_{ij}$ from assuming a poisson distribution
-- $\mu_{ij}$: Expected number of counts on measurement i, detector j  given $\rho$
-
-
 From the [Photonic State Tomography](http://research.physics.illinois.edu/QI/Photonics/tomography-files/amo_tomo_chapter.pdf) paper:
 
-$$\mu_{ij} = I_0 I_i E_j \text{Tr}\left( M'_{ij} \rho \right) + a_{ij}$$
+$$n_{ij} \sim \text{Poiss}(\mu_{ij}) \xrightarrow{\text{CLT}} n_{ij} \sim \text{Norm}(\mu_{ij},\sigma_{ij})\;,$$
+$$\mu_{ij} = I_0 I_i E_j \text{Tr}\left( M'_{ij} \rho \right) + a_{ij}\;.$$
 
 ### Variables:
 
+- $n_{ij}$: Number of counts on measurement i for detector j
+- $\mu_{ij}$: Expected number of counts on measurement i, detector j  given $\rho$
+- $i \in[1,m] \; \big| \; m = \text{Number of Measurements}$
+- $j \in[1,k] \; \big| \; k = \text{Number of Detector Pairs}$
+- $\sigma_{ij}^2$: Variance for the number of counts on measurement i, detector j given $\rho$
+    -  $\sigma_{ij}^2 = \mu_{ij}$ from assuming a poisson distribution
 - $I_0$: Is the overall intensity
 - $I_i$: Is the relative intensity of measurement i given as an input. Default is 1
-- $M'_{ij}$: Is the jth basis of measurement i with cross talk correction
-- $M_{ij}$: Is the jth basis of measurement i
-- $T_i$ Is the time of measurement i given as an input. Default is 1
-- $S_{ijk}$ Is the kth single count on measurement i given as an input. Default is 0
-- $W_j$ Is the coincidence window duration for the jth basis as an input. Default is 0
 - $E_j$ Is the relative efficiency on the jth basis
-- $a_{ij} = \frac{W_j\prod_{k=1}^{2}S_{ijk}}{T_i}$: Is the predicted accidental counts for measurement i.
+- $M'_{ij}$: Is the jth basis of measurement i with cross talk correction
+
 
 ### log-Likelyhood
 
+$$\Like(\rho) = \text{Pr}(\text{Data}|\rho)$$
 $$\Like(\rho) = \prod_{i=1}^m \prod_{j=1}^k  \text{Pr}(n_{ij}|\mu_{ij})$$
 $$\Like(\rho) = \prod_{i=1}^m \prod_{j=1}^k  \frac{1}{\sqrt{\sigma_{ij}2\pi}}
                 \exp\left( -\frac{(n_{ij}-\mu_{ij})^2}{2\sigma_{ij}^2} \right)$$
@@ -107,6 +93,29 @@ $$\Like(\rho) \propto \prod_{i=1}^m \prod_{j=1}^k  \exp\left( -\frac{(n_{ij}-\mu
 We can plug in $\sigma_{ij}^2 = \mu_{ij}$ and take the log of this function to get our log-Likelyhood function.
 
 $$\text{log}(\Like(\rho)) = \sum_{i=1}^m  \sum_{j=1}^k -\frac{(n_{ij}-\mu_{ij})^2}{2\mu_{ij}^2}$$
+
+
+# Error Correction
+
+## Accidental Correction
+
+Accidental Correction is used for 2 detectors per qubit.
+
+$$a_{ij} = \frac{W_j}{T_i * 10^9}\prod_{k=1}^{2}S_{ijk}$$
+
+- $T_i$ Is the time in nanoseconds of measurement i given as an input. Default is 1
+- $S_{ijk}$ Is the kth single count on measurement i given as an input. Default is 0
+- $W_j$ Is the coincidence window duration for the jth basis as an input. Default is 0
+
+## Crosstalk
+
+$$M'_{i,j} = \sum_{j'=1}^{k} C_{j,j'} M_{i,j}$$
+
+- $M'_{ij}$: Is the jth basis of measurement i with cross talk correction
+- $M_{ij}$: Is the jth basis of measurement i.The state the target quantum state is projected on. These are pure states here represented as density matrices
+- $C_{ij}$: The index at the jth row and j'th column of the crosstalk matrix
+- $i \in[1,m] \; \big| \; m = \text{Number of Measurements}$
+- $j,j' \in[1,k] \; \big| \; k = \text{Number of Detector Pairs, which is equal to the number of qubits squared.}$
 
 # Lab setup example: 2 qubits with 2 det/qubit vs 1 det/qubit
 We need to specify 2 states per measurement. The first is the state that the first qubit is projected onto when it ends up at detector 1. The second is the state that the second qubit is projected onto when it ends up at detector 2.
@@ -139,10 +148,17 @@ We need to specify 2 states per measurement. The first is the state that the fir
 # Estimators
 
 ## Maximum Likelyhood Estimator(MLE)
-The MLE estimator is found by maximizing the log of the likelyhood function
+The MLE estimator is found by maximizing the log of the likelyhood function:
 
 $$\rho_\text{MLE} =
-\operatorname*{argmin}_{\rho} \text{log}(\Like(\rho))$$
+\operatorname*{argmin}_{\rho} -\text{log}(\Like(\rho)) \; .$$
+
+## Hedged Maximum Likelyhood Estimator(HMLE)
+Hedged maximum likelihood is a simple modification of the maximum likelihood approach. Instead of maximizing the likelihood, the estimate is the one that maximizes the product of the likelihood with the following hedge function:
+$$h(\rho)=\operatorname{det}(\rho)^{\beta} \mid \beta \in\left[0, \frac{1}{2}\right] \;,$$
+$$\rho_{\mathrm{HMLE}}=\underset{\rho}{\operatorname{argmin}}-\log (\mathcal{L}(\rho) h(\rho)) \;.$$
+
+The value of Beta can be defined in the conf settings; default is 1/2. Robin Blume-Kohout covers the hedged likelihood function in more detail in the paper titled [Hedged Maximum Likelihood Estimation](https://arxiv.org/pdf/1001.2029.pdf).
 
 ## Bayesian Estimator(BME)
 The Bayes estimator is the expected value of the posterior
@@ -166,3 +182,14 @@ $$\hat\rho_\text{BME} \propto \sum_i \rho_i\text{Pr}(\text{Data}|\rho)$$
 
 - $\rho_i \sim \text{Pr}(\rho | \text{Data})$ is a random sample from posterior
 $$\hat\rho_\text{BME} \propto \sum_i \rho_i$$
+
+# Parameterization
+During the optimization we parameterize the density matrix as follows in order to ensure we are only considering valid density matrices:
+
+$$\rho=T T^{\dagger} \;,$$
+$$T=\begin{bmatrix}
+t_{1} & 0 & \ldots & 0 \\
+t_{2^{n}+1}+i t_{2^{n}+2} & t_{2} & \ldots & 0 \\
+\ldots & \ldots & \ldots & 0 \\
+t_{4^{n}-1}+i t_{4^{n}} & t_{4^{n}-3}+i t_{4^{n}-2} & t_{4^{n}-5}+i t_{4^{n}-4} & t_{2 n}
+\end{bmatrix}\;.$$

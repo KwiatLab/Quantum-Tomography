@@ -835,36 +835,14 @@ class Tomography():
                                                                     measurements_densities.shape[2],
                                                                     measurements_densities.shape[3]))
 
-        # # Old way
-        # measurements_densities = np.zeros([2 ** nbits, 2 ** nbits, np.prod(coinc.shape)], dtype=complex)
-        # for j in range(coinc.shape[0]):
-        #     m_twiddle = np.zeros([2 ** nbits, 2 ** nbits, 2 ** nbits]) + 0j
-        #     u = 1
-        #     for k in range(nbits):
-        #         alpha = MeasBasis[j][2 * k]
-        #         beta = MeasBasis[j][2 * k + 1]
-        #         psi_k = np.array([alpha, beta])
-        #         psip_k = np.array([np.conj(beta), np.conj(-alpha)])
-        #         u_k = np.outer((np.array([1, 0])), psi_k) + np.outer((np.array([0, 1])), psip_k)
-        #         # Changed from tensor_product to np.kron
-        #         u = np.kron(u, u_k)
-        #     if (self.conf['NDetectors'] == 1):
-        #         for k in range(0, 2 ** nbits):
-        #             m_twiddle[k, :, :] = np.outer(u[:, k].conj().transpose(), u[:, k])
-        #
-        #         measurements_pures[j * n_coinc, :] = u[:, 0].conj().transpose()
-        #         for k in range(1):
-        #             for l in range(2 ** nbits):
-        #                 measurements_densities[:, :, j + k] = measurements_densities[:, :, j + k] + m_twiddle[l, :, :] * crosstalk[k, l]
-        #         coincidences = coinc
-        #     else:
-        #         for k in range(2 ** nbits):
-        #             m_twiddle[k, :, :] = np.outer(u[:, k].conj().transpose(), u[:, k])
-        #             measurements_pures[j * n_coinc + k, :] = u[:, k].conj().transpose()
-        #         for k in range(2 ** nbits):
-        #             for l in range(2 ** nbits):
-        #                 measurements_densities[:, :, j * (2 ** nbits) + k] = measurements_densities[:, :, j * (2 ** nbits) + k] + m_twiddle[l, :, :] * \
-        #                                                 crosstalk[k, l]
+        # Normalize measurements
+        for j in range(measurements_pures.shape[0]):
+            norm = np.dot(measurements_pures[j].conj(),measurements_pures[j])
+            measurements_pures[j] = measurements_pures[j]/np.sqrt(norm)
+
+        for j in range(measurements_densities.shape[0]):
+            norm = np.trace(measurements_densities[j])
+            measurements_densities[j] = measurements_densities[j]/norm
 
 
         # Flatten the arrays
