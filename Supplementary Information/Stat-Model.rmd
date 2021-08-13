@@ -10,7 +10,7 @@ output:
 # Introduction
 Given the measurement data we wish to determine the best possible estimate for the quantum state. We can use [Bayes' theorem](https://en.wikipedia.org/wiki/Bayes%27_theorem) to define the probability of the state given the data:
 
-$$\text{Pr}(\rho|\text{Data}) = \frac{\text{Pr}(\text{Data}|\rho)\text{Pr}(\rho)}{\text{Pr}(\text{Data})}$$
+$$\text{Pr}(\rho|\text{Data}) = \frac{\text{Pr}(\text{Data}|\rho)\text{Pr}(\rho)}{\text{Pr}(\text{Data})} \;.$$
 
 We define these functions as the following
 
@@ -26,8 +26,8 @@ The counts of the measurements can be modeled by a [Poisson Distrobution](https:
 For each measurement we have 1 count number. From the [Photonic State Tomography](http://research.physics.illinois.edu/QI/Photonics/tomography-files/amo_tomo_chapter.pdf) paper, the distribution of the counts follows:
 
 $$n_i \sim \text{Poiss}(\mu_{i}) \xrightarrow{\text{CLT}}
-       n_i \sim \text{Norm}(\mu_{i},\sigma_i)$$
-$$\mu_{i} = I_0 I_i \text{Tr}\left( M'_i \rho \right) + a_i$$
+       n_i \sim \text{Norm}(\mu_{i},\sigma_i) \;,$$
+$$\mu_{i} = I_0 I_i \text{Tr}\left( M'_i \rho \right) + a_i \;.$$
 
 ### Variables:
 
@@ -42,7 +42,7 @@ $$\mu_{i} = I_0 I_i \text{Tr}\left( M'_i \rho \right) + a_i$$
 - $a_i$ : Is the predicted accidental counts for measurement i.
 
 ### log-Likelyhood
-
+$$\Like(\rho) = \text{Pr}(\text{Data}|\rho) \;,$$
 $$\Like(\rho) = \prod_{i=1}^m \text{Pr}(n_i|\mu_i)$$
 $$\Like(\rho) = \prod_{i=1}^m \frac{1}{\sqrt{\sigma_i2\pi}}
                 \exp\left( -\frac{(n_i-\mu_i)^2}{2\sigma_i^2} \right)$$
@@ -61,8 +61,8 @@ For each measurement a complete number of counts on all the possible outcomes. W
 
 From the [Photonic State Tomography](http://research.physics.illinois.edu/QI/Photonics/tomography-files/amo_tomo_chapter.pdf) paper:
 
-$$n_{ij} \sim \text{Poiss}(\mu_{ij}) \xrightarrow{\text{CLT}} n_{ij} \sim \text{Norm}(\mu_{ij},\sigma_{ij})$$
-$$\mu_{ij} = I_0 I_i E_j \text{Tr}\left( M'_{ij} \rho \right) + a_{ij}$$
+$$n_{ij} \sim \text{Poiss}(\mu_{ij}) \xrightarrow{\text{CLT}} n_{ij} \sim \text{Norm}(\mu_{ij},\sigma_{ij})\;,$$
+$$\mu_{ij} = I_0 I_i E_j \text{Tr}\left( M'_{ij} \rho \right) + a_{ij}\;.$$
 
 ### Variables:
 
@@ -80,6 +80,7 @@ $$\mu_{ij} = I_0 I_i E_j \text{Tr}\left( M'_{ij} \rho \right) + a_{ij}$$
 
 ### log-Likelyhood
 
+$$\Like(\rho) = \text{Pr}(\text{Data}|\rho)$$
 $$\Like(\rho) = \prod_{i=1}^m \prod_{j=1}^k  \text{Pr}(n_{ij}|\mu_{ij})$$
 $$\Like(\rho) = \prod_{i=1}^m \prod_{j=1}^k  \frac{1}{\sqrt{\sigma_{ij}2\pi}}
                 \exp\left( -\frac{(n_{ij}-\mu_{ij})^2}{2\sigma_{ij}^2} \right)$$
@@ -147,10 +148,17 @@ We need to specify 2 states per measurement. The first is the state that the fir
 # Estimators
 
 ## Maximum Likelyhood Estimator(MLE)
-The MLE estimator is found by maximizing the log of the likelyhood function
+The MLE estimator is found by maximizing the log of the likelyhood function:
 
 $$\rho_\text{MLE} =
-\operatorname*{argmin}_{\rho} \text{log}(\Like(\rho))$$
+\operatorname*{argmin}_{\rho} -\text{log}(\Like(\rho)) \; .$$
+
+## Hedged Maximum Likelyhood Estimator(HMLE)
+Hedged maximum likelihood is a simple modification of the maximum likelihood approach. Instead of maximizing the likelihood, the estimate is the one that maximizes the product of the likelihood with the following hedge function:
+$$h(\rho)=\operatorname{det}(\rho)^{\beta} \mid \beta \in\left[0, \frac{1}{2}\right] \;,$$
+$$\rho_{\mathrm{HMLE}}=\underset{\rho}{\operatorname{argmin}}-\log (\mathcal{L}(\rho) h(\rho)) \;.$$
+
+The value of Beta can be defined in the conf settings; default is 1/2. Robin Blume-Kohout covers the hedged likelihood function in more detail in the paper titled [Hedged Maximum Likelihood Estimation](https://arxiv.org/pdf/1001.2029.pdf).
 
 ## Bayesian Estimator(BME)
 The Bayes estimator is the expected value of the posterior
@@ -174,3 +182,14 @@ $$\hat\rho_\text{BME} \propto \sum_i \rho_i\text{Pr}(\text{Data}|\rho)$$
 
 - $\rho_i \sim \text{Pr}(\rho | \text{Data})$ is a random sample from posterior
 $$\hat\rho_\text{BME} \propto \sum_i \rho_i$$
+
+# Parameterization
+During the optimization we parameterize the density matrix as follows in order to ensure we are only considering valid density matrices:
+
+$$\rho=T T^{\dagger} \;,$$
+$$T=\begin{bmatrix}
+t_{1} & 0 & \ldots & 0 \\
+t_{2^{n}+1}+i t_{2^{n}+2} & t_{2} & \ldots & 0 \\
+\ldots & \ldots & \ldots & 0 \\
+t_{4^{n}-1}+i t_{4^{n}} & t_{4^{n}-3}+i t_{4^{n}-2} & t_{4^{n}-5}+i t_{4^{n}-4} & t_{2 n}
+\end{bmatrix}\;.$$
