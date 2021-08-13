@@ -282,7 +282,7 @@ def matrixToHTML(M, printEigenVals = False):
     if(printEigenVals):
         d, v = np.linalg.eig(M)
         sum = 0
-        eigenVals = "<h5>Eigen Values: "
+        eigenVals = "<h5>Eigen Values : "
         for x in range(0, len(d)):
             eigenVals = eigenVals+str(round(d[x].real, 5))
             if(abs(d[x].imag)>.00001):
@@ -292,7 +292,7 @@ def matrixToHTML(M, printEigenVals = False):
             eigenVals = eigenVals+" , "
             sum+= d[x]
         eigenVals = str(eigenVals)[0:len(str(eigenVals))-2]
-        eigenVals = eigenVals+" = "+floatToString(sum, True)+"</h5>"
+        eigenVals = eigenVals +"</h5>"
         res = res+eigenVals
     return res
 
@@ -318,17 +318,21 @@ See Also
 matrixToHTML
 """
 def propertiesToHTML(vals):
-    f = '<h3 >Properties of Rho</h3><table style = \"width:60%;margin-top:10px;font-size: 15px;padding-bottom:5px;float:none;\"><tr><td style = "font-size: 20;font-weight: 1000;color: rebeccapurple;">Property</td><td  style = "font-size: 20;font-weight: 1000;color: rebeccapurple;padding-bottom:5px;">Value</td>'
-    if(vals.shape[1] < 3):
+    f = '<h3 >Properties of Rho</h3><table style = \"width:60%;margin-top:10px;font-size: 15px;padding-bottom:5px;float:none;\"><tr><td style = "font-size: 20;font-weight: 1000;color: rebeccapurple;">Property</td>'
+    hasSTD = len(vals) > 2
+    if hasSTD and any(vals[:,2] != "NA"):
+        f += '<td  style = "font-size: 20;font-weight: 1000;color: rebeccapurple;padding-bottom:5px;">Average Value</td>'
+        f += '<td style = "font-size: 20;font-weight: 1000;color: rebeccapurple;padding-bottom:5px;">STD Error</td></tr>'
         f += '<td style = "font-size: 20;font-weight: 1000;color: rebeccapurple;padding-bottom:5px;"></td></tr>'
     else:
-        f += '<td style = "font-size: 20;font-weight: 1000;color: rebeccapurple;padding-bottom:5px;"> STD Deviation </td></tr>'
+        f += '<td  style = "font-size: 20;font-weight: 1000;color: rebeccapurple;padding-bottom:5px;">Value</td>'
+        f += '<td style = "font-size: 20;font-weight: 1000;color: rebeccapurple;padding-bottom:5px;"></td></tr>'
     for v in vals:
         if(v[1] != "NA"):
             f += '<tr>'
             f += '<td><div onmouseover = "Tip( ' + v[0].replace(" ", "") + 'Tip)" onmouseout = "hideTip()">'+v[0] + '</td>'
             f += '<td name = "' + v[0].replace(" ", "") + '_value">' + floatToString(v[1], True) + '</td>'
-            if (len(v) > 2 and v[2] != ""):
+            if hasSTD and v[2] != "NA":
                 f += '<td> +/- ' + floatToString(v[2], True) + '</td>'
             else:
                 f += "<td></td>"
