@@ -282,7 +282,7 @@ def matrixToHTML(M, printEigenVals = False):
     if(printEigenVals):
         d, v = np.linalg.eig(M)
         sum = 0
-        eigenVals = "<h5>Eigen Values : "
+        eigenVals = "<h5>Eigenvalues: "
         for x in range(0, len(d)):
             eigenVals = eigenVals+str(round(d[x].real, 5))
             if(abs(d[x].imag)>.00001):
@@ -321,16 +321,16 @@ def propertiesToHTML(vals):
     f = '<h3 >Properties of Rho</h3><table style = \"width:60%;margin-top:10px;font-size: 15px;padding-bottom:5px;float:none;\"><tr><td style = "font-size: 20;font-weight: 1000;color: rebeccapurple;">Property</td>'
     hasSTD = len(vals) > 2
     if hasSTD and any(vals[:,2] != "NA"):
-        f += '<td  style = "font-size: 20;font-weight: 1000;color: rebeccapurple;padding-bottom:5px;">Average Value</td>'
+        f += '<td style = "font-size: 20;font-weight: 1000;color: rebeccapurple;padding-bottom:5px;">Average Value</td>'
         f += '<td style = "font-size: 20;font-weight: 1000;color: rebeccapurple;padding-bottom:5px;">STD Error</td></tr>'
         f += '<td style = "font-size: 20;font-weight: 1000;color: rebeccapurple;padding-bottom:5px;"></td></tr>'
     else:
-        f += '<td  style = "font-size: 20;font-weight: 1000;color: rebeccapurple;padding-bottom:5px;">Value</td>'
+        f += '<td style = "font-size: 20;font-weight: 1000;color: rebeccapurple;padding-bottom:5px;">Value</td>'
         f += '<td style = "font-size: 20;font-weight: 1000;color: rebeccapurple;padding-bottom:5px;"></td></tr>'
     for v in vals:
         if(v[1] != "NA"):
             f += '<tr>'
-            f += '<td><div onmouseover = "Tip( ' + v[0].replace(" ", "") + 'Tip)" onmouseout = "hideTip()">'+v[0] + '</td>'
+            f += '<td><div onmouseover = "Tip( ' + v[0].replace(" ", "") + 'Tip)" onmouseout = "hideTip()"><a style="cursor:help;">'+v[0] + '</a></td>'
             f += '<td name = "' + v[0].replace(" ", "") + '_value">' + floatToString(v[1], True) + '</td>'
             if hasSTD and v[2] != "NA":
                 f += '<td> +/- ' + floatToString(v[2], True) + '</td>'
