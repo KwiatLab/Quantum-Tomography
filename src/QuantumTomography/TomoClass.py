@@ -41,6 +41,10 @@ class Tomography():
     # conf['Window']: 0 or array like, dimension = 1
     # conf['Efficiency']: 0 or array like, dimension = 1
     # conf['Beta']: 0 to 0.5, depending on purity of state and total number of measurements.
+    # conf['ftol']: Relative error desired in the sum of squares. Passed directly to scipy.optimize.leastsq
+    # conf['xtol']: Relative error desired in the approximate solution. Passed directly to scipy.optimize.leastsq
+    # conf['gtol']: Orthogonality desired between the function vector and the columns of the Jacobian. Passed directly to scipy.optimize.leastsq
+    # conf['maxfev']: The maximum number of calls to the function. Passed directly to scipy.optimize.leastsq
 
     # tomo_input: array like, dimension = 2.
     # input data of the last tomography run.
@@ -78,7 +82,7 @@ class Tomography():
                               ('Crosstalk', np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])),
                               ('Bellstate', 0),('DoDriftCorrection', 0), ('DoAccidentalCorrection', 0),
                               ('DoErrorEstimation', 0),('Window', [1]),('Efficiency', [1]),('RhoStart', []),
-                              ('Beta', 0)])
+                              ('Beta', 0),('ftol', 1.49012e-08),('xtol', 1.49012e-08),('gtol', 0.0),('maxfev', 0)])
         self.err_functions = ['concurrence', 'tangle', 'entropy', 'linear_entropy', 'negativity', 'purity']
         self.mont_carlo_states = list()
     """
@@ -90,13 +94,15 @@ class Tomography():
     ----------
     setting : string
         The setting you want to update.
-        Possible values are ['NQubits', 'NDetectors', 'Crosstalk', 'Bellstate', 'DoDriftCorrection', 'DoAccidentalCorrection', 'DoErrorEstimation', 'Window', 'Efficiency', 'RhoStart', 'Beta']
+        Possible values are ['NQubits', 'NDetectors', 'Crosstalk', 'Bellstate', 'DoDriftCorrection', 
+        'DoAccidentalCorrection', 'DoErrorEstimation', 'Window', 'Efficiency', 'RhoStart', 'Beta','ftol','xtol','gtol'
+        'maxfev']
     val : ndarray, int, or string
             The new value you want to the setting to be.
     """
     def setConfSetting(self, setting, val):
         warnings.warn('As of v1.0.3.7 setConfSetting() is no longer needed to set a conf setting. '
-                                 'Settings can now be set directly like a normal dictionary.', DeprecationWarning)
+                                 'Settings can now be set directly like a normal dictionary. ex: tomo.conf["DoDriftCorrection"] = 1', DeprecationWarning)
         if (isinstance(val, str)):
             if (val.lower() == "yes" or val.lower() == "true"):
                 valC = 1
@@ -339,7 +345,12 @@ class Tomography():
         coincidences = np.real(coincidences)
         coincidences = coincidences.flatten()
 
-        final_tvals = leastsq(maxlike_fitness, np.real(starting_tvals), args = (coincidences, accidentals, measurements, overall_norms))[0]
+        final_tvals = leastsq(maxlike_fitness, np.real(starting_tvals),
+                              args = (coincidences, accidentals, measurements, overall_norms),
+                              ftol=self.conf["ftol"],
+                              xtol=self.conf["xtol"],
+                              gtol=self.conf["gtol"],
+                              maxfev=self.conf["maxfev"])[0]
         fvalp = np.sum(maxlike_fitness(final_tvals, coincidences, accidentals, measurements, overall_norms) ** 2)
 
         final_matrix = t_to_density(final_tvals, normalize=False)
@@ -394,9 +405,12 @@ class Tomography():
 
         bet = self.conf['Beta']
         if bet > 0:
-            final_tvals = \
-                leastsq(maxlike_fitness_hedged, np.real(starting_tvals),
-                        args=(coincidences, accidentals, measurements, bet, overall_norms))[0]
+            final_tvals = leastsq(maxlike_fitness_hedged, np.real(starting_tvals),
+                                  args=(coincidences, accidentals, measurements, bet, overall_norms),
+                                  ftol=self.conf["ftol"],
+                                  xtol=self.conf["xtol"],
+                                  gtol=self.conf["gtol"],
+                                  maxfev=self.conf["maxfev"])[0]
             fvalp = np.sum(maxlike_fitness_hedged(final_tvals, coincidences, accidentals, measurements, bet,
                                                       overall_norms) ** 2)
         else:
