@@ -194,7 +194,7 @@ class Tomography():
         The relative efficienies between your detector pairs.
     time :  1darray with length = Number of measurements (optional)
         The total duration of each measurment.
-    singles : ndarray shape = ( Number of measurements , 2*NQubits ) (optional)
+    singles : ndarray shape = ( Number of measurements , NDetectors*NQubits ) (optional)
         The singles counts on each detector.
     window : 1darray with length = NQubits*NDetectors (optional)
         The coincidence window duration for each detector pair.
@@ -227,7 +227,7 @@ class Tomography():
     Parameters
     ----------
     tomo_input : ndarray
-        The input data for the current tomography. Example can be seen at top of page.
+        The input data for the current tomography.
     intensities : 1darray with length = number of measurements (optional)
         Relative pump power (arb. units) during measurement; used for drift correction. Default will be an array of ones
     method : ['MLE','HMLE','BME','LINER'] (optional)
@@ -769,7 +769,7 @@ class Tomography():
     Parameters
     ----------
     tomo_input : ndarray
-        The input data for the current tomography. Example can be seen at top of page.
+        The input data for the current tomography.
 
     Returns
     -------
@@ -980,7 +980,7 @@ class Tomography():
                 raise ValueError("Invalid window array")
         else:
             time = np.ones(measurements.shape[0])
-            singles = np.zeros((measurements.shape[0],self.conf["NQubits"]))
+            singles = np.zeros((measurements.shape[0],self.getNumSingles()))
             self.conf['Window'] = window
 
 
@@ -1025,7 +1025,6 @@ class Tomography():
             # measurements
             tomo_input[:, 2 ** n_qubit + 2 * n_qubit + 1: 2 ** n_qubit + 4 * n_qubit + 1] = measurements
 
-
         return tomo_input
 
     """
@@ -1051,7 +1050,7 @@ class Tomography():
         elif self.conf['NDetectors'] == 2:
             try:
                 eff = np.array(self.conf['Efficiency'],dtype=float)
-                if isinstance(eff,int):
+                if isinstance(self.conf['Efficiency'],int):
                     eff = np.ones(self.getNumCoinc())
                 if len(eff.shape) != 1 or len(eff) != self.getNumCoinc():
                     raise
@@ -1149,10 +1148,7 @@ class Tomography():
     Desc: Returns the number of singles per measurement for the current configurations.
     """
     def getNumSingles(self):
-        if (self.conf['NDetectors'] == 2):
-            return 2 * self.conf['NQubits']
-        else:
-            return self.conf['NQubits']
+        return self.conf['NDetectors']*self.conf['NQubits']
 
     """
     getNumDetPerQubit()
@@ -1223,7 +1219,7 @@ class Tomography():
     Returns
     -------
     Tomoinput : ndarray
-        The input data for the current tomography.Example can be seen at top of page.
+        The input data for the current tomography.
     """
     def getTomoInputTemplate(self, numBits = -1,numDet = -1):
         # check if numBits is an int
