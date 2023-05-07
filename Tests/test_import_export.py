@@ -5,13 +5,25 @@ import numpy.testing as tests
 from TestRun import runTests
 import os
 
+"""
+Copyright 2020 University of Illinois Board of Trustees.
+Licensed under the terms of an MIT license
+"""
+
+
+"""CHECK OUT THE REFERENCE PAGE ON OUR WEBSITE :
+https://quantumtomo.web.illinois.edu/Doc/"""
+
+"Attention! These tests run on the version that your environment uses. See readme for details"
+
+
 # Run tomographies
 [[Tomo_Object_1, Fidelity_with_Original, Original_Purity, Total_Time]] = runTests(1,1)
 [[Tomo_Object_2, Fidelity_with_Original, Original_Purity, Total_Time]] = runTests(2,1)
 [[Tomo_Object_3, Fidelity_with_Original, Original_Purity, Total_Time]] = runTests(2,1,test2Det=True,testAccCorr=True,testCrossTalk=True,testDrift=True,testBell=True,errBounds=3,method="linear")
 
 
-class Test_Functions(unittest.TestCase):
+class Test_Import_Export(unittest.TestCase):
 
     def test_eval(self):
         filename = "Test_States/rand_eval.txt"
@@ -97,6 +109,10 @@ class Test_Functions(unittest.TestCase):
             Fixed_Tomo_Objs[i].importEval("Test_States/fixed_eval_" + str(i) + ".txt")
             Fixed_Tomo_Objs[i].printLastOutput()
             qLib.printLastOutput(Fixed_Tomo_Objs[i])
+
+    def test_video_example(self):
+        q = qLib.Tomography()
+        [rho_approx, intensity, fval] = q.importEval(r"../ExampleFiles/pythoneval_video.txt")
 
 
 if __name__ == '__main__':
