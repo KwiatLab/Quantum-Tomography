@@ -263,7 +263,6 @@ class Tomography():
         starting_matrix = self.conf['RhoStart']
         if method.upper() == "LINEAR" or not isinstance(starting_matrix,np.ndarray):
             try:
-                # todo: go over linear tomography. Clean it up. Figure out why it fails on the very rare occasion.
                 [starting_matrix,inten_linear] = self.tomography_LINEAR(coincidences, measurements_pures,overall_norms)
                 # Currently linear tomography gets the phase wrong. So a temporary fix is to just transpose it.
                 starting_matrix = starting_matrix.transpose()
@@ -271,7 +270,6 @@ class Tomography():
                 starting_matrix = starting_matrix / np.trace(starting_matrix)
             except:
                 raise RuntimeError('Failed to run linear Tomography')
-
 
         # Run tomography and find an estimate for the state
         if method == "MLE":
@@ -728,39 +726,30 @@ class Tomography():
     intensity : float
         The predicted overall intensity used to normalize the state.
     """
-    def tomography_LINEAR(self, coincidences, measurements, overall_norms=-1,m_set = ()):
+
+    def tomography_LINEAR(self, coincidences, measurements, overall_norms=-1):
         # If overall_norms not given then assume uniform
         if not isinstance(overall_norms,np.ndarray):
             overall_norms = np.ones(coincidences.shape[0])
         elif not (len(overall_norms.shape) == 1 and overall_norms.shape[0] == coincidences.shape[0]):
             raise ValueError("Invalid intensities array")
 
-        if m_set == ():
-            m_set = independent_set(measurements)
-        if np.isscalar(m_set):
-            n = len(coincidences)
-            linear_measurements = measurements
-            linear_data = coincidences
-        else:
-            n = int(np.sum(m_set))
-            linear_measurements = measurements[(np.rot90(m_set == 1.0)[0])]
-            linear_data = coincidences[(np.rot90(m_set == 1.0)[0])]
+        coincidences = coincidences.flatten()
 
-        linear_rhog = np.zeros([measurements.shape[1], measurements.shape[1]])
+        pauli_basis = generalized_pauli_basis(self.getNumQubits())
+        stokes_measurements = np.array([get_stokes_parameters(m,pauli_basis) for m in measurements]) / 2**self.getNumQubits()
+        freq_array = coincidences / overall_norms
 
-        b = b_matrix(linear_measurements)
-        b_inv = np.linalg.inv(b)
-
-        m = np.zeros([measurements.shape[1], measurements.shape[1], n]) + 0j
-        for j in range(n):
-            m[:, :, j] = m_matrix(j, linear_measurements, b_inv)
-            linear_rhog = linear_rhog + linear_data[j] * m[:, :, j]
+        B_inv = np.linalg.inv(np.matmul(stokes_measurements.T,stokes_measurements))
+        stokes_params = np.matmul(stokes_measurements.T,freq_array)
+        stokes_params = np.matmul(B_inv,stokes_params)
+        linear_rhog = np.multiply(pauli_basis,stokes_params[:, np.newaxis,np.newaxis])
+        linear_rhog = np.sum(linear_rhog,axis=0)
 
         intensity = np.trace(linear_rhog)
         rhog = linear_rhog / intensity
 
         return [rhog, intensity]
-
 
     """
     filter_data(tomo_input)
