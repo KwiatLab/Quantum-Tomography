@@ -686,29 +686,6 @@ def random_bell_state(N=2):
 
 
 """
-random_ginibre(D)
-Desc: Returns a random matrix from the Ginibre ensemble of size DxD. 
-This is a complex matrix whos elements are a+ib | a,b iid. Norm(0,1)
-
-Parameters
-----------
-D :int
-    The dimension of the Matrix
-
-Returns
--------
-mat : ndarray with shape = (2^N, 2^N)
-    The random matrix
-"""
-def random_ginibre(D=2):
-    mat = np.zeros((D, D), dtype=complex)
-    for i in range(D):
-        for j in range(D):
-            mat[i, j] = rand.normal(0, 1) + rand.normal(0, 1) * 1j
-
-    return mat
-
-"""
 densityOperation(D)
 Desc: Performs the operation on the density matrix
 
