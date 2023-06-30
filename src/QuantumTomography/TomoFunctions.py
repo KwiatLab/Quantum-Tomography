@@ -133,6 +133,56 @@ def toDensity(psiMat):
     psiMat = np.outer(psiMat, psiMat.conj())
     return psiMat / np.trace(psiMat)
 
+pauli_matrices = np.array([[[1,0],[0,1]],
+                           [[0,1],[1,0]],
+                           [[0,-1j],[1j,0]],
+                           [[1,0],[0,-1]],],dtype=complex)
+"""
+generalized_pauli_basis(num_qubits)
+Desc: Returns a set of pauli matrices.
+
+Parameters
+----------
+num_qubits : int
+    Number of qubits to define the dimensionality of the basis.
+
+Returns
+-------
+basis : ndarray with shape = (4^numQubits, 2^numQubits, 2^numQubits)
+    Pauli Basis
+    """
+def generalized_pauli_basis(num_qubits):
+    if num_qubits == 1:
+        return pauli_matrices
+    else:
+        return np.kron(generalized_pauli_basis(num_qubits-1),pauli_matrices)
+
+
+"""
+get_stokes_parameters(state,basis)
+Desc: Given a density or pure state, return the stokes parameters.
+
+Parameters
+----------
+state : Pure State or Density
+    Given State
+basis : ndarray with shape = (4^numQubits, 2^numQubits, 2^numQubits)
+    Pauli Basis
+
+Returns
+-------
+stokes : ndarray with length = 4^numQubits
+    The stokes parameters for state
+    """
+def get_stokes_parameters(state,basis=None):
+    if basis is None:
+        num_qubits = np.log2(state.shape[0])
+        num_qubits = int(num_qubits)
+        basis = generalized_pauli_basis(num_qubits)
+    if isStateVector(state):
+        state = toDensity(state)
+    stokes = np.array([np.trace(np.matmul(state,b)) for b in basis])
+    return stokes
 
 """
 t_matrix(t)
@@ -170,16 +220,20 @@ Parameters
 ----------
 t : ndarray
     List of t values converted.
+normalize : bool
+    Set to true if you want the density matrix to be normalized by its trace. 
+    Default is True.
 
 Returns
 -------
 rhog : ndarray
     Density Matrix.
     """
-def t_to_density(t):
+def t_to_density(t,normalize=True):
     tm = t_matrix(t)
-    rhog = np.dot(tm,tm.conj().transpose())
-    rhog = rhog / np.trace(rhog)
+    rhog = np.dot(tm,tm.T.conj())
+    if normalize:
+        rhog = rhog / np.trace(rhog)
     return rhog
 
 """

@@ -41,6 +41,10 @@ class Tomography():
     # conf['Window']: 0 or array like, dimension = 1
     # conf['Efficiency']: 0 or array like, dimension = 1
     # conf['Beta']: 0 to 0.5, depending on purity of state and total number of measurements.
+    # conf['ftol']: Relative error desired in the sum of squares. Passed directly to scipy.optimize.leastsq
+    # conf['xtol']: Relative error desired in the approximate solution. Passed directly to scipy.optimize.leastsq
+    # conf['gtol']: Orthogonality desired between the function vector and the columns of the Jacobian. Passed directly to scipy.optimize.leastsq
+    # conf['maxfev']: The maximum number of calls to the function. Passed directly to scipy.optimize.leastsq
 
     # tomo_input: array like, dimension = 2.
     # input data of the last tomography run.
@@ -78,7 +82,7 @@ class Tomography():
                               ('Crosstalk', np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])),
                               ('Bellstate', 0),('DoDriftCorrection', 0), ('DoAccidentalCorrection', 0),
                               ('DoErrorEstimation', 0),('Window', [1]),('Efficiency', [1]),('RhoStart', []),
-                              ('Beta', 0)])
+                              ('Beta', 0),('ftol', 1.49012e-08),('xtol', 1.49012e-08),('gtol', 0.0),('maxfev', 0)])
         self.err_functions = ['concurrence', 'tangle', 'entropy', 'linear_entropy', 'negativity', 'purity']
         self.mont_carlo_states = list()
     """
@@ -90,13 +94,15 @@ class Tomography():
     ----------
     setting : string
         The setting you want to update.
-        Possible values are ['NQubits', 'NDetectors', 'Crosstalk', 'Bellstate', 'DoDriftCorrection', 'DoAccidentalCorrection', 'DoErrorEstimation', 'Window', 'Efficiency', 'RhoStart', 'Beta']
+        Possible values are ['NQubits', 'NDetectors', 'Crosstalk', 'Bellstate', 'DoDriftCorrection', 
+        'DoAccidentalCorrection', 'DoErrorEstimation', 'Window', 'Efficiency', 'RhoStart', 'Beta','ftol','xtol','gtol'
+        'maxfev']
     val : ndarray, int, or string
             The new value you want to the setting to be.
     """
     def setConfSetting(self, setting, val):
         warnings.warn('As of v1.0.3.7 setConfSetting() is no longer needed to set a conf setting. '
-                                 'Settings can now be set directly like a normal dictionary.', DeprecationWarning)
+                                 'Settings can now be set directly like a normal dictionary. ex: tomo.conf["DoDriftCorrection"] = 1', DeprecationWarning)
         if (isinstance(val, str)):
             if (val.lower() == "yes" or val.lower() == "true"):
                 valC = 1
@@ -162,8 +168,10 @@ class Tomography():
     def importEval(self, evaltxt):
         conf = self.conf
         exec(compile(open(evaltxt, "rb").read(), evaltxt, 'exec'))
-        return self.StateTomography_Matrix(locals().get('tomo_input'), locals().get('intensity'),method=self.conf["method"])
-
+        if "method" in self.conf.keys():
+            return self.StateTomography_Matrix(locals().get('tomo_input'), locals().get('intensity'),method=self.conf["method"])
+        else:
+            return self.StateTomography_Matrix(locals().get('tomo_input'), locals().get('intensity'))
 
     # # # # # # # # # # # # # #
     '''Tomography Functions'''
@@ -186,7 +194,7 @@ class Tomography():
         The relative efficienies between your detector pairs.
     time :  1darray with length = Number of measurements (optional)
         The total duration of each measurment.
-    singles : ndarray shape = ( Number of measurements , 2*NQubits ) (optional)
+    singles : ndarray shape = ( Number of measurements , NDetectors*NQubits ) (optional)
         The singles counts on each detector.
     window : 1darray with length = NQubits*NDetectors (optional)
         The coincidence window duration for each detector pair.
@@ -219,7 +227,7 @@ class Tomography():
     Parameters
     ----------
     tomo_input : ndarray
-        The input data for the current tomography. Example can be seen at top of page.
+        The input data for the current tomography.
     intensities : 1darray with length = number of measurements (optional)
         Relative pump power (arb. units) during measurement; used for drift correction. Default will be an array of ones
     method : ['MLE','HMLE','BME','LINER'] (optional)
@@ -235,7 +243,7 @@ class Tomography():
         Final value of the internal optimization function. Values greater than the number
         of measurements indicate poor agreement with a quantum state.
     """
-    def StateTomography_Matrix(self, tomo_input, intensities = -1,method="MLE",saveState=True):
+    def StateTomography_Matrix(self, tomo_input, intensities = -1,method="MLE",_saveState=True):
         # define a uniform intensity if not stated
         if (isinstance(intensities, int)):
             self.intensities = np.ones(tomo_input.shape[0])
@@ -255,7 +263,6 @@ class Tomography():
         starting_matrix = self.conf['RhoStart']
         if method.upper() == "LINEAR" or not isinstance(starting_matrix,np.ndarray):
             try:
-                # todo: go over linear tomography. Clean it up. Figure out why it fails on the very rare occasion.
                 [starting_matrix,inten_linear] = self.tomography_LINEAR(coincidences, measurements_pures,overall_norms)
                 # Currently linear tomography gets the phase wrong. So a temporary fix is to just transpose it.
                 starting_matrix = starting_matrix.transpose()
@@ -263,7 +270,6 @@ class Tomography():
                 starting_matrix = starting_matrix / np.trace(starting_matrix)
             except:
                 raise RuntimeError('Failed to run linear Tomography')
-
 
         # Run tomography and find an estimate for the state
         if method == "MLE":
@@ -278,7 +284,7 @@ class Tomography():
         else:
             raise ValueError("Invalid Method name: " + str(method))
 
-        if saveState:
+        if _saveState:
             # save the results
             self.last_rho = rhog.copy()
             self.last_intensity = intensity
@@ -291,9 +297,9 @@ class Tomography():
 
     # This is a temporary function. It's here in case there is old code that still uses state_tomography.
     # Eventually this should be removed in a later version
-    def state_tomography(self, tomo_input, intensities = -1,method="MLE",saveState=True):
+    def state_tomography(self, tomo_input, intensities = -1,method="MLE",_saveState=True):
         warnings.warn('state_tomography will be removed in a future version. It is replaced by StateTomography_Matrix which does the same exact thing.', DeprecationWarning)
-        return self.StateTomography_Matrix(tomo_input,intensities,method,saveState)
+        return self.StateTomography_Matrix(tomo_input,intensities,method,_saveState)
 
     """
     tomography_MLE(starting_matrix, coincidences, measurements, accidentals,overall_norms)
@@ -337,12 +343,15 @@ class Tomography():
         coincidences = np.real(coincidences)
         coincidences = coincidences.flatten()
 
-        final_tvals = leastsq(maxlike_fitness, np.real(starting_tvals), args = (coincidences, accidentals, measurements, overall_norms))[0]
+        final_tvals = leastsq(maxlike_fitness, np.real(starting_tvals),
+                              args = (coincidences, accidentals, measurements, overall_norms),
+                              ftol=self.conf["ftol"],
+                              xtol=self.conf["xtol"],
+                              gtol=self.conf["gtol"],
+                              maxfev=self.conf["maxfev"])[0]
         fvalp = np.sum(maxlike_fitness(final_tvals, coincidences, accidentals, measurements, overall_norms) ** 2)
 
-        final_matrix = t_to_density(final_tvals)
-        final_matrix = t_matrix(final_tvals)
-        final_matrix = np.dot(final_matrix, final_matrix.conj().transpose())
+        final_matrix = t_to_density(final_tvals, normalize=False)
         intensity = np.trace(final_matrix)
         final_matrix = final_matrix / np.trace(final_matrix)
 
@@ -394,15 +403,18 @@ class Tomography():
 
         bet = self.conf['Beta']
         if bet > 0:
-            final_tvals = \
-                leastsq(maxlike_fitness_hedged, np.real(starting_tvals),
-                        args=(coincidences, accidentals, measurements, bet, overall_norms))[0]
+            final_tvals = leastsq(maxlike_fitness_hedged, np.real(starting_tvals),
+                                  args=(coincidences, accidentals, measurements, bet, overall_norms),
+                                  ftol=self.conf["ftol"],
+                                  xtol=self.conf["xtol"],
+                                  gtol=self.conf["gtol"],
+                                  maxfev=self.conf["maxfev"])[0]
             fvalp = np.sum(maxlike_fitness_hedged(final_tvals, coincidences, accidentals, measurements, bet,
                                                       overall_norms) ** 2)
         else:
             raise ValueError("To use Hedged Maximum Likelihood, Beta must be a positive number.")
 
-        final_matrix = t_to_density(final_tvals)
+        final_matrix = t_to_density(final_tvals,normalize=False)
         intensity = np.trace(final_matrix)
         final_matrix = final_matrix / np.trace(final_matrix)
 
@@ -714,39 +726,30 @@ class Tomography():
     intensity : float
         The predicted overall intensity used to normalize the state.
     """
-    def tomography_LINEAR(self, coincidences, measurements, overall_norms=-1,m_set = ()):
+
+    def tomography_LINEAR(self, coincidences, measurements, overall_norms=-1):
         # If overall_norms not given then assume uniform
         if not isinstance(overall_norms,np.ndarray):
             overall_norms = np.ones(coincidences.shape[0])
         elif not (len(overall_norms.shape) == 1 and overall_norms.shape[0] == coincidences.shape[0]):
             raise ValueError("Invalid intensities array")
 
-        if m_set == ():
-            m_set = independent_set(measurements)
-        if np.isscalar(m_set):
-            n = len(coincidences)
-            linear_measurements = measurements
-            linear_data = coincidences
-        else:
-            n = int(np.sum(m_set))
-            linear_measurements = measurements[(np.rot90(m_set == 1.0)[0])]
-            linear_data = coincidences[(np.rot90(m_set == 1.0)[0])]
+        coincidences = coincidences.flatten()
 
-        linear_rhog = np.zeros([measurements.shape[1], measurements.shape[1]])
+        pauli_basis = generalized_pauli_basis(self.getNumQubits())
+        stokes_measurements = np.array([get_stokes_parameters(m,pauli_basis) for m in measurements]) / 2**self.getNumQubits()
+        freq_array = coincidences / overall_norms
 
-        b = b_matrix(linear_measurements)
-        b_inv = np.linalg.inv(b)
-
-        m = np.zeros([measurements.shape[1], measurements.shape[1], n]) + 0j
-        for j in range(n):
-            m[:, :, j] = m_matrix(j, linear_measurements, b_inv)
-            linear_rhog = linear_rhog + linear_data[j] * m[:, :, j]
+        B_inv = np.linalg.inv(np.matmul(stokes_measurements.T,stokes_measurements))
+        stokes_params = np.matmul(stokes_measurements.T,freq_array)
+        stokes_params = np.matmul(B_inv,stokes_params)
+        linear_rhog = np.multiply(pauli_basis,stokes_params[:, np.newaxis,np.newaxis])
+        linear_rhog = np.sum(linear_rhog,axis=0)
 
         intensity = np.trace(linear_rhog)
         rhog = linear_rhog / intensity
 
         return [rhog, intensity]
-
 
     """
     filter_data(tomo_input)
@@ -755,7 +758,7 @@ class Tomography():
     Parameters
     ----------
     tomo_input : ndarray
-        The input data for the current tomography. Example can be seen at top of page.
+        The input data for the current tomography.
 
     Returns
     -------
@@ -835,36 +838,14 @@ class Tomography():
                                                                     measurements_densities.shape[2],
                                                                     measurements_densities.shape[3]))
 
-        # # Old way
-        # measurements_densities = np.zeros([2 ** nbits, 2 ** nbits, np.prod(coinc.shape)], dtype=complex)
-        # for j in range(coinc.shape[0]):
-        #     m_twiddle = np.zeros([2 ** nbits, 2 ** nbits, 2 ** nbits]) + 0j
-        #     u = 1
-        #     for k in range(nbits):
-        #         alpha = MeasBasis[j][2 * k]
-        #         beta = MeasBasis[j][2 * k + 1]
-        #         psi_k = np.array([alpha, beta])
-        #         psip_k = np.array([np.conj(beta), np.conj(-alpha)])
-        #         u_k = np.outer((np.array([1, 0])), psi_k) + np.outer((np.array([0, 1])), psip_k)
-        #         # Changed from tensor_product to np.kron
-        #         u = np.kron(u, u_k)
-        #     if (self.conf['NDetectors'] == 1):
-        #         for k in range(0, 2 ** nbits):
-        #             m_twiddle[k, :, :] = np.outer(u[:, k].conj().transpose(), u[:, k])
-        #
-        #         measurements_pures[j * n_coinc, :] = u[:, 0].conj().transpose()
-        #         for k in range(1):
-        #             for l in range(2 ** nbits):
-        #                 measurements_densities[:, :, j + k] = measurements_densities[:, :, j + k] + m_twiddle[l, :, :] * crosstalk[k, l]
-        #         coincidences = coinc
-        #     else:
-        #         for k in range(2 ** nbits):
-        #             m_twiddle[k, :, :] = np.outer(u[:, k].conj().transpose(), u[:, k])
-        #             measurements_pures[j * n_coinc + k, :] = u[:, k].conj().transpose()
-        #         for k in range(2 ** nbits):
-        #             for l in range(2 ** nbits):
-        #                 measurements_densities[:, :, j * (2 ** nbits) + k] = measurements_densities[:, :, j * (2 ** nbits) + k] + m_twiddle[l, :, :] * \
-        #                                                 crosstalk[k, l]
+        # Normalize measurements
+        for j in range(measurements_pures.shape[0]):
+            norm = np.dot(measurements_pures[j].conj(),measurements_pures[j])
+            measurements_pures[j] = measurements_pures[j]/np.sqrt(norm)
+
+        for j in range(measurements_densities.shape[0]):
+            norm = np.trace(measurements_densities[j])
+            measurements_densities[j] = measurements_densities[j]/norm
 
 
         # Flatten the arrays
@@ -988,7 +969,7 @@ class Tomography():
                 raise ValueError("Invalid window array")
         else:
             time = np.ones(measurements.shape[0])
-            singles = np.zeros((measurements.shape[0],self.conf["NQubits"]))
+            singles = np.zeros((measurements.shape[0],self.getNumSingles()))
             self.conf['Window'] = window
 
 
@@ -1033,7 +1014,6 @@ class Tomography():
             # measurements
             tomo_input[:, 2 ** n_qubit + 2 * n_qubit + 1: 2 ** n_qubit + 4 * n_qubit + 1] = measurements
 
-
         return tomo_input
 
     """
@@ -1059,7 +1039,7 @@ class Tomography():
         elif self.conf['NDetectors'] == 2:
             try:
                 eff = np.array(self.conf['Efficiency'],dtype=float)
-                if isinstance(eff,int):
+                if isinstance(self.conf['Efficiency'],int):
                     eff = np.ones(self.getNumCoinc())
                 if len(eff.shape) != 1 or len(eff) != self.getNumCoinc():
                     raise
@@ -1157,10 +1137,7 @@ class Tomography():
     Desc: Returns the number of singles per measurement for the current configurations.
     """
     def getNumSingles(self):
-        if (self.conf['NDetectors'] == 2):
-            return 2 * self.conf['NQubits']
-        else:
-            return self.conf['NQubits']
+        return self.conf['NDetectors']*self.conf['NQubits']
 
     """
     getNumDetPerQubit()
@@ -1231,7 +1208,7 @@ class Tomography():
     Returns
     -------
     Tomoinput : ndarray
-        The input data for the current tomography.Example can be seen at top of page.
+        The input data for the current tomography.
     """
     def getTomoInputTemplate(self, numBits = -1,numDet = -1):
         # check if numBits is an int
@@ -1354,7 +1331,7 @@ class Tomography():
             if len(test_counts.shape) == 1:
                 test_counts = np.array([test_counts]).T
             test_data = np.concatenate((np.array([time]).T, test_singles, test_counts, meas), axis = 1)
-            [rhop, intenp, fvalp] = self.StateTomography_Matrix(test_data, self.intensities,method=self.conf['method'],saveState=False)
+            [rhop, intenp, fvalp] = self.StateTomography_Matrix(test_data, self.intensities,method=self.conf['method'],_saveState=False)
             self.mont_carlo_states.append([rhop, intenp, fvalp])
         # Restore the last tomo_input matrix to the original one
         self.last_input = last_input
