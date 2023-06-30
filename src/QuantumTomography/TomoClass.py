@@ -84,6 +84,9 @@ class Tomography():
                               ('DoErrorEstimation', 0),('Window', [1]),('Efficiency', [1]),('RhoStart', []),
                               ('Beta', 0),('ftol', 1.49012e-08),('xtol', 1.49012e-08),('gtol', 0.0),('maxfev', 0)])
         self.err_functions = ['concurrence', 'tangle', 'entropy', 'linear_entropy', 'negativity', 'purity']
+        self.tomo_input = None
+        self.intensities = None
+        self.last_input = self.tomo_input
         self.mont_carlo_states = list()
     """
     setConfSetting(setting, val)
@@ -144,7 +147,9 @@ class Tomography():
     """
     def importData(self, datatxt):
         exec(compile(open(datatxt, "rb").read(), datatxt, 'exec'))
-        return self.StateTomography_Matrix(locals().get('tomo_input'), locals().get('intensity'),method=self.conf["method"])
+        self.tomo_input = locals().get('tomo_input')
+        self.intensities = locals().get('intensities')
+        self.last_input = self.tomo_input
 
     """
     importEval(evaltxt)
@@ -168,18 +173,18 @@ class Tomography():
     def importEval(self, evaltxt):
         conf = self.conf
         exec(compile(open(evaltxt, "rb").read(), evaltxt, 'exec'))
-        if "method" in self.conf.keys():
-            return self.StateTomography_Matrix(locals().get('tomo_input'), locals().get('intensity'),method=self.conf["method"])
-        else:
-            return self.StateTomography_Matrix(locals().get('tomo_input'), locals().get('intensity'))
-
+        self.tomo_input = locals().get('tomo_input')
+        self.intensities = locals().get('intensities')
+        self.last_input = self.tomo_input
+        
     # # # # # # # # # # # # # #
     '''Tomography Functions'''
     # # # # # # # # # # # # # #
 
 
     """
-    StateTomography(measurements, counts)
+    StateTomography(measurements, counts, crosstalk=-1, efficiency=0, time=-1, singles=-1, window=0, error=0,
+                        intensities=-1, method="MLE")
     Desc: Main function that runs tomography. This function requires a set of measurements and a set of counts.
 
     Parameters
@@ -221,7 +226,7 @@ class Tomography():
         return self.StateTomography_Matrix(tomo_input, intensities, method=method)
 
     """
-    StateTomography_Matrix(tomo_input, intensities)
+    StateTomography_Matrix(tomo_input, intensities, intensities = None, method="MLE")
     Desc: Main function that runs tomography.
 
     Parameters
@@ -231,7 +236,7 @@ class Tomography():
     intensities : 1darray with length = number of measurements (optional)
         Relative pump power (arb. units) during measurement; used for drift correction. Default will be an array of ones
     method : ['MLE','HMLE','BME','LINER'] (optional)
-            Which method to use to run tomography. Default is MLE
+            Which method to use to run tomography. Default is MLE (Maximum Likelihood Estimation)
 
     Returns
     -------
@@ -243,21 +248,29 @@ class Tomography():
         Final value of the internal optimization function. Values greater than the number
         of measurements indicate poor agreement with a quantum state.
     """
-    def StateTomography_Matrix(self, tomo_input, intensities = -1,method="MLE",_saveState=True):
+    def StateTomography_Matrix(self, tomo_input=None, intensities = None, method="MLE", _saveState=True):
+        if (tomo_input is None and self.tomo_input is None):
+            raise ValueError("tomo_input needs to be defined, either through importEval or input directly as a parameter to StateTomography_Matrix!")
+        elif (tomo_input is not None):
+            self.tomo_input = tomo_input
+            self.last_input = tomo_input
+    
         # define a uniform intensity if not stated
-        if (isinstance(intensities, int)):
-            self.intensities = np.ones(tomo_input.shape[0])
-        elif(len(intensities.shape) == 1 and intensities.shape[0] == tomo_input.shape[0]):
+        if (intensities is None and self.intensities is None):
+            self.intensities = np.ones(self.tomo_input.shape[0])
+        elif(len(intensities.shape) == 1 and intensities.shape[0] == self.tomo_input.shape[0]):
             self.intensities = intensities
         else:
             raise ValueError("Invalid intensities array")
+        
+       
+        
         if any(self.intensities-np.ones_like(self.intensities))>10**-6:
             self.conf['DoDriftCorrection'] = 1
 
         # filter the data
-        self.last_input = tomo_input
         self.conf['Method'] = method
-        [coincidences, measurements_densities, measurements_pures, accidentals,overall_norms] = self.filter_data(tomo_input)
+        [coincidences, measurements_densities, measurements_pures, accidentals,overall_norms] = self.filter_data(self.tomo_input)
 
         # get the starting state from tomography_LINEAR if not defined
         starting_matrix = self.conf['RhoStart']
@@ -277,6 +290,7 @@ class Tomography():
         elif method.upper() == "HMLE":
             [rhog, intensity, fvalp] = self.tomography_HMLE(starting_matrix, coincidences, measurements_densities,
                                                            accidentals, overall_norms)
+        # TODO: Uncomment when BME is working
         # elif method.upper() == "BME":
         #     [rhog, intensity, fvalp] = self.tomography_BME(starting_matrix, coincidences, measurements_densities,accidentals,overall_norms)
         elif method.upper() == "LINEAR":
@@ -302,7 +316,7 @@ class Tomography():
         return self.StateTomography_Matrix(tomo_input,intensities,method,_saveState)
 
     """
-    tomography_MLE(starting_matrix, coincidences, measurements, accidentals,overall_norms)
+    tomography_MLE(starting_matrix, coincidences, measurements, accidentals, overall_norms)
     Desc: Runs tomography using maximum likelyhood estimation.
 
     Parameters
