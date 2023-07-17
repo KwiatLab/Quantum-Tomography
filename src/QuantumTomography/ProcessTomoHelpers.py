@@ -15,10 +15,20 @@ Licensed under the terms of an MIT license
 https://quantumtomo.web.illinois.edu/Doc/"""
 
 
-
-
 """
-Returns the default linearly independent states that span the space for 4 measurements of 6 measurements (default).
+get_default_states(num_measurements=6)
+
+Desc: Returns the default linearly independent states that span the space for 4 measurements of 6 measurements (default).
+
+Parameters
+----------
+num_measurements: int
+    Number of measurement states (either 4 or 6).
+
+Returns
+-------
+default_states: ndarray with shape (num_measurements, 2)
+    The default linearly independent states that span the space.
 """
 def get_default_states(num_measurements=6):
     # H, V, D, A, R, L
@@ -34,8 +44,28 @@ def get_default_states(num_measurements=6):
         raise ValueError("Default States are only defined for 6 and 4 measurements")
 
 """
-Gets the density matrices of the inputs, outputs, and measurement states from the coincidences, 
+get_process_densities(coincidences, input_states, measurement_states)
+
+Desc: Gets the density matrices of the inputs, outputs, and measurement states from the coincidences, 
 input states, and measurement states.
+
+Parameters
+----------
+coincidences : ndarray with shape = (number of measurements, number of measurements)
+    Each column corresponds to an input state, and each row corresponds to a measurement state.
+input_states : ndarray with shape = (number of measurements, 2) or (number of measurements, number of measurements)
+    Each row is a pure state used as an input to the process.
+measurement_states : ndarray with shape = (number of measurements, 2)
+    Each row is a pure state used to measure the state after the process.   
+
+Returns
+-------
+input_densities : ndarray with shape = (NDetectors*number of measurements,2^numQubits, 2^numQubits) 
+    The states that are input into the quantum process in density matrix form.
+measurement_densities: ndarray with shape = (number of measurements, 2, 2)
+    The measurements of the tomography in density matrix form.
+output_densities : ndarray with shape = (NDetectors*number of measurements,2^numQubits, 2^numQubits) 
+    The states that are output from the quantum process in density matrix form.
 """
 def get_process_densities(coincidences, input_states, measurement_states):
     input_densities = {}
@@ -55,7 +85,6 @@ def get_process_densities(coincidences, input_states, measurement_states):
     else:
         raise ValueError("input states must be mx2 matrix of pure states or mxm matrix of measurement counts")
 
-
     for i in range(n_measurements):
         measurement_densities[i] = toDensity(measurement_states[i,:])
 
@@ -63,8 +92,34 @@ def get_process_densities(coincidences, input_states, measurement_states):
 
     return input_densities, measurement_densities, output_densities
 
+
 """
-gets c matrix from Joe Altepeter's Thesis page 69 eq. 4.52
+get_c_matrix(output_densities, measurement_densities)
+
+Desc: 
+
+Calculates the c matrix from the equation 
+
+\varepsilon(\hat{\rho}_j) = \sum_k c_{jk}\hat{\rho}_k 
+
+by least-squares approximation.
+
+See also Joe Altpeter's thesis (http://research.physics.illinois.edu/QI/Photonics/theses/altepeter-thesis.pdf) Page 69, eq. 4.52.
+
+Parameters
+----------
+// TODO: double check these shapes
+output_densities : ndarray with shape = (NDetectors*number of measurements,2^numQubits, 2^numQubits) 
+    The states that are output from the quantum process in density matrix form.
+
+measurement_densities: ndarray with shape = (number of measurements, 2, 2)
+    The measurements of the tomography in density matrix form.        
+
+Returns
+-------
+// TODO: Figure out the shape
+c_matrix : ndarray with shape = 
+    The approximated c matrix
 """
 def get_c_matrix(output_densities, measurement_densities):
     n_measurements = len(measurement_densities.keys())
@@ -83,8 +138,31 @@ def get_c_matrix(output_densities, measurement_densities):
 
     return c_matrix
 
+
 """
-Gets B matrix from Joe Altepeter's thesis page 69 equation 4.53
+get_b_matrix(input_densities, measurement_densities)
+
+Desc: 
+
+Calculates the beta matrix from the equation
+\tilde{E}_m \hat{\rho}_j \tilde{E}_n^\dagger = \sum_k \beta_{jk}^{mn}\hat{\rho}_k
+by least-squares approximation.
+
+See also Joe Altpeter's thesis (http://research.physics.illinois.edu/QI/Photonics/theses/altepeter-thesis.pdf) Page 69, eq. 4.53.
+
+Parameters
+----------
+// TODO: double check these shapes
+input_densities : ndarray with shape = (NDetectors*number of measurements,2^numQubits, 2^numQubits) 
+    The states that are input into the quantum process in density matrix form.
+
+measurement_densities: ndarray with shape = (number of measurements, 2, 2)
+    The measurements of the tomography in density matrix form.
+
+Returns
+-------
+b_matrix : ndarray with shape = (4,4, number of measurements, number of measurements)
+    The approximated beta matrix
 """
 def get_b_matrix(input_densities, measurement_densities):
     n_measurements = len(measurement_densities.keys())
@@ -110,7 +188,30 @@ def get_b_matrix(input_densities, measurement_densities):
     return b_matrix
 
 """
-Constructs the chi matrix from the B and C matrices labeled above.
+construct_chi(b_matrix, c_matrix)
+
+Desc: 
+
+Constructs the \chi matrix from the beta and c matrices given by get_b_matrix() and get_c_matrix().
+
+Each element \chi_{mn} is given by
+
+\chi_{mn} = \sum_{jk} (\beta^-1)_{jk}^{mn} c_{jk}
+
+See also Joe Altpeter's thesis (http://research.physics.illinois.edu/QI/Photonics/theses/altepeter-thesis.pdf) Page 70, eq. 4.55.
+
+Parameters
+----------
+b_matrix : ndarray with shape = (4,4, number of measurements, number of measurements)
+    The approximated beta matrix
+
+// TODO: Figure out shape
+c_matrix: ndarray with shape = 
+    The approximated c matrix
+Returns
+-------
+chi_matrix : ndarray with shape = (4,4, number of measurements, number of measurements)
+    The constructed chi matrix
 """
 def construct_chi(b_matrix, c_matrix):
     n_measurements = b_matrix.shape[2]
@@ -127,13 +228,17 @@ def construct_chi(b_matrix, c_matrix):
     chi_matrix = chi_matrix / np.trace(chi_matrix)
     return chi_matrix
 
-
-
-
-
 """
-Returns the pauli matrices for use in Process Tomography
+get_paulis()
+
+Desc: Returns the Pauli matrices for use in Process Tomography
+
+Returns
+-------
+default_paulis : dictionary with keys [0,1,2,3] and values as ndarray with shape = (2,2)
+    A dictionary containing the default Pauli matrices.
 """
+
 def get_paulis():
     default_paulis = {
         0: np.array([[1, 0], [0, 1]], dtype=complex),
