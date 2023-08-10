@@ -2,7 +2,7 @@ import numpy as np
 import scipy
 from .TomoClass import Tomography
 from .TomoClassHelpers import t_to_density
-from .TomoFunctions import toDensity
+from .TomoFunctions import toDensity, generalized_pauli_basis
 
 
 """
@@ -121,20 +121,21 @@ Returns
 c_matrix : ndarray with shape = 
     The approximated c matrix
 """
-def get_c_matrix(output_densities, measurement_densities):
-    n_measurements = len(measurement_densities.keys())
+def get_c_matrix(output_densities, measurement_densities, num_qubits = 1):
+
+    n_measurements = measurement_densities.shape[0]
 
     # flattening the measurement densities into a single matrix so that the c matrix can be solved for.
     # each column of this matrix is a 2x2 measurement density flattened into its 4 elements
-    flattened_measurements = np.zeros((4,n_measurements), dtype=complex)
+    flattened_measurements = np.zeros((measurement_densities.shape[1]**2,n_measurements), dtype=complex)
     for i in range(n_measurements):
-        flattened_measurements[:,i] = np.ndarray.flatten(measurement_densities[i])
+        flattened_measurements[:,i] = measurement_densities[i].flatten()
 
-    c_matrix = np.zeros((n_measurements, n_measurements))
+    c_matrix = np.zeros((n_measurements, n_measurements), dtype=complex)
 
     for i in range(n_measurements):
-        current_output_rho_flat = np.ndarray.flatten(output_densities[i])
-        c_matrix[i,:] = np.linalg.lstsq(flattened_measurements, current_output_rho_flat)[0]
+        current_output_rho_flat = output_densities[i].flatten()
+        c_matrix[i,:] = np.linalg.lstsq(flattened_measurements, current_output_rho_flat, rcond=None)[0]
 
     return c_matrix
 
@@ -164,26 +165,26 @@ Returns
 b_matrix : ndarray with shape = (4,4, number of measurements, number of measurements)
     The approximated beta matrix
 """
-def get_b_matrix(input_densities, measurement_densities):
-    n_measurements = len(measurement_densities.keys())
+def get_b_matrix(input_densities, measurement_densities, num_qubits=1):
+
+    n_measurements = measurement_densities.shape[0]
 
     # flattening the measurement densities into a single matrix so that the c matrix can be solved for.
     # each column of this matrix is a 2x2 measurement density flattened into its 4 elements
-    flattened_measurements = np.zeros((4, n_measurements), dtype=complex)
+    flattened_measurements = np.zeros((measurement_densities.shape[1]**2,n_measurements), dtype=complex)
     for i in range(n_measurements):
-        flattened_measurements[:, i] = np.ndarray.flatten(measurement_densities[i])
+        flattened_measurements[:,i] =measurement_densities[i].flatten()
 
-    b_matrix = np.zeros((4, 4, n_measurements, n_measurements), dtype=complex)
-    paulis = get_paulis()
-
+    b_matrix = np.zeros((4**num_qubits, 4**num_qubits, n_measurements, n_measurements), dtype=complex)
+    paulis = generalized_pauli_basis(num_qubits) 
     # equation 4.53 in Joe Altepeter's thesis, solving for the elements of B
-    for m in range(4):
-        for n in range(4):
+    for m in range(4**num_qubits):
+        for n in range(4**num_qubits):
             for j in range(n_measurements):
                 current_input = paulis[m] @ input_densities[j] @ paulis[n].conj().transpose()
-                current_input_flat = np.ndarray.flatten(current_input)
+                current_input_flat = current_input.flatten()
 
-                b_matrix[m, n, j, :] = np.linalg.lstsq(flattened_measurements, current_input_flat)[0]
+                b_matrix[m, n, j, :] = np.linalg.lstsq(flattened_measurements, current_input_flat, rcond=None)[0]
 
     return b_matrix
 
@@ -213,14 +214,14 @@ Returns
 chi_matrix : ndarray with shape = (4,4, number of measurements, number of measurements)
     The constructed chi matrix
 """
-def construct_chi(b_matrix, c_matrix):
+def construct_chi(b_matrix, c_matrix, num_qubits):
     n_measurements = b_matrix.shape[2]
 
     inv_b = np.linalg.pinv(b_matrix)
-    chi_matrix = np.zeros((4,4), dtype=complex)
+    chi_matrix = np.zeros((4**num_qubits,4**num_qubits), dtype=complex)
 
-    for m in range(4):
-        for n in range(4):
+    for m in range(4**num_qubits):
+        for n in range(4**num_qubits):
             for j in range(n_measurements):
                 for k in range(n_measurements):
                     chi_matrix[m,n] += inv_b[m,n,j,k] * c_matrix[j,k]

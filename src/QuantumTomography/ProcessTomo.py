@@ -31,7 +31,7 @@ Returns
 chi_matrix : ndarray with shape = (4,4)
     Represents the chi matrix that best characterizes the process.
 """
-def ProcessTomography(coincidences, input_states=get_default_states(6), measurement_states=get_default_states(6)):
+def ProcessTomography(coincidences, input_states=get_default_states(6), measurement_states=get_default_states(6), num_qubits=1):
 
     # using tomography to calculate the density matrices after the process, and converting the input pure states (or coincidences) and measurement pure states to density matrices
     input_densities, measurement_densities, output_densities = get_process_densities(coincidences,
@@ -39,13 +39,13 @@ def ProcessTomography(coincidences, input_states=get_default_states(6), measurem
                                                                                            measurement_states)
 
     # construct the starting chi matrix to be input into the MLE process tomography
-    chi_matrix = StandardProcessTomography(input_densities, measurement_densities, output_densities)
+    chi_matrix = StandardProcessTomography(input_densities, measurement_densities, output_densities, num_qubits)
 
     # makes the chi matrix positive definite so that the cholesky decomp can be used in MLE
     chi_matrix = make_positive(chi_matrix)
 
     # performs the MLE on the chi matrix
-    chi_matrix = MLEProcessTomography(chi_matrix, input_densities, measurement_densities, coincidences)
+    chi_matrix = MLEProcessTomography(chi_matrix, input_densities, measurement_densities, coincidences, num_qubits)
 
     return chi_matrix
 
@@ -66,15 +66,15 @@ measurement_densities : dictionary with keys 0-number of measurements
     Dictionary that holds the density matrices for each measurement state. Order must be the same as in rows of coincidence matrix.
 
 """
-def MLEProcessTomography(chi_matrix, input_densities, measurement_densities, coincidences):
+def MLEProcessTomography(chi_matrix, input_densities, measurement_densities, coincidences, num_qubits=1):
     #converting the chi matrix to its t values so that there are less parameters for optimization
     chi_matrix_t_vals = density2t(chi_matrix)
     chi_matrix_t_vals += 0.0001
 
     # get the final t values from scipy.optimize.least sq on the process_count_differences function
-    final_chi_t_vals = scipy.optimize.leastsq(process_count_differences, chi_matrix_t_vals, args=(input_densities, measurement_densities, coincidences))[0]
+    final_chi_t_vals = scipy.optimize.leastsq(process_count_differences, chi_matrix_t_vals, args=(input_densities, measurement_densities, coincidences, num_qubits))[0]
 
-    # converting the t values back into a chi matrix and then normalizing
+    # converting the t values back into a chi  matrix and then normalizing
     chi_matrix = t_to_density(final_chi_t_vals)
     chi_matrix = chi_matrix / np.trace(chi_matrix)
 
@@ -99,19 +99,19 @@ Returns
 chi_matrix : ndarray with shape = (4, 4)
     The chi matrix that characterizes the process.
 """
-def StandardProcessTomography(input_densities, measurement_densities, output_densities):
+def StandardProcessTomography(input_densities, measurement_densities, output_densities, num_qubits =1):
     # get the number of measurements
-    n_measurements = len(measurement_densities.keys())
+    # n_measurements = measurement_densities.shape[0]
 
     # c matrix definted in eq. 4.52 of Joe Altepeter's thesis page 69
     # TODO: Figure out why it performs better with c transposed
-    c_matrix = get_c_matrix(output_densities, measurement_densities).transpose()
+    c_matrix = get_c_matrix(output_densities, measurement_densities, num_qubits).transpose()
 
     # B matrix defined in eq. 4.53 of Joe Altepeter's thesis page 69
-    b_matrix = get_b_matrix(input_densities, measurement_densities)
+    b_matrix = get_b_matrix(input_densities, measurement_densities, num_qubits)
 
     # constructing the chi matrix from the B and c matrices in eq. 4.55 pg. 60 of Joe Altepeter's thesis
-    chi_matrix = construct_chi(b_matrix, c_matrix)
+    chi_matrix = construct_chi(b_matrix, c_matrix, num_qubits)
 
     return chi_matrix
 
@@ -136,16 +136,16 @@ Returns
 log_likelihood : 1-d array with (number of inputs x number of measurements) elements
     The values to be squared and summed by the least squares used for optimization.
 """
-def process_count_differences(chi_matrix_t_vals, input_densities, measurement_densities, coincidences):
+def process_count_differences(chi_matrix_t_vals, input_densities, measurement_densities, coincidences, num_qubits =1):
     n_measurements = coincidences.shape[0]
 
     chi_matrix = t_to_density(chi_matrix_t_vals)
     chi_matrix = chi_matrix / np.trace(chi_matrix)
 
-    counts_predicted = np.zeros_like(coincidences)
+    counts_predicted = np.zeros_like(coincidences, dtype=np.float64)
 
     for i in range(n_measurements):
-        current_output_rho = post_process_density(chi_matrix, input_densities[i])
+        current_output_rho = post_process_density(chi_matrix, input_densities[i],num_qubits)
         for j in range(n_measurements):
             counts_predicted[j,i] = max(min(np.real(np.trace(measurement_densities[j] @ current_output_rho)),1),0.00001)
 
@@ -178,12 +178,12 @@ output_rho : ndarray with shape = (4, 4)
 """
 
 
-def post_process_density(chi_matrix, rho):
+def post_process_density(chi_matrix, rho, num_qubits=1):
     output_rho = np.zeros_like(rho)
-    paulis = get_paulis()
+    paulis = generalized_pauli_basis(num_qubits)
 
-    for m in range(4):
-        for n in range(4):
+    for m in range(4**num_qubits):
+        for n in range(4**num_qubits):
             output_rho += chi_matrix[m, n] * (paulis[m] @ rho @ paulis[n].conj().transpose())
 
     return output_rho / np.trace(output_rho)
