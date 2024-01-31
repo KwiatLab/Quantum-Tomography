@@ -1,9 +1,0 @@
-conf.NQubits=2;
-conf.NDetectors=2;
-conf.Crosstalk=[[0.13221941,0.32783632,0.31158133,0.35946129],[0.42388493,0.11997234,0.05096949,0.02372803],[0.16789479,0.04752157,0.30148818,0.22677141],[0.27600087,0.50466977,0.335961,0.39003928]];
-conf.UseDerivative=0;
-conf.Bellstate=1;
-conf.DoErrorEstimation=3;
-conf.DoDriftCorrection='yes';
-conf.Window=[1,2,3,4];
-conf.Efficiency=[5,6,7,8];

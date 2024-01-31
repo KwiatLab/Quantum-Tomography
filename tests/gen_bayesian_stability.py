@@ -1,6 +1,6 @@
 import unittest
 from TestRun import runTests
-import QuantumTomography as qLib
+import quantum_tomography as qLib
 import matplotlib.pyplot as plt
 import numpy as np
 import warnings

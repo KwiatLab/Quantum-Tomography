@@ -1,6 +1,6 @@
 from __future__ import print_function
 import numpy as np
-import QuantumTomography as qLib
+import quantum_tomography as qLib
 import traceback
 import warnings
 import time

@@ -1,5 +1,5 @@
 import unittest
-import QuantumTomography as qLib
+import quantum_tomography as qLib
 import numpy as np
 import numpy.testing as tests
 from TestRun import runTests

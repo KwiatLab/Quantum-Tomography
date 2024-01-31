@@ -16,12 +16,12 @@ def readme():
 
 
 setup(
-    name = "Quantum-Tomography",
+    name = "quantum-tomography",
     version = "1.0.7.0",
     description = "A python library to help perform tomography on a quantum state.",
     long_description = readme(),
     long_description_content_type = "text/markdown",
-    url = "https://github.com/KwiatQIM/Quantum-Tomography",
+    url = "https://github.com/KwiatQIM/quantum-tomography",
     author = "University of Illinois",
     author_email = "turroscott@gmail.com",
     license = "MIT",
@@ -34,12 +34,12 @@ setup(
         "Programming Language :: Python :: 3.8",
     ],
     package_dir = {'': 'src'},
-    packages = ["QuantumTomography"],
+    packages = ["quantum_tomography"],
     include_package_data = True,
     install_requires = ["scipy", "numpy", "matplotlib"],
     entry_points = {
         "console_scripts": [
-            "Quantum-Tomography = QuantumTomography.cli:main",
+            "quantum-tomography = quantum_tomography.cli:main",
         ]
     },
     project_urls = {

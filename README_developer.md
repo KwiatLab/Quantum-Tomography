@@ -1,4 +1,4 @@
-# Developing on Quantum-Tomography
+# Developing on quantum-tomography
 This package is under an MIT License, meaning it is free to be expanded upon as long as it is kept open source. 
 For more details see our LICENSE file.
 

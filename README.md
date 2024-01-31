@@ -1,15 +1,15 @@
-# Quantum-Tomography
-![Python package](https://github.com/KwiatQIM/Quantum-Tomography/workflows/Python%20package/badge.svg?branch=master)
+# quantum-tomography
+![Python package](https://github.com/KwiatQIM/quantum-tomography/workflows/Python%20package/badge.svg?branch=master)
 [![Website tomography.web.engr.illinois.edu/TomographyDemo.php](https://img.shields.io/website-up-down-green-red/http/shields.io.svg)](http://tomography.web.engr.illinois.edu/TomographyDemo.php)
-[![Generic badge](https://img.shields.io/badge/Python_versions-2_|_3-blue.svg)](https://pypi.org/project/Quantum-Tomography/)
-[![MIT license](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/KwiatQIM/Quantum-Tomography/blob/master/LICENSE)
+[![Generic badge](https://img.shields.io/badge/Python_versions-2_|_3-blue.svg)](https://pypi.org/project/quantum-tomography/)
+[![MIT license](https://img.shields.io/badge/License-MIT-blue.svg)](https://github.com/KwiatQIM/quantum-tomography/blob/master/LICENSE)
 
 A python library to help perform tomography on a quantum state.
 
 Links
  - [Documentation](https://quantumtomo.web.illinois.edu/Doc/)
  - [Video Tutorial](https://www.youtube.com/watch?v=I-214P0LOfQ&list=PLJLHMKtk5Pqy9w9aCuyowUF1p7pl2JCI9&index=3)
- - [Pypi Package](https://pypi.org/project/Quantum-Tomography/)
+ - [Pypi Package](https://pypi.org/project/quantum-tomography/)
 
 
 ## Usage
@@ -17,12 +17,12 @@ Links
 For those who do not want to write python code to perform tomography 
 on their data, you can use the following command in the package directory:
 ```
-Quantum-Tomography -i C:\Full\Path\To\pythoneval.txt
+quantum-tomography -i C:\Full\Path\To\pythoneval.txt
 ```
 This will read the data in the txt file provided and print the output ot the console. Examples and syntax for a conf file
 is provided at the bottom of this readme. If you would like to save your data you can provide the save location like in the following example:
 ```
-Quantum-Tomography -i C:\Full\Path\To\pythoneval.txt -s C:\Full\Path\To\output\Folder 
+quantum-tomography -i C:\Full\Path\To\pythoneval.txt -s C:\Full\Path\To\output\Folder 
 ```
 There are several other arguments that are optional like save option. Here is the full list of arguments:
 
@@ -42,7 +42,7 @@ package directly for a more hands free process.
 ## Usage
 ##### Step 1. Initialize Tomography Object
 ```
-import QuantumTomography as qKLib
+import quantum_tomography as qKLib
 
 t = qKLib.Tomography()
 ```
