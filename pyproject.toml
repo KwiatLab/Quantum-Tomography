@@ -1,0 +1,44 @@
+[tool.poetry]
+name = "quantum-tomography"
+version = "2.0.0"
+description = "A complete library for quantum state/process tomography data analysis"
+license = "MIT"
+authors = [
+    "Benjamin Nussbaum <bn9@illinois.edu>",
+    "Timur Javid <tjavid2@illinois.edu>",
+]
+maintainers =[
+    "Benjamin Nussbaum <bn9@illinois.edu>",
+    "Timur Javid <tjavid2@illinois.edu>",
+]
+readme = "README.md"
+homepage = "https://quantumtomo.web.illinois.edu/"
+repository = "https://github.com/KwiatLab/quantum-tomography"
+documentation = "https://quantumtomo.web.illinois.edu/Doc"
+keywords = ["quantum tomography", "state tomography", "process tomograpy", "quantum information"]
+classifiers = [
+        "License :: OSI Approved :: MIT License",
+        "Programming Language :: Python :: 3.11",
+]
+
+[tool.poetry.dependencies]
+python = "^3.11"
+numpy = "^1.26.3"
+scipy = "^1.12.0"
+
+[tool.poetry.group.dev.dependencies]
+pytest = "^8.0.0"
+black = "^24.1.1"
+reorder-python-imports = "^3.12.0"
+flake8 = "^7.0.0"
+
+[tool.poetry.scripts]
+quantum-tomography = "quantum_tomography.cli:main"
+
+[tool.poetry.urls]
+"Video Tutorial" = "https://www.youtube.com/watch?v=I-214P0LOfQ&list=PLJLHMKtk5Pqy9w9aCuyowUF1p7pl2JCI9&index=3"
+
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
