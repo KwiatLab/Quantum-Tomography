@@ -27,10 +27,9 @@ numpy = "^1.26.3"
 scipy = "^1.12.0"
 
 [tool.poetry.group.dev.dependencies]
-pytest = "^8.0.0"
-black = "^24.1.1"
+pytest-cov = "^4.1.0"
 reorder-python-imports = "^3.12.0"
-flake8 = "^7.0.0"
+ruff = "^0.1.15"
 
 [tool.poetry.scripts]
 quantum-tomography = "quantum_tomography.cli:main"
