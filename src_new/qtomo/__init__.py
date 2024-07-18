@@ -1,6 +1,3 @@
-import sys
-from .tomo_math import *
-from .tomography import *
 """
 Copyright 2020 University of Illinois Board of Trustees.
 Licensed under the terms of an MIT license

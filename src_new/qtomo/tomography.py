@@ -1,5 +1,5 @@
 import numpy as np
-from . import tomo_math, state_utilities
+from . import state_utilities
 
 ###############
 # LIKELYHOODS #
