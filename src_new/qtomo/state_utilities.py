@@ -770,6 +770,49 @@ def getWavePlateBasis(theta_qwp, theta_hwp, flipPBS=False):
 
 
 """
+getStandardBasis(numBit,numDet = -1)
+Desc: Returns an array of standard measurements in separated pure state form for the given number of qubits. It is the same format used in the tomo_input matrix.
+
+Parameters
+----------
+numBits : int
+    number of qubits you want for each measurement. Default will use the number of qubits in the current configurations.
+numDet : 1 or 2
+    Number of detectors for each measurement Default will use the number of qubits in the current configurations.   
+"""
+def getStandardBasis(self, numBits = None, numDet = None):
+    # check if numBits is an int
+    if not numBits:
+        raise ValueError("numBits must be an integer")
+
+    # check if numDet is not 1 or 2
+    if not numDet:
+        raise ValueError("numDet must be an 1 or 2")
+
+    # Define start meas basis
+    if(numDet == 1):
+        basis = np.array([[1, 0],
+                            [0, 1],
+                            [(2 ** (-1 / 2)), (2 ** (-1 / 2))],
+                            [(2 ** (-1 / 2)), -(2 ** (-1 / 2))],
+                            [(2 ** (-1 / 2)), (2 ** (-1 / 2)) * 1j],
+                            [(2 ** (-1 / 2)), -(2 ** (-1 / 2)) * 1j]],dtype=complex)
+    else:
+        basis = np.array([[1, 0],
+                            [(2 ** (-1 / 2)), (2 ** (-1 / 2))],
+                            [(2 ** (-1 / 2)), (2 ** (-1 / 2)) * 1j]], dtype=complex)
+    numBasis = basis.shape[0]
+    m = np.zeros((numBasis ** numBits, 2 * numBits), dtype = complex)
+    for i in range(m.shape[0]):
+        for j in range(0, m.shape[1], 2):
+            bitNumber = np.floor((m.shape[1] - j - 1) / 2)
+            index = int(((i) / numBasis ** (bitNumber)) % numBasis)
+
+            m[i, j] = basis[index][0]
+            m[i, j + 1] = basis[index][1]
+    return m
+
+"""
 removeGlobalPhase(D)
 Desc: Factors out the global phase of the given state by dividing the entire state by the phase of the first component.
 
