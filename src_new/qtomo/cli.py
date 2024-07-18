@@ -2,13 +2,12 @@ from __future__ import print_function
 
 import argparse
 import os
-import sys
 import warnings
+import numpy as np
+import qtomo as qKLib
 
 warnings.filterwarnings("ignore")
-import numpy as np
-from numpy.core.defchararray import add
-import qtomo as qKLib
+
 
 """
 Copyright 2020 University of Illinois Board of Trustees.
@@ -75,15 +74,18 @@ def main():
     # parse the arguments from standard input
     args = parser.parse_args()
 
-    try:
-        inPutfilePath = args.eval[0]
-    except:
+    if args.eval is None:
         raise ValueError("input not defined")
-    try:
+    
+    inPutfilePath = args.eval[0]
+   
+    if args.save is None:
+        save = False
+        
+    else:
         outPutfilePath = args.save[0]
         save = True
-    except:
-        save = False
+   
     pictures = args.pic
 
     t = qKLib.Tomography()

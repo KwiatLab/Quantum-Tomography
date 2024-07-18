@@ -66,5 +66,5 @@ def getValidFileName(fileName):
     newFileName = re.sub(r"^\\.+", "", fileName)
     newFileName = re.sub(r"[\\\\/:*?\"<>|]", "", newFileName)
     if newFileName == "":
-        raise ValueError("File Name : '" + fileName + "' results in an empty fileName!");
+        raise ValueError("File Name : '" + fileName + "' results in an empty fileName!")
     return newFileName

@@ -1,13 +1,9 @@
 from __future__ import print_function
-import scipy as sp
-from numpy.core.defchararray import add
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib as mpl
-from mpl_toolkits.mplot3d import Axes3D
 from . import state_utilities
 from matplotlib.colors import LinearSegmentedColormap
-import warnings
 
 """
 Copyright 2020 University of Illinois Board of Trustees.
@@ -82,7 +78,7 @@ def makeRhoImages(p, plt_given, customColor = True):
     fig = plt_given.figure()
     ax1 = fig.add_subplot(111, projection = '3d')
     dz = p.flatten().astype(float)
-    img = ax1.bar3d(xpos, ypos, zpos, dx, dy, dz, color = colorMap((dz + 1) / 2), edgecolor = "black", alpha = .8)
+    ax1.bar3d(xpos, ypos, zpos, dx, dy, dz, color = colorMap((dz + 1) / 2), edgecolor = "black", alpha = .8)
 
 
 
@@ -95,7 +91,7 @@ def makeRhoImages(p, plt_given, customColor = True):
     plt_given.title("Rho Real")
     fig.subplots_adjust(bottom = 0.2)
     ax1 = fig.add_axes([0.2, 0.10, 0.7, 0.065])
-    cb1 = mpl.colorbar.ColorbarBase(ax1, cmap = colorMap,
+    mpl.colorbar.ColorbarBase(ax1, cmap = colorMap,
                                     norm = norm,
                                     orientation = 'horizontal')
 
@@ -115,7 +111,7 @@ def makeRhoImages(p, plt_given, customColor = True):
 
     fig.subplots_adjust(bottom = 0.2)
     ax1 = fig.add_axes([0.2, 0.10, 0.7, 0.065])
-    cb1 = mpl.colorbar.ColorbarBase(ax1, cmap = colorMap,
+    mpl.colorbar.ColorbarBase(ax1, cmap = colorMap,
                                     norm = norm,
                                     orientation = 'horizontal')
 
@@ -176,7 +172,7 @@ def saveRhoImages(p, pathToDirectory):
     fig = plt.figure()
     ax1 = fig.add_subplot(111, projection = '3d')
     dz = p.flatten().astype(float)
-    img = ax1.bar3d(xpos, ypos, zpos, dx, dy, dz, color = colorMap((dz + 1) / 2), edgecolor = "black", alpha = .8)
+    ax1.bar3d(xpos, ypos, zpos, dx, dy, dz, color = colorMap((dz + 1) / 2), edgecolor = "black", alpha = .8)
 
     ax1.axes.set_xticklabels(xTicks)
     ax1.axes.set_yticklabels(yTicks)
@@ -187,7 +183,7 @@ def saveRhoImages(p, pathToDirectory):
     plt.title("Rho Real")
     fig.subplots_adjust(bottom = 0.2)
     ax1 = fig.add_axes([0.2, 0.10, 0.7, 0.065])
-    cb1 = mpl.colorbar.ColorbarBase(ax1, cmap = colorMap,
+    mpl.colorbar.ColorbarBase(ax1, cmap = colorMap,
                                     norm = norm,
                                     orientation = 'horizontal')
     plt.savefig(pathToDirectory + "/rhobarReal.png", bbox_inches = 'tight', pad_inches = 0)
@@ -207,7 +203,7 @@ def saveRhoImages(p, pathToDirectory):
     plt.title("Rho Imaginary")
     fig.subplots_adjust(bottom = 0.2)
     ax1 = fig.add_axes([0.2, 0.10, 0.7, 0.065])
-    cb1 = mpl.colorbar.ColorbarBase(ax1, cmap = colorMap,
+    mpl.colorbar.ColorbarBase(ax1, cmap = colorMap,
                                     norm = norm,
                                     orientation = 'horizontal')
 
