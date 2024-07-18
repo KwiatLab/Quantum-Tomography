@@ -1,0 +1,10 @@
+on: [push]
+
+jobs:
+  ruff:
+    runs-on: ubuntu-latest
+    name: "ruff"
+    steps:
+      - uses: jpetrucciani/ruff-check@main
+        with:
+          path: './src_new'
