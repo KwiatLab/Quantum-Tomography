@@ -27,7 +27,6 @@ def file_path(string):
     if os.path.isfile(string) or string == "../../":
         return string
     else:
-
         raise OSError(string)
 
 
@@ -35,7 +34,6 @@ def dir_path(string):
     if os.path.isdir(string) or string == "../../":
         return string
     else:
-
         raise OSError(string)
 
 
@@ -76,16 +74,16 @@ def main():
 
     if args.eval is None:
         raise ValueError("input not defined")
-    
+
     inPutfilePath = args.eval[0]
-   
+
     if args.save is None:
         save = False
-        
+
     else:
         outPutfilePath = args.save[0]
         save = True
-   
+
     pictures = args.pic
 
     t = qKLib.Tomography()

@@ -13,9 +13,10 @@ Licensed under the terms of an MIT license
 """CHECK OUT THE REFERENCE PAGE ON OUR WEBSITE :
 https://quantumtomo.web.illinois.edu/Doc/"""
 
+
 class ConfDict(MutableMapping):
     """A dictionary where the casing of the keys don't matter
-        and values can be automatically handled."""
+    and values can be automatically handled."""
 
     def __init__(self, *args, **kwargs):
         self.store = dict()
@@ -38,28 +39,34 @@ class ConfDict(MutableMapping):
 
     def _keytransform(self, key):
         return key.lower()
+
     def _valuetransform(self, value):
-        if (isinstance(value, str)):
-            if (value.lower() == "yes" or
-                value.lower() == "true" or
-                value.lower() == "t" or
-                value.lower() == "y"):
+        if isinstance(value, str):
+            if (
+                value.lower() == "yes"
+                or value.lower() == "true"
+                or value.lower() == "t"
+                or value.lower() == "y"
+            ):
                 value = 1
-            elif (value.lower() == "no" or
-                  value.lower() == "false" or
-                  value.lower() == "f"or
-                  value.lower() == "f"):
+            elif (
+                value.lower() == "no"
+                or value.lower() == "false"
+                or value.lower() == "f"
+                or value.lower() == "f"
+            ):
                 value = 0
-            elif(value.upper() == "LINEAR" or
-                value.upper() == "MLE" or
-                value.upper() == "HMLE" or
-                value.upper() == "BME"):
+            elif (
+                value.upper() == "LINEAR"
+                or value.upper() == "MLE"
+                or value.upper() == "HMLE"
+                or value.upper() == "BME"
+            ):
                 return value.upper()
             else:
-                raise ValueError('Invalid Conf Setting of "' + value+'"')
+                raise ValueError('Invalid Conf Setting of "' + value + '"')
 
         return value
-
 
 
 def getValidFileName(fileName):

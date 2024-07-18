@@ -25,6 +25,8 @@ See Also
  ------ 
 err_functions;getProperties
 """
+
+
 def concurrence(rhog):
     if rhog.shape[0] == 4:
         if isStateVector(rhog):
@@ -38,13 +40,13 @@ def concurrence(rhog):
         # left = np.linalg.inv(right)
         r = np.real(r)
 
-        tmp = np.sort(np.sqrt(r+0j))
-        val = np.real(tmp[3]-tmp[2]-tmp[1]-tmp[0])
+        tmp = np.sort(np.sqrt(r + 0j))
+        val = np.real(tmp[3] - tmp[2] - tmp[1] - tmp[0])
         val = np.max([val, 0])
 
         return val
     else:
-        return 'NA'
+        return "NA"
 
 
 """
@@ -69,16 +71,19 @@ See Also
  ------ 
 err_functions;getProperties
 """
+
+
 def tangle(rhog):
     if rhog.shape[0] == 4:
         if isStateVector(rhog):
             rhog = toDensity(rhog)
         c = concurrence(rhog)
-        val = c ** 2
+        val = c**2
         return val
     else:
-        return 'NA'
-    
+        return "NA"
+
+
 """
 entropy(rhog)
 Desc: Calculates the Von Neumann Entropy of the input state.
@@ -101,6 +106,8 @@ See Also
  ------ 
 err_functions;getProperties
 """
+
+
 def entropy(rhog):
     if isStateVector(rhog):
         rhog = toDensity(rhog)
@@ -109,8 +116,9 @@ def entropy(rhog):
     val = 0
     for a in range(len(e)):
         if e[a] > 0:
-            val = val-e[a]*np.log2(e[a])
+            val = val - e[a] * np.log2(e[a])
     return val
+
 
 """
 linear_entropy(rhog)
@@ -135,10 +143,12 @@ See Also
  ------ 
 err_functions;getProperties
 """
+
+
 def linear_entropy(rhog):
     if isStateVector(rhog):
         rhog = toDensity(rhog)
-    return 1- purity(rhog)
+    return 1 - purity(rhog)
 
 
 """
@@ -163,16 +173,19 @@ See Also
  ------ 
 err_functions;getProperties
 """
+
+
 def negativity(rhog):
     if isStateVector(rhog):
         rhog = toDensity(rhog)
     if rhog.shape[0] == 4:
         rho1 = partial_transpose(rhog)
-        val = -2*np.min(np.min(np.real(np.linalg.eig(rho1)[0])), 0)
+        val = -2 * np.min(np.min(np.real(np.linalg.eig(rho1)[0])), 0)
 
         return val
     else:
-        return 'NA'
+        return "NA"
+
 
 """
 purity(rhog)
@@ -197,6 +210,8 @@ See Also
  ------ 
 err_functions;getProperties
 """
+
+
 def purity(rhog):
     return np.real(np.trace(np.dot(rhog, rhog)))
 
@@ -206,17 +221,18 @@ def partial_transpose_helper(m, d):
         val = m.transpose()
     else:
         na = int(d)
-        nb = int(len(m)/d)
-        y = np.zeros([nb, nb, na, na])+0j
-        val = np.zeros([len(m), len(m)])+0j
+        nb = int(len(m) / d)
+        y = np.zeros([nb, nb, na, na]) + 0j
+        val = np.zeros([len(m), len(m)]) + 0j
         for j in range(nb):
             for k in range(nb):
-                y[j, k] = m[j*nb:j*nb+na, k*nb:k*nb+na]
+                y[j, k] = m[j * nb : j * nb + na, k * nb : k * nb + na]
         for j in range(nb):
             for k in range(nb):
-                val[j*nb:j*nb+na, k*nb:k*nb+na] = y[k, j]
+                val[j * nb : j * nb + na, k * nb : k * nb + na] = y[k, j]
 
     return val
+
 
 """
 partial_transpose(rhog)
@@ -232,16 +248,18 @@ Returns
 rv : ndarray
     Partial transpose of rhog.
 """
-def partial_transpose(rhog, n = 0, d = np.nan):
+
+
+def partial_transpose(rhog, n=0, d=np.nan):
     if min(rhog.shape) == 1:
-            rhog = np.dot(rhog, rhog.conj().transpose())
+        rhog = np.dot(rhog, rhog.conj().transpose())
 
     if d is np.nan:
         n_qubit = int(np.log2(rhog.shape[0]))
         if not n_qubit % 1:
-            d = 2*np.ones(n_qubit)
+            d = 2 * np.ones(n_qubit)
         else:
-            print('dimension of rho is incorrect.')
+            print("dimension of rho is incorrect.")
 
     na = 0
     nb = 0
@@ -253,13 +271,13 @@ def partial_transpose(rhog, n = 0, d = np.nan):
     elif n == 0:
         na = 1.0
         nb = d[n]
-        nc = np.prod(d[np.arange(n+1, len(d))])
+        nc = np.prod(d[np.arange(n + 1, len(d))])
     elif (n > 0) & (n < len(d)):
-        na = np.prod(d[range(n-1)])
+        na = np.prod(d[range(n - 1)])
         nb = d[n]
-        nc = np.prod(d[np.arange(n+1, len(d))])
+        nc = np.prod(d[np.arange(n + 1, len(d))])
     elif n == len(d):
-        na = np.prod(d[0:n-1])
+        na = np.prod(d[0 : n - 1])
         nb = d[n]
         nc = 1.0
     elif n > len(d):
@@ -271,19 +289,25 @@ def partial_transpose(rhog, n = 0, d = np.nan):
         rv = partial_transpose_helper(rhog, nb)
     # I did't check from here
     else:
-        sub_sizes = nb*nc
-        y = np.zeros([sub_sizes, sub_sizes, na, na])+0j
+        sub_sizes = nb * nc
+        y = np.zeros([sub_sizes, sub_sizes, na, na]) + 0j
         for j in range(sub_sizes):
             for k in range(sub_sizes):
-                y[j, k] = rhog[j*sub_sizes:j*sub_sizes+na, k*sub_sizes:k*sub_sizes+na]
+                y[j, k] = rhog[
+                    j * sub_sizes : j * sub_sizes + na,
+                    k * sub_sizes : k * sub_sizes + na,
+                ]
 
-        rv = np.zeros([len(rhog), len(rhog)])+0j
+        rv = np.zeros([len(rhog), len(rhog)]) + 0j
 
         for j in range(na):
             for k in range(na):
-                rv[j*nb:j*nb+na, k*nb:k*nb+na] = partial_transpose_helper(y[j, k], nb)
+                rv[j * nb : j * nb + na, k * nb : k * nb + na] = (
+                    partial_transpose_helper(y[j, k], nb)
+                )
 
     return rv
+
 
 """
 performOperation(psi, g)
@@ -301,12 +325,14 @@ Returns
 p : ndarray
     The output state after the operations. Will retain the input form.
 """
+
+
 def performOperation(psi, g):
     p = psi
-    if(len(g.shape) == 3):
+    if len(g.shape) == 3:
         # Multiple operations
         for i in range(g.shape[0]):
-            p = performOperation(p,g[i])
+            p = performOperation(p, g[i])
     else:
         if isStateVector(psi):
             p = ketOperation(p, g)
@@ -329,12 +355,14 @@ Returns
 pure_state : ndarray with length = 2^N
     The random quantum state.
 """
-def random_pure_state(N = 1):
-    pure_state = np.zeros(2**N,dtype=complex)
+
+
+def random_pure_state(N=1):
+    pure_state = np.zeros(2**N, dtype=complex)
     for x in range(len(pure_state)):
-        pure_state[x] = rand.normal(0, 1)+rand.normal(0, 1)*1j
-    length = np.inner(pure_state.conj(),pure_state)
-    pure_state = pure_state/np.sqrt(length)
+        pure_state[x] = rand.normal(0, 1) + rand.normal(0, 1) * 1j
+    length = np.inner(pure_state.conj(), pure_state)
+    pure_state = pure_state / np.sqrt(length)
     length = np.inner(pure_state.conj(), pure_state)
     return pure_state
 
@@ -353,15 +381,18 @@ Returns
 density : ndarray with shape = (2^N, 2^N)
     The random quantum state.
 """
+
+
 def random_density_state(N=1):
-    density = tomo_math.random_ginibre(2 ** N)
+    density = tomo_math.random_ginibre(2**N)
     density = np.matmul(density, density.T.conj())
-    if np.trace(density).real<10**-6:
+    if np.trace(density).real < 10**-6:
         # If trace is close to 0 then resample
         return random_density_state(N)
     else:
         density = density / np.trace(density)
     return density
+
 
 """
 random_bell_state(N)
@@ -379,35 +410,38 @@ Returns
 pure_state : ndarray with shape = (2^N, 2^N)
     The random quantum state.
 """
+
+
 def random_bell_state(N=2):
-    if N ==1:
-        whichState = rand.randint(0,6)
+    if N == 1:
+        whichState = rand.randint(0, 6)
         if whichState == 0:
-            return np.array([1,0],dtype=complex)
+            return np.array([1, 0], dtype=complex)
         elif whichState == 1:
-            return np.array([0,1],dtype=complex)
+            return np.array([0, 1], dtype=complex)
         elif whichState == 2:
-            return 1/np.sqrt(2)*np.array([1,1],dtype=complex)
+            return 1 / np.sqrt(2) * np.array([1, 1], dtype=complex)
         elif whichState == 3:
-            return 1/np.sqrt(2)*np.array([1,-1],dtype=complex)
+            return 1 / np.sqrt(2) * np.array([1, -1], dtype=complex)
         elif whichState == 4:
-            return 1/np.sqrt(2)*np.array([1,1j],dtype=complex)
+            return 1 / np.sqrt(2) * np.array([1, 1j], dtype=complex)
         elif whichState == 5:
-            return 1/np.sqrt(2)*np.array([1,-1j],dtype=complex)
-    if N ==2:
+            return 1 / np.sqrt(2) * np.array([1, -1j], dtype=complex)
+    if N == 2:
         whichState = rand.randint(0, 4)
         if whichState == 0:
-            return 1 / np.sqrt(2) * np.array([1,0,0,1], dtype=complex)
+            return 1 / np.sqrt(2) * np.array([1, 0, 0, 1], dtype=complex)
         elif whichState == 1:
-            return 1 / np.sqrt(2) * np.array([1,0,0,-1], dtype=complex)
+            return 1 / np.sqrt(2) * np.array([1, 0, 0, -1], dtype=complex)
         elif whichState == 2:
-            return 1 / np.sqrt(2) * np.array([0,1,1,0], dtype=complex)
+            return 1 / np.sqrt(2) * np.array([0, 1, 1, 0], dtype=complex)
         elif whichState == 3:
-            return 1 / np.sqrt(2) * np.array([0,1,-1,0], dtype=complex)
-    GHZ = np.zeros(2**N,dtype=complex)
+            return 1 / np.sqrt(2) * np.array([0, 1, -1, 0], dtype=complex)
+    GHZ = np.zeros(2**N, dtype=complex)
     GHZ[0] = 1
     GHZ[-1] = 1
-    return 1 / np.sqrt(2)* GHZ
+    return 1 / np.sqrt(2) * GHZ
+
 
 """
 densityOperation(D)
@@ -425,8 +459,11 @@ Returns
 psi : ndarray with shape = (2^nQubits, 2^nQubits)
     The state with the operation applied.
 """
+
+
 def densityOperation(psi, gate):
     return np.matmul(np.matmul(gate, psi), np.conjugate(np.transpose(gate)))
+
 
 """
 ketOperation(D)
@@ -444,8 +481,11 @@ Returns
 psi : ndarray with shape = (2^nQubits, 2^nQubits)
     The state with the operation applied.
 """
+
+
 def ketOperation(psi, gate):
     return np.matmul(gate, psi)
+
 
 """
 density2tm(rhog)
@@ -461,6 +501,8 @@ Returns
 tm : ndarray
     Lower t matrix defining the input matrix.
 """
+
+
 def density2tm(rhog):
     return np.linalg.cholesky(rhog)
 
@@ -479,6 +521,8 @@ Returns
 t : ndarray
     List of t values defining the input matrix.
 """
+
+
 def density2t(rhog):
     tm = density2tm(rhog)
     d = len(tm)
@@ -486,10 +530,10 @@ def density2t(rhog):
     cur_length = d
     t = np.zeros(d**2)
     for j in range(d):
-        t[np.arange(idx, idx+cur_length)] = np.real(np.diag(tm, -j))
+        t[np.arange(idx, idx + cur_length)] = np.real(np.diag(tm, -j))
         idx = idx + cur_length
         if j > 0:
-            t[np.arange(idx, idx+cur_length)] = np.imag(np.diag(tm, -j))
+            t[np.arange(idx, idx + cur_length)] = np.imag(np.diag(tm, -j))
             idx = idx + cur_length
         cur_length -= 1
     return t
@@ -511,15 +555,18 @@ Returns
 stokes : ndarray with length = 4^numQubits
     The stokes parameters for state
     """
-def get_stokes_parameters(state,basis=None):
+
+
+def get_stokes_parameters(state, basis=None):
     if basis is None:
         num_qubits = np.log2(state.shape[0])
         num_qubits = int(num_qubits)
         basis = generalized_pauli_basis(num_qubits)
     if isStateVector(state):
         state = toDensity(state)
-    stokes = np.array([np.trace(np.matmul(state,b)) for b in basis])
+    stokes = np.array([np.trace(np.matmul(state, b)) for b in basis])
     return stokes
+
 
 """
 t_matrix(t)
@@ -535,19 +582,22 @@ Returns
 tm : ndarray
     Lower t matrix.
     """
+
+
 def t_matrix(t):
     d = int(np.sqrt(len(t)))
     idx = 0
     cur_length = d
     tm = np.zeros([d, d])
     for j in range(int(d)):
-        tm = tm + 1*np.diag(t[np.arange(idx, idx+cur_length)], -j)
+        tm = tm + 1 * np.diag(t[np.arange(idx, idx + cur_length)], -j)
         idx = idx + cur_length
         if j > 0:
-            tm = tm + 1j*np.diag(t[np.arange(idx, idx+cur_length)], -j)
+            tm = tm + 1j * np.diag(t[np.arange(idx, idx + cur_length)], -j)
             idx = idx + cur_length
         cur_length -= 1
     return tm
+
 
 """
 t_to_density(t)
@@ -566,12 +616,15 @@ Returns
 rhog : ndarray
     Density Matrix.
     """
-def t_to_density(t,normalize=True):
+
+
+def t_to_density(t, normalize=True):
     tm = t_matrix(t)
-    rhog = np.dot(tm,tm.T.conj())
+    rhog = np.dot(tm, tm.T.conj())
     if normalize:
         rhog = rhog / np.trace(rhog)
     return rhog
+
 
 """
 toDensity(psiMat)
@@ -587,16 +640,24 @@ Returns
 rhog: ndarray
     Density Matrix of the input state.
     """
+
+
 def toDensity(psiMat):
     if not isStateVector(psiMat):
         raise ValueError("Invalid input state with shape " + str(psiMat.shape))
     psiMat = np.outer(psiMat, psiMat.conj())
     return psiMat / np.trace(psiMat)
 
-pauli_matrices = np.array([[[1,0],[0,1]],
-                           [[0,1],[1,0]],
-                           [[0,-1j],[1j,0]],
-                           [[1,0],[0,-1]],],dtype=complex)
+
+pauli_matrices = np.array(
+    [
+        [[1, 0], [0, 1]],
+        [[0, 1], [1, 0]],
+        [[0, -1j], [1j, 0]],
+        [[1, 0], [0, -1]],
+    ],
+    dtype=complex,
+)
 
 """
 generalized_pauli_basis(num_qubits)
@@ -612,11 +673,14 @@ Returns
 basis : ndarray with shape = (4^numQubits, 2^numQubits, 2^numQubits)
     Pauli Basis
     """
+
+
 def generalized_pauli_basis(num_qubits):
     if num_qubits == 1:
         return pauli_matrices
     else:
-        return np.kron(generalized_pauli_basis(num_qubits-1),pauli_matrices)
+        return np.kron(generalized_pauli_basis(num_qubits - 1), pauli_matrices)
+
 
 """
 quarterWavePlate(D)
@@ -627,11 +691,23 @@ Parameters
 theta : float
     The angle of the wave plate with respect to horizontal.
 """
+
+
 def quarterWavePlate(theta):
-    return np.array([
-        [np.cos(theta)**2+1j*np.sin(theta)**2   ,   (1-1j)*np.cos(theta)*np.sin(theta)  ],
-        [(1-1j)*np.cos(theta)*np.sin(theta)     ,   np.sin(theta)**2+1j*np.cos(theta)**2]
-    ],dtype=complex)
+    return np.array(
+        [
+            [
+                np.cos(theta) ** 2 + 1j * np.sin(theta) ** 2,
+                (1 - 1j) * np.cos(theta) * np.sin(theta),
+            ],
+            [
+                (1 - 1j) * np.cos(theta) * np.sin(theta),
+                np.sin(theta) ** 2 + 1j * np.cos(theta) ** 2,
+            ],
+        ],
+        dtype=complex,
+    )
+
 
 """
 halfWavePlate(D)
@@ -642,11 +718,23 @@ Parameters
 theta : float
     The angle of the wave plate with respect to horizontal.
 """
+
+
 def halfWavePlate(theta):
-    return np.array([
-        [np.cos(theta)**2-np.sin(theta)**2      ,   2*np.cos(theta)*np.sin(theta)  ],
-        [2*np.cos(theta)*np.sin(theta)          ,   np.sin(theta)**2-np.cos(theta)**2]
-    ],dtype=complex)
+    return np.array(
+        [
+            [
+                np.cos(theta) ** 2 - np.sin(theta) ** 2,
+                2 * np.cos(theta) * np.sin(theta),
+            ],
+            [
+                2 * np.cos(theta) * np.sin(theta),
+                np.sin(theta) ** 2 - np.cos(theta) ** 2,
+            ],
+        ],
+        dtype=complex,
+    )
+
 
 """
 getWavePlateBasis(theta_qwp,theta_hwp,flipPBS)
@@ -668,15 +756,18 @@ basis : ndarray with shape (2,2)
     Top row : State the original state was projected onto given that it transmitted through the PBS,
     Bottom row : State the original state was projected onto given that it reflected off the PBS
 """
-def getWavePlateBasis(theta_qwp,theta_hwp,flipPBS=False):
-    basis = np.eye(2,dtype=complex)
-    if(flipPBS):
+
+
+def getWavePlateBasis(theta_qwp, theta_hwp, flipPBS=False):
+    basis = np.eye(2, dtype=complex)
+    if flipPBS:
         basis = np.fliplr(basis)
-    basis = np.matmul(halfWavePlate(theta_hwp).T.conj(),basis)
-    basis = np.matmul(quarterWavePlate(theta_qwp).T.conj(),basis)
+    basis = np.matmul(halfWavePlate(theta_hwp).T.conj(), basis)
+    basis = np.matmul(quarterWavePlate(theta_qwp).T.conj(), basis)
     # return the transpose so that basis[0] returns state 1
     # no need to do conj, its just a reordering of the numbers
     return basis.T
+
 
 """
 removeGlobalPhase(D)
@@ -692,16 +783,19 @@ Returns
 psi : ndarray with shape = (2^nQubits, 2^nQubits)
     The state with global phase factored out.
 """
+
+
 def removeGlobalPhase(pure_state):
     # Normalize
     norm = np.dot(pure_state.conj(), pure_state)
     pure_state = pure_state / norm
     # get phase of first number
-    [magn,phase] = tomo_math.complexToPhaser(pure_state[0])
-    complexPhaser = tomo_math.phaserToComplex(np.array([1,phase]))
+    [magn, phase] = tomo_math.complexToPhaser(pure_state[0])
+    complexPhaser = tomo_math.phaserToComplex(np.array([1, phase]))
     # divide state by first phase
-    pure_state = pure_state/complexPhaser
+    pure_state = pure_state / complexPhaser
     return pure_state
+
 
 """
 fidelity(state1, state2)
@@ -717,6 +811,8 @@ Returns
 val : float
     The calculated fidelity.
 """
+
+
 def fidelity(state1, state2):
     rho1 = state1
     rho2 = state2
@@ -737,7 +833,7 @@ def fidelity(state1, state2):
     else:
         raise ValueError("State2 is not a vector or density matrix")
 
-    rho1 = rho1 /np.trace(rho1)
+    rho1 = rho1 / np.trace(rho1)
     rho2 = rho2 / np.trace(rho2)
 
     if pure:
@@ -745,7 +841,7 @@ def fidelity(state1, state2):
     else:
         tmp = sp.linalg.sqrtm(rho1)
         a = np.dot(tmp, np.dot(rho2, tmp))
-        val = (np.trace(sp.linalg.sqrtm(a)))**2
+        val = (np.trace(sp.linalg.sqrtm(a))) ** 2
     val = np.real(val)
 
     # when comparing 2 identical pure state, it will get a value larger than 1,
@@ -757,19 +853,20 @@ def fidelity(state1, state2):
 
     return val
 
+
 def make_positive(rhog_in):
     d, v = np.linalg.eig(rhog_in)
     rhog = np.zeros(rhog_in.shape)
     for j in range(len(d)):
-        rhog = rhog + np.abs(d[j])*np.outer(v[:, j], v[:, j].conj().transpose())
-    rhog = (rhog + rhog.conj().transpose())/2.0
+        rhog = rhog + np.abs(d[j]) * np.outer(v[:, j], v[:, j].conj().transpose())
+    rhog = (rhog + rhog.conj().transpose()) / 2.0
     return rhog
 
 
 # Helper function that returns the given properties of the given rho.
 # This will not given you fval and intensity. So it is recommended to use getProperties in the TomoClass
 def getProperties_helper(errf, rho0):
-    return np.array([[errf, errf(rho0)] for errf in errf], dtype = 'O')
+    return np.array([[errf, errf(rho0)] for errf in errf], dtype="O")
 
 
 # Helper function that returns the given properties with bounds of the given rhos.
@@ -777,26 +874,27 @@ def getProperties_helper(errf, rho0):
 def getProperties_helper_bounds(errf, rhos):
     n = rhos.shape[0]
     n_fun = len(errf)
-    data = np.zeros([n, n_fun], dtype = "O")
+    data = np.zeros([n, n_fun], dtype="O")
     for j in range(n):
         data[j] = getProperties_helper(errf, rhos[j])[:, 1]
 
-    stds = np.zeros(n_fun, dtype = "O")
-    means = np.zeros(n_fun, dtype = "O")
+    stds = np.zeros(n_fun, dtype="O")
+    means = np.zeros(n_fun, dtype="O")
 
     for k in range(n_fun):
-        if all(data[:, k] == 'NA'):
-            stds[k] = 'NA'
-            means[k] = 'NA'
+        if all(data[:, k] == "NA"):
+            stds[k] = "NA"
+            means[k] = "NA"
         else:
             if n < 2:
                 stds[k] = "NA"
                 means[k] = np.mean(data[:, k])
             else:
-                stds[k] = np.std(data[:, k], ddof = 1)
+                stds[k] = np.std(data[:, k], ddof=1)
                 means[k] = np.mean(data[:, k])
 
-    return np.array([np.array(errf), means, stds], dtype = "O").transpose()
+    return np.array([np.array(errf), means, stds], dtype="O").transpose()
+
 
 def isStateVector(state):
     return np.ndim(state) == 1
