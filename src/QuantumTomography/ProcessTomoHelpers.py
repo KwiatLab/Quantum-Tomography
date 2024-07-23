@@ -68,29 +68,29 @@ output_densities : ndarray with shape = (NDetectors*number of measurements,2^num
     The states that are output from the quantum process in density matrix form.
 """
 def get_process_densities(coincidences, input_states, measurement_states):
-    input_densities = {}
-    measurement_densities = {}
-    output_densities = {}
+    input_densities = []
+    measurement_densities = []
+    output_densities = []
 
     n_measurements = coincidences.shape[0]
 
     if input_states.shape == (n_measurements, 2):
         for i in range(n_measurements):
-            input_densities[i] = toDensity(input_states[i,:])
+            input_densities.append(toDensity(input_states[i,:]))
     elif input_states.shape == (n_measurements, n_measurements):
         for i in range(n_measurements):
             #if the input states were given as counts, the input states are the columns, and the measurement states the rows
             #so you take the state tomography of each column to give you the rho of each input state
-            input_densities[i] = Tomography(1).StateTomography(measurement_states, input_states[:,i])
+            input_densities.append(Tomography(1).StateTomography(measurement_states, input_states[:,i]))
     else:
         raise ValueError("input states must be mx2 matrix of pure states or mxm matrix of measurement counts")
 
     for i in range(n_measurements):
-        measurement_densities[i] = toDensity(measurement_states[i,:])
+        measurement_densities.append(toDensity(measurement_states[i,:]))
 
-        output_densities[i] = Tomography(1).StateTomography(measurement_states, coincidences[:,i])[0]
+        output_densities.append(Tomography(1).StateTomography(measurement_states, coincidences[:,i])[0])
 
-    return input_densities, measurement_densities, output_densities
+    return np.array(input_densities), np.array(measurement_densities), np.array(output_densities)
 
 
 """
