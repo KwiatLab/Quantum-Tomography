@@ -1,43 +1,125 @@
-[tool.poetry]
+
+[project]
 name = "quantum-tomography"
 version = "2.0.0"
 description = "A complete library for quantum state/process tomography data analysis"
-license = "MIT"
 authors = [
-    "Benjamin Nussbaum <bn9@illinois.edu>",
-    "Timur Javid <tjavid2@illinois.edu>",
+    { name = "Benjamin Nussbaum", email = "bn9@illinois.edu" },
+    { name = "Timur Javid", email = "tjavid2@illinois.edu" },
 ]
-maintainers =[
-    "Benjamin Nussbaum <bn9@illinois.edu>",
-    "Timur Javid <tjavid2@illinois.edu>",
+maintainers = [
+    { name = "Benjamin Nussbaum", email = "bn9@illinois.edu" },
+    { name = "Timur Javid", email = "tjavid2@illinois.edu" },
 ]
+dependencies = [
+    "numpy>=2.1.2",
+    "scipy>=1.14.1",
+]
+requires-python = ">=3.13"
 readme = "README.md"
-homepage = "https://quantumtomo.web.illinois.edu/"
-repository = "https://github.com/KwiatLab/quantum-tomography"
-documentation = "https://quantumtomo.web.illinois.edu/Doc"
-keywords = ["quantum tomography", "state tomography", "process tomograpy", "quantum information"]
+keywords = [
+    "quantum tomography",
+    "state tomography",
+    "process tomography",
+    "quantum information",
+]
 classifiers = [
-        "License :: OSI Approved :: MIT License",
-        "Programming Language :: Python :: 3.11",
+    "License :: OSI Approved :: MIT License",
+    "Programming Language :: Python :: 3.13",
 ]
 
-[tool.poetry.dependencies]
-python = "^3.11"
-numpy = "^1.26.3"
-scipy = "^1.12.0"
-
-[tool.poetry.group.dev.dependencies]
-pytest-cov = "^4.1.0"
-reorder-python-imports = "^3.12.0"
-ruff = "^0.1.15"
-
-[tool.poetry.scripts]
-quantum-tomography = "quantum_tomography.cli:main"
-
-[tool.poetry.urls]
+[project.urls]
+Homepage = "https://quantumtomo.web.illinois.edu/"
+Documentation = "https://quantumtomo.web.illinois.edu/Doc"
+Repository = "https://github.com/KwiatLab/quantum-tomography"
 "Video Tutorial" = "https://www.youtube.com/watch?v=I-214P0LOfQ&list=PLJLHMKtk5Pqy9w9aCuyowUF1p7pl2JCI9&index=3"
 
+[project.scripts]
+qtomo = "qtomo.cli:main"
 
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+
+[tool.pdm.dev-dependencies]
+dev = [
+    "ruff>=0.7.1",
+    "pytest-cov>=6.0.0",
+    "mypy>=1.13.0",
+]
+
+[tool.pdm.scripts]
+lint = "ruff check"
+format = "ruff format"
+test = "pytest"
+coverage = "pytest --cov=src"
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+# See https://docs.astral.sh/ruff/rules/ for details.
+select = [
+    # Common conventions, errors, and bugs
+    "B",   # Bugbear
+    "D",   # Docstrings
+    "E",   # Pycodestyle errors
+    "F",   # Pyflakes rules
+    "N",   # Naming conventions
+    "PD",  # Pandas conventions
+    "PLC", # Pylint conventions
+    "PLE", # Pylint errors
+    "PT",  # Pytest conventions
+
+    # Simpler, clearner, more Pythonic code
+    "C4",  # Comprehensions
+    "EM",  # Error messages
+    "PIE", # Misc. rules
+    "RET", # Return values
+    "RUF", # Ruff-specific rules
+    "SIM", # Simplify
+
+    # Modernize code
+    "ANN001", # Function argument type annotations
+    "ANN2",   # Function return type annotations
+    "DTZ",    # Require timezone information when using datetime
+    "FURB",   # Refurbish/modernize code
+    "NPY",    # Avoid Numpy deprecations
+    "PERF",   # Avoid performance anti-patterns
+    "PTH",    # Prefer pathlib over alternatives
+    "UP",     # Use newest syntax according to project.requires-python
+
+    # Logging
+    "G",   # Logging setup
+    "LOG", # Log messages
+    "T20", # Check for print statements
+
+    # Imports
+    "I",      # Sort and add missing imports with isort
+    "TID252", # Prefer absolute imports over relative imports from parent modules
+]
+
+ignore = [
+    # "ANN", # Uncomment if you don't want to be reminded about type annotations
+    "D1", # Don't warn about missing docstrings
+
+    # Ignore rules which are redundant when using the formatter.
+    # See https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules for details.
+    "E111",
+    "E114",
+    "E117",
+    "D206",
+    "D300",
+    "E501",
+]
+
+[tool.ruff.lint.extend-per-file-ignores]
+# Skip docstring and return type annotation rules for test files.
+"tests/*" = ["ANN2", "D"]
+# Run pytest lint rules only in test files.
+"!tests/*" = ["PT"]
+# Allow "unused" imports when exposing objects from submodules.
+"**/__init__.py" = ["F401"]
+
+[tool.ruff.lint.isort]
+force-single-line = true
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy" # One of: "google" | "numpy" | "pep257"
