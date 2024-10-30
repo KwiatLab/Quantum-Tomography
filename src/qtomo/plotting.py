@@ -1,19 +1,9 @@
-from __future__ import print_function
-import numpy as np
-import matplotlib.pyplot as plt
 import matplotlib as mpl
-from . import state_utilities
+import matplotlib.pyplot as plt
+import numpy as np
 from matplotlib.colors import LinearSegmentedColormap
 
-"""
-Copyright 2020 University of Illinois Board of Trustees.
-Licensed under the terms of an MIT license
-"""
-
-
-"""CHECK OUT THE REFERENCE PAGE ON OUR WEBSITE :
-https://quantumtomo.web.illinois.edu/Doc/"""
-
+from qtomo import state_utilities
 
 """
 makeRhoImages(p, plt_given, customColor)
@@ -39,9 +29,9 @@ def makeRhoImages(p, plt_given, customColor=True):
     numQubits = int(np.log2(p.shape[0]))
     xpos = np.zeros_like(p.flatten(), dtype=float)
     ypos = np.zeros_like(p.flatten(), dtype=float)
-    for i in range(0, 2**numQubits):
+    for i in range(2**numQubits):
         xpos[i * 2**numQubits : (1 + i) * 2**numQubits] = 0.5 + i
-    for i in range(0, 2**numQubits):
+    for i in range(2**numQubits):
         ypos[i :: 2**numQubits] = 0.5 + i
     zpos = np.zeros_like(p.flatten(), dtype=float)
     # width of cols
@@ -50,8 +40,6 @@ def makeRhoImages(p, plt_given, customColor=True):
     # custom color map
     n_bin = 100
     if customColor:
-        from matplotlib.colors import LinearSegmentedColormap
-
         cmap_name = "my_list"
         colors = [
             (1 / 255.0, 221 / 255.0, 137 / 255.0),
@@ -156,9 +144,9 @@ def saveRhoImages(p, pathToDirectory):
     numQubits = int(np.log2(p.shape[0]))
     xpos = np.zeros_like(p.flatten(), dtype=float)
     ypos = np.zeros_like(p.flatten(), dtype=float)
-    for i in range(0, 2**numQubits):
+    for i in range(2**numQubits):
         xpos[i * 2**numQubits : (1 + i) * 2**numQubits] = 0.5 + i
-    for i in range(0, 2**numQubits):
+    for i in range(2**numQubits):
         ypos[i :: 2**numQubits] = 0.5 + i
     zpos = np.zeros_like(p.flatten(), dtype=float)
     # width of cols
@@ -275,19 +263,13 @@ def printLastOutput(tomo, bounds=-1):
     for i in range(p.shape[0]):
         for j in range(p.shape[1]):
             print(p[i, j] + " " * (mx - len(p[i, j])), end="")
-        print("")
+        print()
 
     # print(p)
     properties = tomo.getProperties(bounds)
     for prop in properties:
         if (len(prop) >= 3) and prop[2] != "NA":
-            print(
-                prop[0]
-                + " : "
-                + floatToString(prop[1])
-                + " +/- "
-                + floatToString(prop[2])
-            )
+            print(prop[0] + " : " + floatToString(prop[1]) + " +/- " + floatToString(prop[2]))
         else:
             print(prop[0] + " : " + floatToString(prop[1]))
 
@@ -321,30 +303,19 @@ def matrixToHTML(M, printEigenVals=False):
         for j in range(s[1]):
             # res = res + '<td style = "border: 1px solid black;">' + str(np.real(M[i, j])) + "<div style = \"color:rebeccapurple;font-weight: bold;display:inline;\">+</div><BR>"+ str(np.imag(M[i, j]))
             # res = res + '<div style = \"color:rebeccapurple;font-weight: bold;display:inline;\">j</div></td>'
-            res = (
-                res
-                + '<td style = "border: 1px solid black;">'
-                + floatToString(M[i, j], True)
-                + "</td>"
-            )
+            res = res + '<td style = "border: 1px solid black;">' + floatToString(M[i, j], True) + "</td>"
         res = res + "</tr>"
     res = res + "</table>"
     if printEigenVals:
         d, v = np.linalg.eig(M)
         sum = 0
         eigenVals = "<h5>Eigenvalues: "
-        for x in range(0, len(d)):
+        for x in range(len(d)):
             eigenVals = eigenVals + str(round(d[x].real, 5))
             if abs(d[x].imag) > 0.00001:
-                eigenVals = (
-                    eigenVals
-                    + '< div style = "color:rebeccapurple;font-weight: bold;display:inline;">+</div>'
-                )
+                eigenVals = eigenVals + '< div style = "color:rebeccapurple;font-weight: bold;display:inline;">+</div>'
                 eigenVals = eigenVals + str(round(d[x].imag, 5))
-                eigenVals = (
-                    eigenVals
-                    + '<div style = "color:rebeccapurple;font-weight: bold;display:inline;">j</div>'
-                )
+                eigenVals = eigenVals + '<div style = "color:rebeccapurple;font-weight: bold;display:inline;">j</div>'
             eigenVals = eigenVals + " , "
             sum += d[x]
         eigenVals = str(eigenVals)[0 : len(str(eigenVals)) - 2]
@@ -380,7 +351,9 @@ def propertiesToHTML(vals):
     hasSTD = len(vals) > 2
     if hasSTD and any(vals[:, 2] != "NA"):
         f += '<td style = "font-size: 20;font-weight: 1000;color: rebeccapurple;padding-bottom:5px;">Average Value</td>'
-        f += '<td style = "font-size: 20;font-weight: 1000;color: rebeccapurple;padding-bottom:5px;">STD Error</td></tr>'
+        f += (
+            '<td style = "font-size: 20;font-weight: 1000;color: rebeccapurple;padding-bottom:5px;">STD Error</td></tr>'
+        )
         f += '<td style = "font-size: 20;font-weight: 1000;color: rebeccapurple;padding-bottom:5px;"></td></tr>'
     else:
         f += '<td style = "font-size: 20;font-weight: 1000;color: rebeccapurple;padding-bottom:5px;">Value</td>'
@@ -395,13 +368,7 @@ def propertiesToHTML(vals):
                 + v[0]
                 + "</a></td>"
             )
-            f += (
-                '<td name = "'
-                + v[0].replace(" ", "")
-                + '_value">'
-                + floatToString(v[1], True)
-                + "</td>"
-            )
+            f += '<td name = "' + v[0].replace(" ", "") + '_value">' + floatToString(v[1], True) + "</td>"
             if hasSTD and v[2] != "NA":
                 f += "<td> +/- " + floatToString(v[2], True) + "</td>"
             else:
@@ -454,56 +421,41 @@ def floatToString(x, html=False):
                         + '<div style = "color:rebeccapurple;font-weight: bold;display:inline;"> + i</div>'
                         + tempIMAG
                     )
-                else:
-                    return (
-                        floatToString(x.real)
-                        + '<div style = "color:rebeccapurple;font-weight: bold;display:inline;"> - i</div>'
-                        + tempIMAG[1:]
-                    )
-            else:
-                if tempIMAG[0] != "-":
-                    return floatToString(x.real) + " + i" + tempIMAG
-                else:
-                    return floatToString(x.real) + " - i" + tempIMAG[1:]
-        else:
-            if html:
-                if tempIMAG[0] != "-":
-                    return (
-                        '<div style = "color:rebeccapurple;font-weight: bold;display:inline;">i</div>'
-                        + tempIMAG
-                    )
-                else:
-                    return (
-                        '<div style = "color:rebeccapurple;font-weight: bold;display:inline;">-i</div>'
-                        + tempIMAG[1:]
-                    )
-            else:
-                if tempIMAG[0] != "-":
-                    return "i" + tempIMAG
-                else:
-                    return "-i" + tempIMAG[1:]
+                return (
+                    floatToString(x.real)
+                    + '<div style = "color:rebeccapurple;font-weight: bold;display:inline;"> - i</div>'
+                    + tempIMAG[1:]
+                )
+            if tempIMAG[0] != "-":
+                return floatToString(x.real) + " + i" + tempIMAG
+            return floatToString(x.real) + " - i" + tempIMAG[1:]
+        if html:
+            if tempIMAG[0] != "-":
+                return '<div style = "color:rebeccapurple;font-weight: bold;display:inline;">i</div>' + tempIMAG
+            return '<div style = "color:rebeccapurple;font-weight: bold;display:inline;">-i</div>' + tempIMAG[1:]
+        if tempIMAG[0] != "-":
+            return "i" + tempIMAG
+        return "-i" + tempIMAG[1:]
+    if x == float("inf"):
+        return "inf"
+    if isNaN(x):
+        return "nan"
+    if abs(x.real) <= 10**-8:
+        return "0"
+
+    s = f"{float(x.real):e}"
+    [num, power] = s.split("e")
+    if num[0] == "-":
+        num = num[:5]
     else:
-        if x == float("inf"):
-            return "inf"
-        if isNaN(x):
-            return "nan"
-        if abs(x.real) <= 10**-8:
-            return "0"
+        num = num[:4]
 
-        s = "{:e}".format(float(x.real))
-        [num, power] = s.split("e")
-        if num[0] == "-":
-            num = num[:5]
-        else:
-            num = num[:4]
-
-        if abs(float(power)) > 2:
-            return num + "e" + power
-        else:
-            s = float(num) * 10 ** float(power)
-            s = np.around(s, 2 - int(power))
-            s = str(s)
-            return s
+    if abs(float(power)) > 2:
+        return num + "e" + power
+    s = float(num) * 10 ** float(power)
+    s = np.around(s, 2 - int(power))
+    s = str(s)
+    return s
 
 
 # checks if a number is nan
