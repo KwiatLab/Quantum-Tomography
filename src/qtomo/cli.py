@@ -1,96 +1,60 @@
-from __future__ import print_function
-
 import argparse
 import os
-import warnings
+
 import numpy as np
-import qtomo as qKLib
 
-warnings.filterwarnings("ignore")
-
-
-"""
-Copyright 2020 University of Illinois Board of Trustees.
-Licensed under the terms of an MIT license
-"""
+import qtomo
+from qtomo.tomography import Tomography
 
 
-"""CHECK OUT THE REFERENCE PAGE ON OUR WEBSITE :
-https://quantumtomo.web.illinois.edu/Doc/"""
-
-# This script is used to run quantum tomography from the command line.
-#
-# Running the command quantum-tomography from the command line in the package directory will run this script
-
-
-def file_path(string):
-    if os.path.isfile(string) or string == "../../":
-        return string
-    else:
-        raise OSError(string)
-
-
-def dir_path(string):
-    if os.path.isdir(string) or string == "../../":
-        return string
-    else:
-        raise OSError(string)
-
-
-def main():
-    # create argument parser object
+def main() -> None:
     parser = argparse.ArgumentParser(description="Quantum Tomography")
 
-    parser.add_argument(
-        "-i",
-        "--eval",
-        type=file_path,
+    _ = parser.add_argument(
+        "filename"
+        type=str,
         nargs=1,
-        metavar="evalFile",
-        default=None,
-        help="The full path to the file that contains the data and configuration for the tomography.",
+        metavar="FILE",
+        required=True,
+        help="Path to the tomography data file.",
     )
 
-    parser.add_argument(
-        "-s",
-        "--save",
-        type=dir_path,
+    _ = parser.add_argument(
+        "-c",
+        "--config",
+        type=str,
         nargs=1,
-        metavar="outPutFolder",
+        metavar="CONFIG",
         default=None,
-        help="The full path to the folder where you want the output to be saved. If not included it will not save your data.",
+        help="Path to the config file to use. If not specified, the default configuration will be used.",
     )
 
-    parser.add_argument(
-        "-p",
-        "--pic",
+    _ = parser.add_argument(
+        "-w",
+        "--write",
+        type=str,
+        nargs=1,
+        metavar="OUTDIR",
+        default=None,
+        help="Path directory to save tomography data. If not specified, data will be displayed, but not saved.",
+    )
+
+    _ = parser.add_argument(
+        "--skip-real-imag",
         action="store_true",
         default=False,
-        help="Including this will show images of real and imaginary values of the density matrix. If save is also included pictures will be saved and not shown.",
+        help="Whether to incldue the skip showing the real and imaginary density matrix components and just show the overall plot.",
     )
 
-    # parse the arguments from standard input
     args = parser.parse_args()
 
-    if args.eval is None:
-        raise ValueError("input not defined")
+    args
 
-    inPutfilePath = args.eval[0]
 
-    if args.save is None:
-        save = False
 
-    else:
-        outPutfilePath = args.save[0]
-        save = True
-
-    pictures = args.pic
-
-    t = qKLib.Tomography()
+    t = Tomography()
 
     # import the eval file to import both the config and data
-    [rho, intensity, fval] = t.importEval(inPutfilePath)
-    qKLib.printLastOutput(t)
 
     if save and save != "False":
         if not os.path.exists(outPutfilePath + "/TomoOutPut"):
@@ -101,19 +65,15 @@ def main():
             import matplotlib.pyplot as plt
 
             FORREPLACE = (
-                FORREPLACE
-                + '<img src = "rhobarReal.png" style = "float: left;" width = "550" height = "auto">'
+                FORREPLACE + '<img src = "rhobarReal.png" style = "float: left;" width = "550" height = "auto">'
             )
-            FORREPLACE = (
-                FORREPLACE
-                + '<img src = "rhobarImag.png" width = "550" height = "auto"><br>'
-            )
-            qKLib.saveRhoImages(rho, outPutfilePath + "/TomoOutPut")
+            FORREPLACE = FORREPLACE + '<img src = "rhobarImag.png" width = "550" height = "auto"><br>'
+            qtomo.saveRhoImages(rho, outPutfilePath + "/TomoOutPut")
 
-        FORREPLACE = FORREPLACE + qKLib.matrixToHTML(rho)
+        FORREPLACE = FORREPLACE + qtomo.matrixToHTML(rho)
 
         vals = t.getProperties(rho)
-        FORREPLACE = str(FORREPLACE) + qKLib.propertiesToHTML(vals)
+        FORREPLACE = str(FORREPLACE) + qtomo.propertiesToHTML(vals)
 
         # Print out properties of bellSettings
         bs = ""
@@ -125,22 +85,18 @@ def main():
             if vals.shape[1] > 2:
                 bs += '<td  style = "font-size: 20;font-weight: 1000;color: rebeccapurple;padding-bottom:5px;">   Error</td></tr>'
             else:
-                bs += '<td  style = "font-size: 20;font-weight: 1000;color: rebeccapurple;padding-bottom:5px;"></td></tr>'
-            for v in vals:
                 bs += (
-                    "<tr><td>"
-                    + v[0]
-                    + "</td><td>"
-                    + qKLib.floatToString(v[1])
-                    + " &deg;</td>"
+                    '<td  style = "font-size: 20;font-weight: 1000;color: rebeccapurple;padding-bottom:5px;"></td></tr>'
                 )
+            for v in vals:
+                bs += "<tr><td>" + v[0] + "</td><td>" + qtomo.floatToString(v[1]) + " &deg;</td>"
                 if len(v) > 2:
-                    bs += "<td>+/- " + qKLib.floatToString(v[2]) + "&deg;</td></tr> \n"
+                    bs += "<td>+/- " + qtomo.floatToString(v[2]) + "&deg;</td></tr> \n"
                 else:
                     bs += "<td></td></tr>"
             bs += (
                 "<tr><td>resolution</td><td>"
-                + qKLib.floatToString(resolution * 180 / np.pi)
+                + qtomo.floatToString(resolution * 180 / np.pi)
                 + "&deg;</td><td></tr></tr> \n"
             )
             bs += "</td></tr></table>"
@@ -170,9 +126,5 @@ def main():
         if pictures:
             import matplotlib.pyplot as plt
 
-            qKLib.makeRhoImages(rho, plt)
+            qtomo.makeRhoImages(rho, plt)
             plt.show()
-
-
-if __name__ == "__main__":
-    main()

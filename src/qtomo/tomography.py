@@ -1,43 +1,47 @@
 import numpy as np
-from . import state_utilities
 import scipy
 
+from qtomo import state
+
+
 class Tomography:
-    def __init__(self,
-                n_qubits=2,
-                n_detectors=1):
-        
+    def __init__(self, n_qubits: int = 2, n_detectors: int = 1) -> None:
         self.n_qubits = n_qubits
         self.n_detectors = n_detectors
 
-    """
-    check_settings()
-    desc : Checks the current settings and throws errors if any are invalid.
-    """
     def check_settings(self):
         # Check Accidentals and window
-        if self.n_qubits == 1:
-            if self.accidental_correction:
-                raise ValueError('Invalid Conf settings. Accidental Correction can not be done for single qubit tomography')
+        if self.n_qubits == 1 and self.accidental_correction:
+            raise ValueError("Invalid Conf settings. Accidental Correction can not be done for single qubit tomography")
         if self.accidental_correction:
-            win = np.array(self.window,dtype=float)
-            if len(win.shape) != 1 or len(win) != self.n_detectors*self.n_qubits:
-                raise ValueError('Invalid Conf settings. Window should have length ' +str(self.n_detectors*self.n_qubits) + " with the given settings.")
+            win = np.array(self.window, dtype=float)
+            if len(win.shape) != 1 or len(win) != self.n_detectors * self.n_qubits:
+                raise ValueError(
+                    "Invalid Conf settings. Window should have length "
+                    + str(self.n_detectors * self.n_qubits)
+                    + " with the given settings."
+                )
             self.window = win
         # Efficicieny and Ndetectors
-        if self.n_detectors not in [1,2]:
-            raise ValueError('Invalid Conf settings. NDetectors can be either 1 or 2, corresponding to the number of detectors per qubit.')
-        elif self.n_detectors == 2:
-            eff = np.array(self.efficiency,dtype=float)
+        if self.n_detectors not in [1, 2]:
+            raise ValueError(
+                "Invalid Conf settings. NDetectors can be either 1 or 2, corresponding to the number of detectors per qubit."
+            )
+        if self.n_detectors == 2:
+            eff = np.array(self.efficiency, dtype=float)
             if not self.efficiency:
-                eff = np.ones(self.n_qubits*self.n_detectors)
-            if eff.ndims != 1 and eff.shape[0] != self.n_qubits*self.n_detectors:
-                raise ValueError('Invalid Conf settings. Efficiency should have length ' +str(self.n_detectors*self.n_qubits) + " with the given settings.")
+                eff = np.ones(self.n_qubits * self.n_detectors)
+            if eff.ndims != 1 and eff.shape[0] != self.n_qubits * self.n_detectors:
+                raise ValueError(
+                    "Invalid Conf settings. Efficiency should have length "
+                    + str(self.n_detectors * self.n_qubits)
+                    + " with the given settings."
+                )
         elif self.n_detectors == 1:
             eff = np.ones(1)
         self.efficiency = eff
         # Crosstalk
-        correctSize = int(np.floor(2**self.n_qubits+.01))
+        correctSize = int(np.floor(2**self.n_qubits + 0.01))
         c = self.crosstalk
         if c:
             c = np.eye(correctSize)
@@ -45,44 +49,67 @@ class Tomography:
             c = np.array(c)
         # make sure it has the right shape
         if len(c.shape) != 2 or c.shape[0] != c.shape[1]:
-            raise ValueError('Invalid Conf settings. Crosstalk should be an array with shape (' +
-                                str(correctSize)+","+str(correctSize)+ ") with the given settings.")
+            raise ValueError(
+                "Invalid Conf settings. Crosstalk should be an array with shape ("
+                + str(correctSize)
+                + ","
+                + str(correctSize)
+                + ") with the given settings."
+            )
         # make sure it has the right size
         if c.shape[0] != correctSize:
-            if np.any(c-np.eye(c.shape[0])>10**-6):
+            if np.any(c - np.eye(c.shape[0]) > 10**-6):
                 # Throw error if not the right size
-                raise ValueError('Invalid Conf settings. Crosstalk should be an array with shape (' +
-                                    str(correctSize) + "," + str(correctSize) + ") with the given settings.")
-            else:
-                # If the given cross talk is an identity matrix just fix the size.
-                c = np.eye(correctSize)
+                raise ValueError(
+                    "Invalid Conf settings. Crosstalk should be an array with shape ("
+                    + str(correctSize)
+                    + ","
+                    + str(correctSize)
+                    + ") with the given settings."
+                )
+            # If the given cross talk is an identity matrix just fix the size.
+            c = np.eye(correctSize)
         self.crosstalk = c
-        
 
-    def check_tomo_input(self, measurements, counts, intensities, rho_start, drift_correction, accidental_correction, crosstalk, efficiency, times, singles, window):
-
+    def check_tomo_input(
+        self,
+        measurements,
+        counts,
+        intensities,
+        rho_start,
+        drift_correction,
+        accidental_correction,
+        crosstalk,
+        efficiency,
+        times,
+        singles,
+        window,
+    ):
         # Check input measurements
         if measurements.ndim != 3:
             raise ValueError("Invalid measurements matrix, need an array of density matrices.")
         if measurements.shape[1] != self.n_qubits**2:
-            raise ValueError("Invalid measurements matrix, the number of qubits in measurements does not match the number of qubits in the system (defined by Tomography.n_qubits).")
+            raise ValueError(
+                "Invalid measurements matrix, the number of qubits in measurements does not match the number of qubits in the system (defined by Tomography.n_qubits)."
+            )
         if measurements.shape[0] != counts.shape[0]:
             raise ValueError("Number of counts does not match the number of measurements.")
-        
+
         self.measurements = measurements
 
         # Check counts
-        if (counts.shape[0] != measurements.shape[0]):
+        if counts.shape[0] != measurements.shape[0]:
             raise ValueError("Number of Counts does not match the number of measurements")
-        else:
-            self.counts = counts
+        self.counts = counts
         # Determine if 2det/qubit from counts matrix
-        if(counts.shape[1] == 1):
+        if counts.shape[1] == 1:
             self.n_detectors = 1
-        elif(counts.shape[1] == self.conf['NQubits']*2):
+        elif counts.shape[1] == self.conf["NQubits"] * 2:
             self.n_detectors = 2
         else:
-            raise ValueError("The second axis of counts does not have the right dimension. Should be 1 or 2*NQubits for 2det")
+            raise ValueError(
+                "The second axis of counts does not have the right dimension. Should be 1 or 2*NQubits for 2det"
+            )
 
         # Create intensities matrix
         if intensities is None:
@@ -91,23 +118,22 @@ class Tomography:
             self.intensities = intensities
         else:
             raise ValueError("Invalid intensities array")
-        
+
         # Check if drift correction is necessary
-        if drift_correction or any(self.intensities-np.ones_like(self.intensities))>10**-6:
+        if drift_correction or any(self.intensities - np.ones_like(self.intensities)) > 10**-6:
             self.drift_correction = True
 
-        if (times or singles or window):
+        if times or singles or window:
             self.accidental_correction = True
         else:
             self.time = np.ones(measurements.shape[0])
-            self.singles = np.zeros((measurements.shape[0],self.n_detectors*self.n_qubits))
-            self.window = np.zeros(self.n_detectors*self.n_qubits)
-
+            self.singles = np.zeros((measurements.shape[0], self.n_detectors * self.n_qubits))
+            self.window = np.zeros(self.n_detectors * self.n_qubits)
 
         # Check if time has right length
         if not times:
             self.time = np.ones(measurements.shape[0])
-        elif not times.shape[0] == measurements.shape[0]:
+        elif times.shape[0] != measurements.shape[0]:
             ValueError("Invalid time array")
         else:
             self.times = times
@@ -135,25 +161,24 @@ class Tomography:
                 self.singles = singles
         # Check if window has right length
         if not window:
-            self.window = np.zeros(self.n_detectors*self.n_qubits)
-        elif window.n_dims == 1 and window.shape[0] != self.n_detectors*self.n_qubits:
+            self.window = np.zeros(self.n_detectors * self.n_qubits)
+        elif window.n_dims == 1 and window.shape[0] != self.n_detectors * self.n_qubits:
             raise ValueError("Invalid window array")
         else:
             self.window = window
 
         if not crosstalk:
-            self.crosstalk = np.identity(2 ** self.n_qubits)
-        elif crosstalk.ndims != 2 or crosstalk.shape[0] != crosstalk.shape[1] or crosstalk.shape[0] != 2 ** self.n_qubits:
+            self.crosstalk = np.identity(2**self.n_qubits)
+        elif crosstalk.ndims != 2 or crosstalk.shape[0] != crosstalk.shape[1] or crosstalk.shape[0] != 2**self.n_qubits:
             raise ValueError("Invalid crosstalk matrix")
         else:
-            self.crosstalk =  crosstalk
+            self.crosstalk = crosstalk
 
-        if(efficiency and efficiency.shape[0] != self.n_qubits*2):
+        if efficiency and efficiency.shape[0] != self.n_qubits * 2:
             raise ValueError("Invalid efficiency array. Length should be n_qubits*2")
-        else:
-            self.efficiency = efficiency
+        self.efficiency = efficiency
 
-        # Initialize 
+        # Initialize
         self.rho_start = rho_start
 
         self.accidentals = np.zeros_like(counts)
@@ -167,43 +192,75 @@ class Tomography:
             scalarIndex = np.concatenate((np.ones(self.counts - 2), [2, 2]))
             additiveIndex = np.array([0, 1])
             for j in range(2, self.n_qubits):
-                additiveIndex = np.concatenate(([2*j], additiveIndex))
-            if (len(self.counts.shape) == 1):
+                additiveIndex = np.concatenate(([2 * j], additiveIndex))
+            if len(self.counts.shape) == 1:
                 self.accidentals = self.accidentals[:, np.newaxis]
             for j in range(self.counts.shape[0]):
                 index = bin(j).split("b")[1]
                 index = "0" * (self.n_qubits_ - len(index)) + index
                 index = [int(char) for char in index]
-                index = index*scalarIndex + additiveIndex
-                index = np.array(index, dtype = int)
-                self.accidentals[:, j] = np.prod(np.real(self.singles[:, tuple(index)]), axis = 1) * (window[j] * 1e-9 / np.real(self.times)) ** (self.n_qubits - 1)
-            if (self.accidentals.shape != self.counts.shape):
+                index = index * scalarIndex + additiveIndex
+                index = np.array(index, dtype=int)
+                self.accidentals[:, j] = np.prod(np.real(self.singles[:, tuple(index)]), axis=1) * (
+                    window[j] * 1e-9 / np.real(self.times)
+                ) ** (self.n_qubits - 1)
+            if self.accidentals.shape != self.counts.shape:
                 self.accidentals = self.accidentals[:, 0]
-    
 
-    def tomography(self, measurements, counts, rho_start = None, crosstalk=None, accidental_correction=False, drift_correction = False, efficiency=None, times=None, singles=None, window=None, error=0,
-                        intensities=None, method="MLE"):
-        
-        self.check_tomo_input(measurements, counts, intensities, rho_start, drift_correction, accidental_correction, crosstalk, efficiency, times, singles, window)
+    def tomography(
+        self,
+        measurements,
+        counts,
+        rho_start=None,
+        crosstalk=None,
+        accidental_correction=False,
+        drift_correction=False,
+        efficiency=None,
+        times=None,
+        singles=None,
+        window=None,
+        error=0,
+        intensities=None,
+        method="MLE",
+    ):
+        self.check_tomo_input(
+            measurements,
+            counts,
+            intensities,
+            rho_start,
+            drift_correction,
+            accidental_correction,
+            crosstalk,
+            efficiency,
+            times,
+            singles,
+            window,
+        )
         self.check_settings()
         # get the starting state from tomography_LINEAR if not defined
         if self.rho_start is None:
             try:
-                [self.rho_start,inten_linear] = self.tomography_LINEAR(self.counts, self.measurements, self.overall_norms)
+                [self.rho_start, inten_linear] = self.tomography_LINEAR(
+                    self.counts, self.measurements, self.overall_norms
+                )
                 # Currently linear tomography gets the phase wrong. So a temporary fix is to just transpose it.
                 self.rho_start = self.rho_start.transpose()
-                self.rho_start = state_utilities.make_positive(self.rho_start)
+                self.rho_start = state.make_positive(self.rho_start)
                 self.rho_start = self.rho_start / np.trace(self.rho_start)
             except Exception:
-                raise RuntimeError('Failed to run linear Tomography', str(Exception))
+                raise RuntimeError("Failed to run linear Tomography", str(Exception))
 
         # Run tomography and find an estimate for the state
         if method == "linear":
-            [self.rhog, self.intensity, self.fvalp] = [self.rho_start,inten_linear,0]
+            [self.rhog, self.intensity, self.fvalp] = [self.rho_start, inten_linear, 0]
         elif method == "mle":
-            [self.rhog, self.intensity, self.fvalp] = self.tomography_MLE(self.rho_start, self.counts, self.measurements, self.accidentals, self.overall_norms)
+            [self.rhog, self.intensity, self.fvalp] = self.tomography_MLE(
+                self.rho_start, self.counts, self.measurements, self.accidentals, self.overall_norms
+            )
         elif method == "hmle":
-            [self.rhog, self.intensity, self.fvalp] = self.tomography_HMLE(self.rho_start, self.counts, self.measurements, self.accidentals, self.overall_norms)
+            [self.rhog, self.intensity, self.fvalp] = self.tomography_HMLE(
+                self.rho_start, self.counts, self.measurements, self.accidentals, self.overall_norms
+            )
         # elif method.upper() == "BME":
         #     [rhog, intensity, fvalp] = self.tomography_BME(starting_matrix, coincidences, measurements_densities,accidentals,overall_norms)
         else:
@@ -212,7 +269,7 @@ class Tomography:
         self.mont_carlo_states = list([[self.rhog, self.intensity, self.fvalp]])
 
         return [self.rhog, self.intensity, self.fvalp]
-        
+
     """
     tomography_LINEAR(coincidences, measurements,overall_norms)
     Desc: Uses linear techniques to find a starting state for maximum likelihood estimation.
@@ -238,26 +295,28 @@ class Tomography:
         # If overall_norms not given then assume uniform
         if overall_norms is None:
             overall_norms = np.ones(counts.shape[0])
-        elif not overall_norms.shape[0] == counts.shape[0]:
+        elif overall_norms.shape[0] != counts.shape[0]:
             raise ValueError("Invalid intensities array")
 
         counts = counts.flatten()
 
-        pauli_basis = state_utilities.generalized_pauli_basis(self.getNumQubits())
-        stokes_measurements = np.array([state_utilities.get_stokes_parameters(m,pauli_basis) for m in measurements]) / 2**self.getNumQubits()
+        pauli_basis = state.generalized_pauli_basis(self.getNumQubits())
+        stokes_measurements = (
+            np.array([state.get_stokes_parameters(m, pauli_basis) for m in measurements]) / 2 ** self.getNumQubits()
+        )
         freq_array = counts / overall_norms
 
-        B_inv = np.linalg.inv(np.matmul(stokes_measurements.T,stokes_measurements))
-        stokes_params = np.matmul(stokes_measurements.T,freq_array)
-        stokes_params = np.matmul(B_inv,stokes_params)
-        linear_rhog = np.multiply(pauli_basis,stokes_params[:, np.newaxis,np.newaxis])
-        linear_rhog = np.sum(linear_rhog,axis=0)
+        B_inv = np.linalg.inv(np.matmul(stokes_measurements.T, stokes_measurements))
+        stokes_params = np.matmul(stokes_measurements.T, freq_array)
+        stokes_params = np.matmul(B_inv, stokes_params)
+        linear_rhog = np.multiply(pauli_basis, stokes_params[:, np.newaxis, np.newaxis])
+        linear_rhog = np.sum(linear_rhog, axis=0)
 
         intensity = np.trace(linear_rhog)
         rhog = linear_rhog / intensity
 
         return [rhog, intensity]
-    
+
     """
     tomography_MLE(starting_matrix, coincidences, measurements, accidentals,overall_norms)
     Desc: Runs tomography using maximum likelyhood estimation.
@@ -285,37 +344,41 @@ class Tomography:
         Final value of the internal optimization function. Values greater than the number
         of measurements indicate poor agreement with a quantum state.
     """
-    def tomography_MLE(self, starting_matrix, coincidences, measurements, accidentals,overall_norms=-1):
+
+    def tomography_MLE(self, starting_matrix, coincidences, measurements, accidentals, overall_norms=-1):
         # If overall_norms not given then assume uniform
-        if not isinstance(overall_norms,np.ndarray):
+        if not isinstance(overall_norms, np.ndarray):
             overall_norms = np.ones(coincidences.shape[0])
         elif not (len(overall_norms.shape) == 1 and overall_norms.shape[0] == coincidences.shape[0]):
             raise ValueError("Invalid intensities array")
 
-        init_intensity = np.mean(np.multiply(coincidences, 1/overall_norms)) * (starting_matrix.shape[0])
-        starting_tvals = state_utilities.density2t(starting_matrix)
+        init_intensity = np.mean(np.multiply(coincidences, 1 / overall_norms)) * (starting_matrix.shape[0])
+        starting_tvals = state.density2t(starting_matrix)
         starting_tvals = starting_tvals + 0.0001
         starting_tvals = starting_tvals * np.sqrt(init_intensity)
 
         coincidences = np.real(coincidences)
         coincidences = coincidences.flatten()
 
-        final_tvals = scipy.optimize.leastsq(maxlike_fitness, np.real(starting_tvals),
-                              args = (coincidences, accidentals, measurements, overall_norms),
-                              ftol=self.conf["ftol"],
-                              xtol=self.conf["xtol"],
-                              gtol=self.conf["gtol"],
-                              maxfev=self.conf["maxfev"])[0]
+        final_tvals = scipy.optimize.leastsq(
+            maxlike_fitness,
+            np.real(starting_tvals),
+            args=(coincidences, accidentals, measurements, overall_norms),
+            ftol=self.conf["ftol"],
+            xtol=self.conf["xtol"],
+            gtol=self.conf["gtol"],
+            maxfev=self.conf["maxfev"],
+        )[0]
         fvalp = np.sum(maxlike_fitness(final_tvals, coincidences, accidentals, measurements, overall_norms) ** 2)
 
-        final_matrix = state_utilities.t_to_density(final_tvals, normalize=False)
+        final_matrix = state.t_to_density(final_tvals, normalize=False)
         intensity = np.trace(final_matrix)
         final_matrix = final_matrix / np.trace(final_matrix)
 
         intensity = np.float64(np.real(intensity))
 
         return [final_matrix, intensity, fvalp]
-    
+
     """
     tomography_HMLE(starting_matrix, coincidences, measurements, accidentals,overall_norms)
     Desc: Runs tomography using hedged maximum likelyhood estimation.
@@ -343,7 +406,8 @@ class Tomography:
         Final value of the internal optimization function. Values greater than the number
         of measurements indicate poor agreement with a quantum state.
     """
-    def tomography_HMLE(self, starting_matrix, coincidences, measurements, accidentals,overall_norms=-1):
+
+    def tomography_HMLE(self, starting_matrix, coincidences, measurements, accidentals, overall_norms=-1):
         # If overall_norms not given then assume uniform
         if not isinstance(overall_norms, np.ndarray):
             overall_norms = np.ones(coincidences.shape[0])
@@ -351,35 +415,39 @@ class Tomography:
             raise ValueError("Invalid intensities array")
 
         init_intensity = np.mean(np.multiply(coincidences, 1 / overall_norms)) * (starting_matrix.shape[0])
-        starting_tvals = state_utilities.density2t(starting_matrix)
+        starting_tvals = state.density2t(starting_matrix)
         starting_tvals = starting_tvals + 0.0001
         starting_tvals = starting_tvals * np.sqrt(init_intensity)
 
         coincidences = np.real(coincidences)
         coincidences = coincidences.flatten()
 
-        bet = self.conf['Beta']
+        bet = self.conf["Beta"]
         if bet > 0:
-            final_tvals = scipy.optimize.leastsq(maxlike_fitness_hedged, np.real(starting_tvals),
-                                  args=(coincidences, accidentals, measurements, bet, overall_norms),
-                                  ftol=self.conf["ftol"],
-                                  xtol=self.conf["xtol"],
-                                  gtol=self.conf["gtol"],
-                                  maxfev=self.conf["maxfev"])[0]
-            fvalp = np.sum(maxlike_fitness_hedged(final_tvals, coincidences, accidentals, measurements, bet,
-                                                      overall_norms) ** 2)
+            final_tvals = scipy.optimize.leastsq(
+                maxlike_fitness_hedged,
+                np.real(starting_tvals),
+                args=(coincidences, accidentals, measurements, bet, overall_norms),
+                ftol=self.conf["ftol"],
+                xtol=self.conf["xtol"],
+                gtol=self.conf["gtol"],
+                maxfev=self.conf["maxfev"],
+            )[0]
+            fvalp = np.sum(
+                maxlike_fitness_hedged(final_tvals, coincidences, accidentals, measurements, bet, overall_norms) ** 2
+            )
         else:
             raise ValueError("To use Hedged Maximum Likelihood, Beta must be a positive number.")
 
-        final_matrix = state_utilities.t_to_density(final_tvals,normalize=False)
+        final_matrix = state.t_to_density(final_tvals, normalize=False)
         intensity = np.trace(final_matrix)
         final_matrix = final_matrix / np.trace(final_matrix)
 
         intensity = np.float64(np.real(intensity))
 
         return [final_matrix, intensity, fvalp]
-    
-    '''
+
+    """
     tomography_BME(starting_matrix, coincidences, measurements, accidentals,overall_norms)
     Desc: Runs tomography using bayesian mean estimation. Currently in progress.
 
@@ -405,7 +473,7 @@ class Tomography:
     fvalp : float
         Final value of the internal optimization function. Values greater than the number
         of measurements indicate poor agreement with a quantum state.
-    '''
+    """
     # def tomography_BME(self,starting_matrix, coincidences, measurements, accidentals,overall_norms):
     #
     #     # algorithm parameters
@@ -682,6 +750,7 @@ class Tomography:
     fvalp : 1darray with length = n
         The fval of the regression associated with each approximate density matrices.
     """
+
     def tomography_states_generator(self, n, method="mle"):
         # Save the last data so we can restore it later
         last_input = self.last_input.copy()
@@ -698,33 +767,42 @@ class Tomography:
         for j in range(n):
             if len(test_counts.shape) == 1:
                 test_counts = np.array([test_counts]).T
-            [rhop, intenp, fvalp] = self.tomography(meas,test_counts,times=time, accidental_correction = acc, singles=test_singles,intensities=self.intensities,method=method)
+            [rhop, intenp, fvalp] = self.tomography(
+                meas,
+                test_counts,
+                times=time,
+                accidental_correction=acc,
+                singles=test_singles,
+                intensities=self.intensities,
+                method=method,
+            )
             self.mont_carlo_states.append([rhop, intenp, fvalp])
         # Restore the last tomo_input matrix to the original one
         self.last_input = last_input
         return self.mont_carlo_states
-    
+
     """
     getBellSettings(bounds)
     Desc: Returns the optimal measurment settings for the CHSH bell inequality. In Progress, have not checked.
     """
-    def getBellSettings(self, partsize_init = 9, partsize = 5, t = 3, bounds = -1):
-        if self.conf['nqubits'] != 2:
-            raise ValueError('Invalid Conf settings. Bell state can only be found for 2 qubit tomography')
+
+    def getBellSettings(self, partsize_init=9, partsize=5, t=3, bounds=-1):
+        if self.conf["nqubits"] != 2:
+            raise ValueError("Invalid Conf settings. Bell state can only be found for 2 qubit tomography")
         rho = self.last_rho
         # if bounds not set use the conf settings
         if bounds == -1:
-            bounds = self.conf['DoErrorEstimation']
+            bounds = self.conf["DoErrorEstimation"]
 
         # generate states if needed
         if bounds > len(self.mont_carlo_states) - 1:
             self.tomography_states_generator(bounds - len(self.mont_carlo_states) + 1)
-        states = np.array(self.mont_carlo_states,dtype="O")[:bounds + 1, :]
+        states = np.array(self.mont_carlo_states, dtype="O")[: bounds + 1, :]
 
-        if (bounds > 0):
-            return getBellSettings_helper_bounds(states[:,0], rho, partsize_init, partsize, t, bounds)
-        else:
-            return getBellSettings_helper(rho, partsize_init, partsize, t)
+        if bounds > 0:
+            return getBellSettings_helper_bounds(states[:, 0], rho, partsize_init, partsize, t, bounds)
+        return getBellSettings_helper(rho, partsize_init, partsize, t)
+
 
 # Helper function for calculating the bell settings
 def coinmat(a, b):
@@ -739,6 +817,7 @@ def coinmat(a, b):
     cmat = np.outer(k, k)
 
     return cmat
+
 
 """
 maxlike_fitness(t, coincidences, accidentals, m, prediction)
@@ -767,13 +846,10 @@ val : float
 
 
 def maxlike_fitness(t, coincidences, accidentals, measurements, overall_norms):
-    rhog = state_utilities.t_to_density(t, normalize=False)
+    rhog = state.t_to_density(t, normalize=False)
     prediction = np.zeros_like(coincidences)
     for j in range(len(prediction)):
-        prediction[j] = (
-            overall_norms[j] * np.real(np.trace(np.dot(measurements[j, :, :], rhog)))
-            + accidentals[j]
-        )
+        prediction[j] = overall_norms[j] * np.real(np.trace(np.dot(measurements[j, :, :], rhog))) + accidentals[j]
         prediction[j] = np.max([prediction[j], 0.01])
     log_like = (prediction - coincidences) / np.sqrt(prediction)
     return np.real(log_like)
@@ -807,23 +883,14 @@ val : float
 """
 
 
-def maxlike_fitness_hedged(
-    t, coincidences, accidentals, measurements, bet, overall_norms
-):
+def maxlike_fitness_hedged(t, coincidences, accidentals, measurements, bet, overall_norms):
     prediction = np.zeros_like(coincidences)
-    rhog = state_utilities.t_to_density(t, normalize=False)
+    rhog = state.t_to_density(t, normalize=False)
     for j in range(len(prediction)):
-        prediction[j] = (
-            overall_norms[j] * np.real(np.trace(np.dot(measurements[j, :, :], rhog)))
-            + accidentals[j]
-        )
+        prediction[j] = overall_norms[j] * np.real(np.trace(np.dot(measurements[j, :, :], rhog))) + accidentals[j]
         prediction[j] = np.max([prediction[j], 0.01])
-    hedge = np.repeat(
-        np.real((bet * np.log(np.linalg.det(rhog))) / len(prediction)), len(prediction)
-    )
-    val = np.sqrt(
-        np.real((((prediction - coincidences) ** 2) / (2 * prediction)) - hedge) + 1000
-    )
+    hedge = np.repeat(np.real((bet * np.log(np.linalg.det(rhog))) / len(prediction)), len(prediction))
+    val = np.sqrt(np.real((((prediction - coincidences) ** 2) / (2 * prediction)) - hedge) + 1000)
     return np.real(val)
 
 
@@ -840,36 +907,22 @@ def bellsettings_range_init(rhog, partsize):
             for b in np.linspace(0, np.pi / 2, partsize):
                 for bp in np.linspace(b, np.pi / 2, partsize):
                     npp = np.real(np.trace(np.dot(coinmat(a, b), rhog)))
-                    nmm = np.real(
-                        np.trace(np.dot(coinmat(a + np.pi / 2, b + np.pi / 2), rhog))
-                    )
+                    nmm = np.real(np.trace(np.dot(coinmat(a + np.pi / 2, b + np.pi / 2), rhog)))
                     e_ab = 2 * (npp + nmm) - 1
 
                     npp = np.real(np.trace(np.dot(coinmat(ap, b), rhog)))
-                    nmm = np.real(
-                        np.trace(np.dot(coinmat(ap + np.pi / 2, b + np.pi / 2), rhog))
-                    )
+                    nmm = np.real(np.trace(np.dot(coinmat(ap + np.pi / 2, b + np.pi / 2), rhog)))
                     e_apb = 2 * (npp + nmm) - 1
 
                     npp = np.real(np.trace(np.dot(coinmat(a, bp), rhog)))
-                    nmm = np.real(
-                        np.trace(np.dot(coinmat(a + np.pi / 2, bp + np.pi / 2), rhog))
-                    )
+                    nmm = np.real(np.trace(np.dot(coinmat(a + np.pi / 2, bp + np.pi / 2), rhog)))
                     e_abp = 2 * (npp + nmm) - 1
 
                     npp = np.real(np.trace(np.dot(coinmat(ap, bp), rhog)))
-                    nmm = np.real(
-                        np.trace(np.dot(coinmat(ap + np.pi / 2, bp + np.pi / 2), rhog))
-                    )
+                    nmm = np.real(np.trace(np.dot(coinmat(ap + np.pi / 2, bp + np.pi / 2), rhog)))
                     e_apbp = 2 * (npp + nmm) - 1
 
-                    s = (
-                        e_ab
-                        + e_abp
-                        + e_apb
-                        + e_apbp
-                        - 2 * np.min([e_ab, e_abp, e_apb, e_apbp])
-                    )
+                    s = e_ab + e_abp + e_apb + e_apbp - 2 * np.min([e_ab, e_abp, e_apb, e_apbp])
 
                     if s > sval:
                         sval = s
@@ -911,36 +964,22 @@ def bellsettings_range(rhog, partsize, arange, brange, aprange, bprange):
             for b in np.linspace(brange[0], brange[1], partsize):
                 for bp in np.linspace(bprange[0], bprange[1], partsize):
                     npp = np.real(np.trace(np.dot(coinmat(a, b), rhog)))
-                    nmm = np.real(
-                        np.trace(np.dot(coinmat(a + np.pi / 2, b + np.pi / 2), rhog))
-                    )
+                    nmm = np.real(np.trace(np.dot(coinmat(a + np.pi / 2, b + np.pi / 2), rhog)))
                     e_ab = 2 * (npp + nmm) - 1
 
                     npp = np.real(np.trace(np.dot(coinmat(ap, b), rhog)))
-                    nmm = np.real(
-                        np.trace(np.dot(coinmat(ap + np.pi / 2, b + np.pi / 2), rhog))
-                    )
+                    nmm = np.real(np.trace(np.dot(coinmat(ap + np.pi / 2, b + np.pi / 2), rhog)))
                     e_apb = 2 * (npp + nmm) - 1
 
                     npp = np.real(np.trace(np.dot(coinmat(a, bp), rhog)))
-                    nmm = np.real(
-                        np.trace(np.dot(coinmat(a + np.pi / 2, bp + np.pi / 2), rhog))
-                    )
+                    nmm = np.real(np.trace(np.dot(coinmat(a + np.pi / 2, bp + np.pi / 2), rhog)))
                     e_abp = 2 * (npp + nmm) - 1
 
                     npp = np.real(np.trace(np.dot(coinmat(ap, bp), rhog)))
-                    nmm = np.real(
-                        np.trace(np.dot(coinmat(ap + np.pi / 2, bp + np.pi / 2), rhog))
-                    )
+                    nmm = np.real(np.trace(np.dot(coinmat(ap + np.pi / 2, bp + np.pi / 2), rhog)))
                     e_apbp = 2 * (npp + nmm) - 1
 
-                    s = (
-                        e_ab
-                        + e_abp
-                        + e_apb
-                        + e_apbp
-                        - 2 * np.min([e_ab, e_abp, e_apb, e_apbp])
-                    )
+                    s = e_ab + e_abp + e_apb + e_apbp - 2 * np.min([e_ab, e_abp, e_apb, e_apbp])
 
                     if s > sval:
                         sval = s
@@ -993,9 +1032,7 @@ def getBellSettings_helper_bounds(rhop, rho, partsize_init, partsize, t, n):
 
     for j in range(n):
         belldata[j] = getBellSettings_helper(rhop[j], partsize_init, partsize, t)[:, 1]
-    [bellNames, belldata[-1]] = getBellSettings_helper(
-        rho, partsize_init, partsize, t
-    ).transpose()
+    [bellNames, belldata[-1]] = getBellSettings_helper(rho, partsize_init, partsize, t).transpose()
     bmeans = np.zeros(5)
     berrors = np.zeros(5)
 
@@ -1004,5 +1041,3 @@ def getBellSettings_helper_bounds(rhop, rho, partsize_init, partsize, t, n):
         bmeans[m] = np.mean(belldata[:, m])
 
     return np.array([bellNames, berrors, bmeans], dtype="O").transpose()
-
-    

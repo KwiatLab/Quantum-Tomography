@@ -1,7 +1,9 @@
-import numpy as np
-from . import tomo_math
 from random import rand
+
+import numpy as np
 import scipy as sp
+
+from . import tomo_math
 
 """
 concurrence(rhog)
@@ -16,7 +18,7 @@ Returns
 -------
 val : float
     The calculated concurrence.
-   
+
 Other Properties
  -------------- 
 entropy;linear_entropy;negativity;purity;tangle
@@ -45,8 +47,7 @@ def concurrence(rhog):
         val = np.max([val, 0])
 
         return val
-    else:
-        return "NA"
+    return "NA"
 
 
 """
@@ -80,8 +81,7 @@ def tangle(rhog):
         c = concurrence(rhog)
         val = c**2
         return val
-    else:
-        return "NA"
+    return "NA"
 
 
 """
@@ -183,8 +183,7 @@ def negativity(rhog):
         val = -2 * np.min(np.min(np.real(np.linalg.eig(rho1)[0])), 0)
 
         return val
-    else:
-        return "NA"
+    return "NA"
 
 
 """
@@ -302,9 +301,7 @@ def partial_transpose(rhog, n=0, d=np.nan):
 
         for j in range(na):
             for k in range(na):
-                rv[j * nb : j * nb + na, k * nb : k * nb + na] = (
-                    partial_transpose_helper(y[j, k], nb)
-                )
+                rv[j * nb : j * nb + na, k * nb : k * nb + na] = partial_transpose_helper(y[j, k], nb)
 
     return rv
 
@@ -384,13 +381,12 @@ density : ndarray with shape = (2^N, 2^N)
 
 
 def random_density_state(N=1):
-    density = tomo_math.random_ginibre(2**N)
+    density = tomo_math.ginibre(2**N)
     density = np.matmul(density, density.T.conj())
     if np.trace(density).real < 10**-6:
         # If trace is close to 0 then resample
         return random_density_state(N)
-    else:
-        density = density / np.trace(density)
+    density = density / np.trace(density)
     return density
 
 
@@ -417,25 +413,25 @@ def random_bell_state(N=2):
         whichState = rand.randint(0, 6)
         if whichState == 0:
             return np.array([1, 0], dtype=complex)
-        elif whichState == 1:
+        if whichState == 1:
             return np.array([0, 1], dtype=complex)
-        elif whichState == 2:
+        if whichState == 2:
             return 1 / np.sqrt(2) * np.array([1, 1], dtype=complex)
-        elif whichState == 3:
+        if whichState == 3:
             return 1 / np.sqrt(2) * np.array([1, -1], dtype=complex)
-        elif whichState == 4:
+        if whichState == 4:
             return 1 / np.sqrt(2) * np.array([1, 1j], dtype=complex)
-        elif whichState == 5:
+        if whichState == 5:
             return 1 / np.sqrt(2) * np.array([1, -1j], dtype=complex)
     if N == 2:
         whichState = rand.randint(0, 4)
         if whichState == 0:
             return 1 / np.sqrt(2) * np.array([1, 0, 0, 1], dtype=complex)
-        elif whichState == 1:
+        if whichState == 1:
             return 1 / np.sqrt(2) * np.array([1, 0, 0, -1], dtype=complex)
-        elif whichState == 2:
+        if whichState == 2:
             return 1 / np.sqrt(2) * np.array([0, 1, 1, 0], dtype=complex)
-        elif whichState == 3:
+        if whichState == 3:
             return 1 / np.sqrt(2) * np.array([0, 1, -1, 0], dtype=complex)
     GHZ = np.zeros(2**N, dtype=complex)
     GHZ[0] = 1
@@ -678,8 +674,7 @@ basis : ndarray with shape = (4^numQubits, 2^numQubits, 2^numQubits)
 def generalized_pauli_basis(num_qubits):
     if num_qubits == 1:
         return pauli_matrices
-    else:
-        return np.kron(generalized_pauli_basis(num_qubits - 1), pauli_matrices)
+    return np.kron(generalized_pauli_basis(num_qubits - 1), pauli_matrices)
 
 
 """
@@ -780,7 +775,9 @@ numBits : int
 numDet : 1 or 2
     Number of detectors for each measurement Default will use the number of qubits in the current configurations.   
 """
-def getStandardBasis(self, numBits = None, numDet = None):
+
+
+def getStandardBasis(self, numBits=None, numDet=None):
     # check if numBits is an int
     if not numBits:
         raise ValueError("numBits must be an integer")
@@ -790,19 +787,24 @@ def getStandardBasis(self, numBits = None, numDet = None):
         raise ValueError("numDet must be an 1 or 2")
 
     # Define start meas basis
-    if(numDet == 1):
-        basis = np.array([[1, 0],
-                            [0, 1],
-                            [(2 ** (-1 / 2)), (2 ** (-1 / 2))],
-                            [(2 ** (-1 / 2)), -(2 ** (-1 / 2))],
-                            [(2 ** (-1 / 2)), (2 ** (-1 / 2)) * 1j],
-                            [(2 ** (-1 / 2)), -(2 ** (-1 / 2)) * 1j]],dtype=complex)
+    if numDet == 1:
+        basis = np.array(
+            [
+                [1, 0],
+                [0, 1],
+                [(2 ** (-1 / 2)), (2 ** (-1 / 2))],
+                [(2 ** (-1 / 2)), -(2 ** (-1 / 2))],
+                [(2 ** (-1 / 2)), (2 ** (-1 / 2)) * 1j],
+                [(2 ** (-1 / 2)), -(2 ** (-1 / 2)) * 1j],
+            ],
+            dtype=complex,
+        )
     else:
-        basis = np.array([[1, 0],
-                            [(2 ** (-1 / 2)), (2 ** (-1 / 2))],
-                            [(2 ** (-1 / 2)), (2 ** (-1 / 2)) * 1j]], dtype=complex)
+        basis = np.array(
+            [[1, 0], [(2 ** (-1 / 2)), (2 ** (-1 / 2))], [(2 ** (-1 / 2)), (2 ** (-1 / 2)) * 1j]], dtype=complex
+        )
     numBasis = basis.shape[0]
-    m = np.zeros((numBasis ** numBits, 2 * numBits), dtype = complex)
+    m = np.zeros((numBasis**numBits, 2 * numBits), dtype=complex)
     for i in range(m.shape[0]):
         for j in range(0, m.shape[1], 2):
             bitNumber = np.floor((m.shape[1] - j - 1) / 2)
@@ -811,6 +813,7 @@ def getStandardBasis(self, numBits = None, numDet = None):
             m[i, j] = basis[index][0]
             m[i, j + 1] = basis[index][1]
     return m
+
 
 """
 removeGlobalPhase(D)
@@ -833,8 +836,8 @@ def removeGlobalPhase(pure_state):
     norm = np.dot(pure_state.conj(), pure_state)
     pure_state = pure_state / norm
     # get phase of first number
-    [magn, phase] = tomo_math.complexToPhaser(pure_state[0])
-    complexPhaser = tomo_math.phaserToComplex(np.array([1, phase]))
+    [magn, phase] = tomo_math.complexToPhasor(pure_state[0])
+    complexPhaser = tomo_math.phasorToComplex(np.array([1, phase]))
     # divide state by first phase
     pure_state = pure_state / complexPhaser
     return pure_state

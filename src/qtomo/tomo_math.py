@@ -1,9 +1,9 @@
 import numpy as np
+
 from . import state_utilities
-from random import rand
 
 """
-log_likelyhood(t, coincidences, accidentals, m, prediction)
+log_likelihood(t, coincidences, accidentals, m, prediction)
 Desc: This is the log likelyhood function. It used in bayesian tomography.
 
 Parameters
@@ -28,28 +28,20 @@ val : float
 """
 
 
-def log_likelyhood(
-    intensity, givenState, coincidences, measurements, accidentals, overall_norms=-1
-):
+def log_likelihood(intensity, givenState, coincidences, measurements, accidentals, overall_norms=-1):
     # If overall_norms not given then assume uniform
     if not isinstance(overall_norms, np.ndarray):
         overall_norms = np.ones(coincidences.shape[0])
-    elif not (
-        len(overall_norms.shape) == 1
-        and overall_norms.shape[0] == coincidences.shape[0]
-    ):
+    elif not (len(overall_norms.shape) == 1 and overall_norms.shape[0] == coincidences.shape[0]):
         raise ValueError("Invalid intensities array")
     # Convert to densities if given tvals
     if len(givenState.shape) == 1:
         givenState = state_utilities.t_to_density(givenState)
     # Calculate expected averages
-    Averages = np.zeros_like(coincidences, dtype=np.float)
+    Averages = np.zeros_like(coincidences, dtype=float)
     givenState = intensity * givenState
     for j in range(len(Averages)):
-        Averages[j] = (
-            overall_norms[j] * np.real(np.trace(np.matmul(measurements[j], givenState)))
-            + accidentals[j]
-        )
+        Averages[j] = overall_norms[j] * np.real(np.trace(np.matmul(measurements[j], givenState))) + accidentals[j]
         # Avoid dividing by zero for pure states
         if Averages[j] == 0:
             Averages[j] == 1
@@ -77,42 +69,11 @@ def weightedcov(samples, weights):
     return [mean, covariance]
 
 
-"""
-    random_ginibre(D)
-    Desc: Returns a random matrix from the Ginibre ensemble of size DxD. 
-    This is a complex matrix whos elements are a+ib | a,b iid. Norm(0,1)
+def ginibre(rng: np.random.Generator, d: int = 2):
+    """Return a dxd matrix with entries from the Ginibre ensemble.
 
-    Parameters
-    ----------
-    D :int
-        The dimension of the Matrix
-
-    Returns
-    -------
-    mat : ndarray with shape = (2^N, 2^N)
-        The random matrix
+    Matrix entries are of the form a+ib | a,b iid. Norm(0,1)
     """
-
-
-def random_ginibre(D=2):
-    mat = np.zeros((D, D), dtype=complex)
-    for i in range(D):
-        for j in range(D):
-            mat[i, j] = rand.normal(0, 1) + rand.normal(0, 1) * 1j
-
-    return mat
-
-
-def phaserToComplex(phaser):
-    Magn = phaser[0]
-    Phase = phaser[1]
-    complex = Magn * (np.cos(Phase) + 1j * np.sin(Phase))
-    return complex
-
-
-def complexToPhaser(complex):
-    Magn = np.absolute(complex)
-    Phase = np.angle(complex)
-    if Phase < 0:
-        Phase += 2 * np.pi
-    return np.array([Magn, Phase])
+    a = rng.normal(size=(d, d))
+    b = rng.normal(size=(d, d))
+    return a + b * 1j
