@@ -19,8 +19,8 @@ t = qKLib.Tomography()
 # Step 2. Set up Configurations
 # import conf file
 t.importConf('ExampleFiles/conf.txt')
-# or set the conf settings directly or with the helper
-t.setConfSetting('DoAccidentalCorrection', 1)
+# or set the conf settings using the conf property
+t.conf['DoAccidentalCorrection'] =  1
 
 # Step 3. Run Tomography on The data
 # import data file
