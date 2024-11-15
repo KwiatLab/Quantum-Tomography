@@ -108,6 +108,8 @@ class Tomography():
                 valC = 1
             elif (val.lower() == "no" or val.lower() == "false"):
                 valC = 0
+        else:
+            valC = val
         self.conf[setting] = valC
 
     """
