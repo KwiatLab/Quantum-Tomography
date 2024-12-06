@@ -1,8 +1,14 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
 
 [project]
 name = "quantum-tomography"
 version = "2.0.0"
 description = "A complete library for quantum state/process tomography data analysis"
+readme = "README.md"
+requires-python = ">=3.13"
+license = { text = "MIT" }
 authors = [
     { name = "Benjamin Nussbaum", email = "bn9@illinois.edu" },
     { name = "Timur Javid", email = "tjavid2@illinois.edu" },
@@ -11,12 +17,7 @@ maintainers = [
     { name = "Benjamin Nussbaum", email = "bn9@illinois.edu" },
     { name = "Timur Javid", email = "tjavid2@illinois.edu" },
 ]
-dependencies = [
-    "numpy>=2.1.2",
-    "scipy>=1.14.1",
-]
-requires-python = ">=3.13"
-readme = "README.md"
+dependencies = ["numpy>=2.1.3", "scipy>=1.14.1"]
 keywords = [
     "quantum tomography",
     "state tomography",
@@ -38,81 +39,58 @@ Repository = "https://github.com/KwiatLab/quantum-tomography"
 qtomo = "qtomo.cli:main"
 
 
-[tool.pdm.dev-dependencies]
-dev = [
-    "ruff>=0.7.1",
-    "pytest-cov>=6.0.0",
-    "mypy>=1.13.0",
-]
+[dependency-groups]
+dev = ["mypy>=1.13.0", "pytest-cov>=6.0.0", "ruff>=0.8.2"]
 
-[tool.pdm.scripts]
-lint = "ruff check"
-format = "ruff format"
-test = "pytest"
-coverage = "pytest --cov=src"
+
+[tool.mypy]
+files = ["src", "tests"]
+strict = true
+pretty = true
+
+enable_error_code = ["ignore-without-code"]
+
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+ignore_errors = true
+
 
 [tool.ruff]
 line-length = 120
 
 [tool.ruff.lint]
 # See https://docs.astral.sh/ruff/rules/ for details.
-select = [
-    # Common conventions, errors, and bugs
-    "B",   # Bugbear
-    "D",   # Docstrings
-    "E",   # Pycodestyle errors
-    "F",   # Pyflakes rules
-    "N",   # Naming conventions
-    "PD",  # Pandas conventions
-    "PLC", # Pylint conventions
-    "PLE", # Pylint errors
-    "PT",  # Pytest conventions
-
-    # Simpler, clearner, more Pythonic code
-    "C4",  # Comprehensions
-    "EM",  # Error messages
-    "PIE", # Misc. rules
-    "RET", # Return values
-    "RUF", # Ruff-specific rules
-    "SIM", # Simplify
-
-    # Modernize code
-    "ANN001", # Function argument type annotations
-    "ANN2",   # Function return type annotations
-    "DTZ",    # Require timezone information when using datetime
-    "FURB",   # Refurbish/modernize code
-    "NPY",    # Avoid Numpy deprecations
-    "PERF",   # Avoid performance anti-patterns
-    "PTH",    # Prefer pathlib over alternatives
-    "UP",     # Use newest syntax according to project.requires-python
-
-    # Logging
-    "G",   # Logging setup
-    "LOG", # Log messages
-    "T20", # Check for print statements
-
-    # Imports
-    "I",      # Sort and add missing imports with isort
-    "TID252", # Prefer absolute imports over relative imports from parent modules
+select = ["ALL"]
+ignore = [
+    "ANN", # Let mypy handle type annotations
+    "D1",  # Don't warn about missing docstrings (but lint the ones that exist)
+    "FIX", # The linter doesnt need to remind us about TODOs
+    "TD",  # Simple TODO syntax is fine
 ]
 
-ignore = [
-    # "ANN", # Uncomment if you don't want to be reminded about type annotations
-    "D1", # Don't warn about missing docstrings
-
-    # Ignore rules which are redundant when using the formatter.
-    # See https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules for details.
+# Ignore rules which are redundant when using the formatter.
+# See https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules for details.
+extend-ignore = [
+    "W191",
     "E111",
     "E114",
     "E117",
     "D206",
     "D300",
+    "Q",
+    "COM812",
+    "COM819",
+    "ISC001",
+    "ISC002",
     "E501",
 ]
 
 [tool.ruff.lint.extend-per-file-ignores]
-# Skip docstring and return type annotation rules for test files.
-"tests/*" = ["ANN2", "D"]
+"tests/*" = [
+    "S101", # Asserts are welcome in tests.
+]
 # Run pytest lint rules only in test files.
 "!tests/*" = ["PT"]
 # Allow "unused" imports when exposing objects from submodules.
@@ -123,3 +101,7 @@ force-single-line = true
 
 [tool.ruff.lint.pydocstyle]
 convention = "numpy" # One of: "google" | "numpy" | "pep257"
+
+
+[tool.uv.pip]
+generate-hashes = true
