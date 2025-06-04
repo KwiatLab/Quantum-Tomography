@@ -6,22 +6,40 @@ from TestRun import runTests
 
 
 class Test_Functions(unittest.TestCase):
-
     def __init__(self, *args, **kwargs):
         super(Test_Functions, self).__init__(*args, **kwargs)
 
         # initializing the inputs to be used in the following test tomographies
         self.tomoinp1 = np.array(
-            [[1, 0, 500, 1, 0], [1, 0, 500, 0, 1], [1, 0, 500, 0.7071, 0.7071], [1, 0, 500, 0.7071, -0.7071],
-             [1, 0, 500, 0.7071, 0.7071j], [1, 0, 500, 0.7071, -0.7071j]])
+            [
+                [1, 0, 500, 1, 0],
+                [1, 0, 500, 0, 1],
+                [1, 0, 500, 0.7071, 0.7071],
+                [1, 0, 500, 0.7071, -0.7071],
+                [1, 0, 500, 0.7071, 0.7071j],
+                [1, 0, 500, 0.7071, -0.7071j],
+            ]
+        )
         self.tomoinp2 = np.array(
-            [[1, 0, 0, 500, 1, 0, 1, 0], [1, 0, 0, 500, 1, 0, 0, 1], [1, 0, 0, 500, 1, 0, 0.7071, 0.7071],
-             [1, 0, 0, 500, 1, 0, 0.7071, 0.7071j], [1, 0, 0, 500, 0, 1, 1, 0], [1, 0, 0, 500, 0, 1, 0, 1],
-             [1, 0, 0, 500, 0, 1, 0.7071, 0.7071], [1, 0, 0, 500, 0, 1, 0.7071, 0.7071j],
-             [1, 0, 0, 500, 0.7071, 0.7071, 1, 0], [1, 0, 0, 500, 0.7071, 0.7071, 0, 1],
-             [1, 0, 0, 500, 0.7071, 0.7071, 0.7071, 0.7071], [1, 0, 0, 500, 0.7071, 0.7071, 0.7071, 0.7071j],
-             [1, 0, 0, 500, 0.7071, 0.7071j, 1, 0], [1, 0, 0, 500, 0.7071, 0.7071j, 0, 1],
-             [1, 0, 0, 500, 0.7071, 0.7071j, 0.7071, 0.7071], [1, 0, 0, 500, 0.7071, 0.7071j, 0.7071, 0.7071j]])
+            [
+                [1, 0, 0, 500, 1, 0, 1, 0],
+                [1, 0, 0, 500, 1, 0, 0, 1],
+                [1, 0, 0, 500, 1, 0, 0.7071, 0.7071],
+                [1, 0, 0, 500, 1, 0, 0.7071, 0.7071j],
+                [1, 0, 0, 500, 0, 1, 1, 0],
+                [1, 0, 0, 500, 0, 1, 0, 1],
+                [1, 0, 0, 500, 0, 1, 0.7071, 0.7071],
+                [1, 0, 0, 500, 0, 1, 0.7071, 0.7071j],
+                [1, 0, 0, 500, 0.7071, 0.7071, 1, 0],
+                [1, 0, 0, 500, 0.7071, 0.7071, 0, 1],
+                [1, 0, 0, 500, 0.7071, 0.7071, 0.7071, 0.7071],
+                [1, 0, 0, 500, 0.7071, 0.7071, 0.7071, 0.7071j],
+                [1, 0, 0, 500, 0.7071, 0.7071j, 1, 0],
+                [1, 0, 0, 500, 0.7071, 0.7071j, 0, 1],
+                [1, 0, 0, 500, 0.7071, 0.7071j, 0.7071, 0.7071],
+                [1, 0, 0, 500, 0.7071, 0.7071j, 0.7071, 0.7071j],
+            ]
+        )
 
     def test_getCoincidences(self):
         # setting up tomography objects
@@ -64,7 +82,11 @@ class Test_Functions(unittest.TestCase):
             curinp2[:, 1:3] = singles_twobit
             tomo = tomoObj1.StateTomography_Matrix(curinp1)
             tomo2 = tomoObj2.StateTomography_Matrix(curinp2)
-            self.assertTrue((np.real(np.transpose(tomoObj1.getSingles()))[0] == singles_onebit).all())
+            self.assertTrue(
+                (
+                    np.real(np.transpose(tomoObj1.getSingles()))[0] == singles_onebit
+                ).all()
+            )
             self.assertTrue((np.real(tomoObj2.getSingles()) == singles_twobit).all())
 
     def test_getTimes(self):
@@ -97,23 +119,50 @@ class Test_Functions(unittest.TestCase):
         tomoObj1 = qLib.Tomography(1)
         tomoObj2 = qLib.Tomography(2)
 
-        [times1, singles1, coincidences1, measurements11, measurements12] = self.tomoinp1.transpose()
+        [times1, singles1, coincidences1, measurements11, measurements12] = (
+            self.tomoinp1.transpose()
+        )
 
         measurements1 = np.array([measurements11, measurements12]).transpose()
-        built_input1 = tomoObj1.buildTomoInput(measurements1, coincidences1, crosstalk=-1, efficiency=0, time=times1,
-                                               singles=singles1, window=0, error=0)
+        built_input1 = tomoObj1.buildTomoInput(
+            measurements1,
+            coincidences1,
+            crosstalk=-1,
+            efficiency=0,
+            time=times1,
+            singles=singles1,
+            window=0,
+            error=0,
+        )
         self.assertTrue((built_input1 == self.tomoinp1).all())
 
-        [times2, singles21, singles22, coincidences2, measurements211, measurements212, measurements221,
-         measurements222] = self.tomoinp2.transpose()
+        [
+            times2,
+            singles21,
+            singles22,
+            coincidences2,
+            measurements211,
+            measurements212,
+            measurements221,
+            measurements222,
+        ] = self.tomoinp2.transpose()
         singles2 = np.array([singles21, singles22]).transpose()
 
-        measurements2 = np.array([measurements211, measurements212, measurements221, measurements222]).transpose()
-        built_input2 = tomoObj2.buildTomoInput(measurements2, coincidences2, crosstalk=-1, efficiency=0, time=times2,
-                                               singles=singles2, window=0, error=0)
+        measurements2 = np.array(
+            [measurements211, measurements212, measurements221, measurements222]
+        ).transpose()
+        built_input2 = tomoObj2.buildTomoInput(
+            measurements2,
+            coincidences2,
+            crosstalk=-1,
+            efficiency=0,
+            time=times2,
+            singles=singles2,
+            window=0,
+            error=0,
+        )
 
         self.assertTrue((built_input2 == self.tomoinp2).all())
-
 
     # This tests phaserToComplex,complexToPhaser,removeGlobalPhase and stateToString
     def test_stateToString(self):
@@ -121,19 +170,19 @@ class Test_Functions(unittest.TestCase):
         complex1 = qLib.phaserToComplex(phase1)
         phase1_2 = qLib.complexToPhaser(complex1)
         complex1_2 = qLib.phaserToComplex(phase1_2)
-        tests.assert_array_almost_equal(phase1,phase1_2)
-        tests.assert_almost_equal(complex1,complex1_2)
+        tests.assert_array_almost_equal(phase1, phase1_2)
+        tests.assert_almost_equal(complex1, complex1_2)
 
-        complex2 = .5 + 5j
+        complex2 = 0.5 + 5j
         phase2 = qLib.complexToPhaser(complex2)
         complex2_2 = qLib.phaserToComplex(phase2)
         phase2_2 = qLib.complexToPhaser(complex2_2)
-        tests.assert_array_almost_equal(phase2,phase2_2)
-        tests.assert_almost_equal(complex2,complex2_2)
+        tests.assert_array_almost_equal(phase2, phase2_2)
+        tests.assert_almost_equal(complex2, complex2_2)
 
-        state = np.array([-.5 + .5j, -.5 - .5j])
+        state = np.array([-0.5 + 0.5j, -0.5 - 0.5j])
 
-        self.assertEqual('0.707|H> + i0.707|V>',qLib.stateToString(state))
+        self.assertEqual("0.707|H> + i0.707|V>", qLib.stateToString(state))
 
     # Error bounds is not specified, then getProperties(5) is run after
     # then do getProperties(3) is run and should not increase the number of monte carlo states.
@@ -149,23 +198,22 @@ class Test_Functions(unittest.TestCase):
     # This tests several functions involving going from density to tvals
     # functions include t_to_density(), t_matrix(), density2tm(), and density2t()
     def test_tvals(self):
-        for n in range(1,5):
+        for n in range(1, 5):
             og_state = qLib.random_density_state(n)
             curr_state = og_state
             for i in range(100):
                 tvals = qLib.density2t(curr_state)
                 next_state = qLib.t_to_density(tvals)
-                fid = qLib.fidelity(next_state,og_state)
-                self.assertGreater(fid,.95)
+                fid = qLib.fidelity(next_state, og_state)
+                self.assertGreater(fid, 0.95)
                 curr_state = next_state
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()
 
     counts = 0
     measurements = 0
 
-
     Tomography_Object = qLib.Tomography()
-    [Rho,Intensity,fval] = Tomography_Object.StateTomography(counts,measurements)
+    [Rho, Intensity, fval] = Tomography_Object.StateTomography(counts, measurements)
