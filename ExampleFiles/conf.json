@@ -1,0 +1,41 @@
+{
+  "n_qubits": 1,
+  "n_detectors": 1,
+  "crosstalk": [
+    [
+      1,
+      0,
+      0,
+      0
+    ],
+    [
+      0,
+      1,
+      0,
+      0
+    ],
+    [
+      0,
+      0,
+      1,
+      0
+    ],
+    [
+      0,
+      0,
+      0,
+      1
+    ]
+  ],
+  "use_derivative": 0,
+  "bellstate": 0,
+  "do_error_estimation": 0,
+  "do_drift_correction": false,
+  "window": 0,
+  "efficiency": [
+    1,
+    1,
+    1,
+    1
+  ]
+}

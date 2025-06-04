@@ -3,11 +3,34 @@ try:
 except ImportError:
     from collections import MutableMapping
 import re
+from pathlib import Path
+import json
+import numpy as np
 
 """
 Copyright 2020 University of Illinois Board of Trustees.
 Licensed under the terms of an MIT license
 """
+
+DEFAULT_CONF = {
+    "n_qubits": 1,
+    "n_detectors": 1,
+    "crosstalk": np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]),
+    "use_derivative": 0,
+    "bellstate": 0,
+    "do_error_estimation": 0,
+    "do_drift_correction": False,
+    "do_accidental_correction": False,
+    "window": 0,
+    "efficiency": np.array([1, 1, 1, 1]),
+    "rho_start": None,
+    "beta": None,
+    "ftol": None,
+    "xtol": None,
+    "gtol": None,
+    "maxfev": None,
+    "method": "MLE",
+}
 
 
 """CHECK OUT THE REFERENCE PAGE ON OUR WEBSITE :
@@ -75,3 +98,32 @@ def getValidFileName(fileName):
     if newFileName == "":
         raise ValueError("File Name : '" + fileName + "' results in an empty fileName!")
     return newFileName
+
+
+def export_json(filename, dict):
+    filepath = Path(filename)
+    with open(filepath) as f:
+        json.dump(dict, f)
+
+
+def import_conf(filename):
+    json_dict = import_json(filename)
+    # Populate the config with the defaults if they don't exist
+    for key, value in DEFAULT_CONF.items():
+        if key not in json_dict.keys():
+            json_dict[key] = value
+
+    return json_dict
+
+
+def import_json(filename):
+    filepath = Path(filename)
+    with open(filepath) as f:
+        json_dict = json.load(f)
+
+    for key, value in json_dict.items():
+        if isinstance(value, list):
+            array = np.asarray(value, dtype=complex)
+            json_dict[key] = array
+
+    return json_dict

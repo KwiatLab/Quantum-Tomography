@@ -2,7 +2,14 @@ from __future__ import print_function
 from .TomoFunctions import *
 from .TomoDisplay import floatToString
 from .TomoClassHelpers import *
-from .Utilities import ConfDict, getValidFileName
+from .Utilities import (
+    ConfDict,
+    getValidFileName,
+    DEFAULT_CONF,
+    import_json,
+    export_json,
+    import_conf,
+)
 import numpy as np
 from scipy.optimize import leastsq, minimize
 import warnings
@@ -33,15 +40,15 @@ class Tomography:
 
     # # # # # # # # # # # #
 
-    # conf['NQubits']: >= 1, it will take a much longer time for more qubits.
-    # conf['NDetectors']: 1 or 2
-    # conf['Crosstalk']: [[C0->0, C0->1], [C1->0, C1->1]]
-    # conf['Bellstate']: 'no' or 'yes'
-    # conf['DoDriftCorrection'] = 'no' or 'yes'
-    # conf['DoAccidentalCorrection'] = 'no' or 'yes'
-    # conf['DoErrorEstimation']: >= 0
-    # conf['Window']: 0 or array like, dimension = 1
-    # conf['Efficiency']: 0 or array like, dimension = 1
+    # conf['n_qubits']: >= 1, it will take a much longer time for more qubits.
+    # conf['n_detectors']: 1 or 2
+    # conf['crosstalk']: [[C0->0, C0->1], [C1->0, C1->1]]
+    # conf['bellstate']: 'no' or 'yes'
+    # conf['do_drift_correction'] = 'no' or 'yes'
+    # conf['do_accidental_correction'] = 'no' or 'yes'
+    # conf['do_error_estimation']: >= 0
+    # conf['window']: 0 or array like, dimension = 1
+    # conf['efficiency']: 0 or array like, dimension = 1
     # conf['Beta']: 0 to 0.5, depending on purity of state and total number of measurements.
     # conf['ftol']: Relative error desired in the sum of squares. Passed directly to scipy.optimize.leastsq
     # conf['xtol']: Relative error desired in the approximate solution. Passed directly to scipy.optimize.leastsq
@@ -81,28 +88,8 @@ class Tomography:
     """
 
     def __init__(self, nQ=2):
-        self.conf = ConfDict(
-            [
-                ("NQubits", nQ),
-                ("NDetectors", 1),
-                (
-                    "Crosstalk",
-                    np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]),
-                ),
-                ("Bellstate", 0),
-                ("DoDriftCorrection", 0),
-                ("DoAccidentalCorrection", 0),
-                ("DoErrorEstimation", 0),
-                ("Window", [1]),
-                ("Efficiency", [1]),
-                ("RhoStart", []),
-                ("Beta", 0),
-                ("ftol", 1.49012e-08),
-                ("xtol", 1.49012e-08),
-                ("gtol", 0.0),
-                ("maxfev", 0),
-            ]
-        )
+        self.conf = DEFAULT_CONF
+        print(self.conf)
         self.err_functions = [
             "concurrence",
             "tangle",
@@ -122,8 +109,8 @@ class Tomography:
     ----------
     setting : string
         The setting you want to update.
-        Possible values are ['NQubits', 'NDetectors', 'Crosstalk', 'Bellstate', 'DoDriftCorrection', 
-        'DoAccidentalCorrection', 'DoErrorEstimation', 'Window', 'Efficiency', 'RhoStart', 'Beta','ftol','xtol','gtol'
+        Possible values are ['n_qubits', 'n_detectors', 'crosstalk', 'bellstate', 'do_drift_correction', 
+        'do_accidental_correction', 'do_error_estimation', 'window', 'efficiency', 'rho_start', 'Beta','ftol','xtol','gtol'
         'maxfev']
     val : ndarray, int, or string
             The new value you want to the setting to be.
@@ -132,15 +119,10 @@ class Tomography:
     def setConfSetting(self, setting, val):
         warnings.warn(
             "As of v1.0.3.7 setConfSetting() is no longer needed to set a conf setting. "
-            'Settings can now be set directly like a normal dictionary. ex: tomo.conf["DoDriftCorrection"] = 1',
+            'Settings can now be set directly like a normal dictionary. ex: tomo.conf["do_drift_correction"] = 1',
             DeprecationWarning,
         )
-        if isinstance(val, str):
-            if val.lower() == "yes" or val.lower() == "true":
-                valC = 1
-            elif val.lower() == "no" or val.lower() == "false":
-                valC = 0
-        self.conf[setting] = valC
+        self.conf[setting] = val
 
     """
     importConf(conftxt)
@@ -153,8 +135,7 @@ class Tomography:
     """
 
     def importConf(self, conftxt):
-        conf = self.conf
-        exec(compile(open(conftxt, "rb").read(), conftxt, "exec"))
+        self.conf = import_conf(conftxt)
 
     """
     importData(datatxt)
@@ -177,11 +158,11 @@ class Tomography:
     """
 
     def importData(self, datatxt):
-        exec(compile(open(datatxt, "rb").read(), datatxt, "exec"))
+        data_dict = import_conf(datatxt)
         return self.StateTomography_Matrix(
-            locals().get("tomo_input"),
-            locals().get("intensity"),
-            method=self.conf["method"],
+            data_dict["tomo_input"],
+            data_dict["intensity"],
+            method=self.conf.get("method"),
         )
 
     """
@@ -205,18 +186,12 @@ class Tomography:
     """
 
     def importEval(self, evaltxt):
-        conf = self.conf
-        exec(compile(open(evaltxt, "rb").read(), evaltxt, "exec"))
-        if "method" in self.conf.keys():
-            return self.StateTomography_Matrix(
-                locals().get("tomo_input"),
-                locals().get("intensity"),
-                method=self.conf["method"],
-            )
-        else:
-            return self.StateTomography_Matrix(
-                locals().get("tomo_input"), locals().get("intensity")
-            )
+        eval_dict = import_conf(evaltxt)
+        return self.StateTomography_Matrix(
+            eval_dict["tomo_input"],
+            eval_dict["intensity"],
+            method=self.conf.get("method"),
+        )
 
     # # # # # # # # # # # # # #
     """Tomography Functions"""
@@ -228,19 +203,19 @@ class Tomography:
 
     Parameters
     ----------
-    measurements : ndarray shape = ( Number of measurements , 2*NQubits )
+    measurements : ndarray shape = ( Number of measurements , 2*n_qubits )
         Each row in the matrix is a set of independent measurements.
-    counts : ndarray shape = (Number of measurements, NDetectors**NQubits )
+    counts : ndarray shape = (Number of measurements, n_detectors**n_qubits )
         Each row in the matrix is a set of independent measurements.
-    crosstalk : ndarray shape = ( Number of measurements , 2**NQubits,2**NQubits ) (optional)
+    crosstalk : ndarray shape = ( Number of measurements , 2**n_qubits,2**n_qubits ) (optional)
         The crosstalk matrix to compensate for inefficentcies in your beam splitter.
-    efficiency : 1darray with length = NQubits*NDetectors (optional)
+    efficiency : 1darray with length = n_qubits*n_detectors (optional)
         The relative efficienies between your detector pairs.
     time :  1darray with length = Number of measurements (optional)
         The total duration of each measurment.
-    singles : ndarray shape = ( Number of measurements , NDetectors*NQubits ) (optional)
+    singles : ndarray shape = ( Number of measurements , n_detectors*n_qubits ) (optional)
         The singles counts on each detector.
-    window : 1darray with length = NQubits*NDetectors (optional)
+    window : 1darray with length = n_qubits*n_detectors (optional)
         The coincidence window duration for each detector pair.
     error : int (optional)
         The number of monte carlo states used to estimate the properties of the state.
@@ -315,11 +290,12 @@ class Tomography:
         else:
             raise ValueError("Invalid intensities array")
         if any(self.intensities - np.ones_like(self.intensities)) > 10**-6:
-            self.conf["DoDriftCorrection"] = 1
+            self.conf["do_drift_correction"] = 1
 
         # filter the data
         self.last_input = tomo_input
-        self.conf["Method"] = method
+        self.conf["tomo_input"] = tomo_input
+        self.conf["method"] = method
         [
             coincidences,
             measurements_densities,
@@ -329,7 +305,7 @@ class Tomography:
         ] = self.filter_data(tomo_input)
 
         # get the starting state from tomography_LINEAR if not defined
-        starting_matrix = self.conf["RhoStart"]
+        starting_matrix = self.conf["rho_start"]
         if method.upper() == "LINEAR" or not isinstance(starting_matrix, np.ndarray):
             try:
                 [starting_matrix, inten_linear] = self.tomography_LINEAR(
@@ -395,9 +371,9 @@ class Tomography:
     ----------
     starting_matrix : ndarray with shape = (2^numQubits, 2^numQubits)
         The starting predicted state.
-    coincidences : ndarray shape = (Number of measurements, NDetectors**NQubits)
+    coincidences : ndarray shape = (Number of measurements, n_detectors**n_qubits)
         The counts of the tomography.
-    measurements_densities : ndarray with shape = (NDetectors*number of measurements,2^numQubits, 2^numQubits) 
+    measurements_densities : ndarray with shape = (n_detectors*number of measurements,2^numQubits, 2^numQubits) 
         The measurements of the tomography in density matrix form.
     accidentals : 1darray with length = number of measurements or length = number of measurements * 2^numQubits for 2 det/qubit
         The accidental values of the tomography. Used for accidental correction.
@@ -470,9 +446,9 @@ class Tomography:
     ----------
     starting_matrix : ndarray with shape = (2^numQubits, 2^numQubits)
         The starting predicted state.
-    coincidences : ndarray shape = (Number of measurements, NDetectors**NQubits)
+    coincidences : ndarray shape = (Number of measurements, n_detectors**n_qubits)
         The counts of the tomography.
-    measurements_densities : ndarray with shape = (NDetectors*number of measurements,2^numQubits, 2^numQubits) 
+    measurements_densities : ndarray with shape = (n_detectors*number of measurements,2^numQubits, 2^numQubits) 
         The measurements of the tomography in density matrix form.
     accidentals : 1darray with length = number of measurements or length = number of measurements * 2^numQubits for 2 det/qubit
         The accidental values of the tomography. Used for accidental correction.
@@ -557,9 +533,9 @@ class Tomography:
     ----------
     starting_matrix : ndarray with shape = (2^numQubits, 2^numQubits)
         The starting predicted state.
-    coincidences : ndarray shape = (Number of measurements, NDetectors**NQubits)
+    coincidences : ndarray shape = (Number of measurements, n_detectors**n_qubits)
         The counts of the tomography.
-    measurements : ndarray with shape = (NDetectors*number of measurements,2^numQubits, 2^numQubits) 
+    measurements : ndarray with shape = (n_detectors*number of measurements,2^numQubits, 2^numQubits) 
         The measurements of the tomography in density matrix form.
     accidentals : 1darray with length = number of measurements or length = number of measurements * 2^numQubits for 2 det/qubit
         The accidental values of the tomography. Used for accidental correction.
@@ -627,7 +603,7 @@ class Tomography:
     #             sampleStates_tvals = np.concatenate((sampleStates_tvals, np.zeros((i, d ** 2))), axis=0)
     #
     #         # Sample from the ginibre distribution
-    #         random_rho = random_density_state(self.conf['NQubits'])
+    #         random_rho = random_density_state(self.conf['n_qubits'])
     #         random_tvals = density2t(random_rho)
     #         random_loglike = log_likelyhood(norm, random_rho, coincidences, measurements, accidentals,overall_norms)
     #
@@ -838,9 +814,9 @@ class Tomography:
 
     Parameters
     ----------
-    coincidences : ndarray shape = (Number of measurements, NDetectors**NQubits)
+    coincidences : ndarray shape = (Number of measurements, n_detectors**n_qubits)
         The counts of the tomography.
-    measurements : ndarray with shape = (NDetectors*number of measurements,2^numQubits) 
+    measurements : ndarray with shape = (n_detectors*number of measurements,2^numQubits) 
         The measurements of the tomography in pure state form.
     overall_norms : 1darray with length = number of measurements or length = number of measurements * 2^numQubits for 2 det/qubit
         The relative weights of each measurment. Used for drift correction.
@@ -894,11 +870,11 @@ class Tomography:
 
     Returns
     -------
-    coincidences : ndarray shape = (Number of measurements, NDetectors**NQubits)
+    coincidences : ndarray shape = (Number of measurements, n_detectors**n_qubits)
         The counts of the tomography.
-    measurements_densities : ndarray with shape = (NDetectors*number of measurements,2^numQubits, 2^numQubits) 
+    measurements_densities : ndarray with shape = (n_detectors*number of measurements,2^numQubits, 2^numQubits) 
         The measurements of the tomography in density matrix form.
-    measurements_pures : ndarray with shape = (NDetectors*number of measurements, 2^numQubits) 
+    measurements_pures : ndarray with shape = (n_detectors*number of measurements, 2^numQubits) 
         The measurements of the tomography in pure state form.
     acc : 1darray with length = number of measurements or length = number of measurements * 2^numQubits for 2 det/qubit
         The accidental values of the tomography. Used for accidental correction.
@@ -911,19 +887,19 @@ class Tomography:
         self.checkForInvalidSettings()
 
         # getting variables
-        nbits = self.conf["NQubits"]
+        nbits = self.conf["n_qubits"]
         times = self.getTimes()
         sings = self.getSingles()
         coinc = self.getCoincidences()
         n_coinc = self.getNumCoinc()
-        window = self.conf["Window"]
-        eff = self.conf["Efficiency"]
-        crosstalk = self.conf["Crosstalk"]
+        window = self.conf["window"]
+        eff = self.conf["efficiency"]
+        crosstalk = self.conf["crosstalk"]
         overall_norms = np.kron(self.intensities, eff)
 
         # Accidental Correction
         acc = np.zeros_like(coinc)
-        if self.conf["DoAccidentalCorrection"] == 1:
+        if self.conf["do_accidental_correction"] == 1:
             scalerIndex = np.concatenate((np.ones(nbits - 2), [2, 2]))
             additiveIndex = np.array([0, 1])
             for j in range(2, nbits):
@@ -1010,19 +986,19 @@ class Tomography:
 
     Parameters
     ----------
-    measurements : ndarray shape = ( Number of measurements , 2*NQubits )
+    measurements : ndarray shape = ( Number of measurements , 2*n_qubits )
         Each row in the matrix is a set of independent measurements.
-    counts : ndarray shape = (Number of measurements, NDetectors**NQubits )
+    counts : ndarray shape = (Number of measurements, n_detectors**n_qubits )
         Each row in the matrix is a set of independent measurements.
-    crosstalk : ndarray shape = ( Number of measurements , 2**NQubits,2**NQubits ) (optional)
+    crosstalk : ndarray shape = ( Number of measurements , 2**n_qubits,2**n_qubits ) (optional)
         The crosstalk matrix to compensate for inefficentcies in your beam splitter.
-    efficiency : 1darray with length = NQubits*NDetectors (optional)
+    efficiency : 1darray with length = n_qubits*n_detectors (optional)
         The relative efficienies between your detector pairs.
     time :  1darray with length = Number of measurements (optional)
         The total duration of each measurment.
-    singles : ndarray shape = ( Number of measurements , 2*NQubits ) (optional)
+    singles : ndarray shape = ( Number of measurements , 2*n_qubits ) (optional)
         The singles counts on each detector.
-    window : 1darray with length = NQubits*NDetectors (optional)
+    window : 1darray with length = n_qubits*n_detectors (optional)
         The coincidence window duration for each detector pair.
     error : int (optional)
         The number of monte carlo states used to estimate the properties of the state.
@@ -1049,7 +1025,7 @@ class Tomography:
         if len(measurements.shape) != 2 or measurements.shape[1] % 2 != 0:
             raise ValueError("Invalid measurements matrix")
         else:
-            self.conf["NQubits"] = int(measurements.shape[1] / 2)
+            self.conf["n_qubits"] = int(measurements.shape[1] / 2)
         # TODO: make sure measurements span the entire space
 
         ##########
@@ -1063,26 +1039,26 @@ class Tomography:
         # Determine if 2det/qubit from counts matrix
         try:
             if counts.shape[1] == 1:
-                self.conf["NDetectors"] = 1
-            elif counts.shape[1] == self.conf["NQubits"] * 2:
-                self.conf["NDetectors"] = 2
+                self.conf["n_detectors"] = 1
+            elif counts.shape[1] == self.conf["n_qubits"] * 2:
+                self.conf["n_detectors"] = 2
             else:
                 raise ValueError(
-                    "The second axis of counts does not have the right dimension. Should be 1 or 2*NQubits for 2det"
+                    "The second axis of counts does not have the right dimension. Should be 1 or 2*n_qubits for 2det"
                 )
         except:
-            self.conf["NDetectors"] = 1
+            self.conf["n_detectors"] = 1
 
         ##############
         # efficiency #
         ##############
         if (not isinstance(efficiency, int)) and (
             len(efficiency.shape) != 1
-            or efficiency.shape[0] != self.conf["NQubits"] * 2
+            or efficiency.shape[0] != self.conf["n_qubits"] * 2
         ):
-            raise ValueError("Invalid efficiency array. Length should be NQubits*2")
+            raise ValueError("Invalid efficiency array. Length should be n_qubits*2")
         else:
-            self.conf["Efficiency"] = efficiency
+            self.conf["efficiency"] = efficiency
 
         ##########
         # window #
@@ -1091,10 +1067,10 @@ class Tomography:
             len(window.shape) != 1 or window.shape[0] != self.getNumCoinc()
         ):
             raise ValueError(
-                "Invalid window array. Length should be NQubits*NDetectors"
+                "Invalid window array. Length should be n_qubits*n_detectors"
             )
         else:
-            self.conf["Window"] = window
+            self.conf["window"] = window
 
         ################
         # time/singles #
@@ -1104,7 +1080,7 @@ class Tomography:
             or (not isinstance(singles, int))
             or (not isinstance(window, int))
         ):
-            self.conf["DoAccidentalCorrection"] = 1
+            self.conf["do_accidental_correction"] = 1
             # Check if time has right length
             if isinstance(time, int):
                 time = np.ones(measurements.shape[0])
@@ -1112,14 +1088,14 @@ class Tomography:
                 ValueError("Invalid time array")
             # Check if singles has right dimensions
             if isinstance(singles, int):
-                if self.conf["NDetectors"] == 1:
-                    singles = np.zeros((measurements.shape[0], self.conf["NQubits"]))
-                elif self.conf["NDetectors"] == 2:
+                if self.conf["n_detectors"] == 1:
+                    singles = np.zeros((measurements.shape[0], self.conf["n_qubits"]))
+                elif self.conf["n_detectors"] == 2:
                     singles = np.zeros(
-                        (measurements.shape[0], 2 * self.conf["NQubits"])
+                        (measurements.shape[0], 2 * self.conf["n_qubits"])
                     )
             else:
-                if self.conf["NDetectors"] == 1 and self.conf["NQubits"] == 1:
+                if self.conf["n_detectors"] == 1 and self.conf["n_qubits"] == 1:
                     if singles.shape != (measurements.shape[0],) and singles.shape != (
                         measurements.shape[0],
                         1,
@@ -1128,52 +1104,52 @@ class Tomography:
                     # if the singles vector has the form (x,), this changes it to (x,1)
                     if np.ndim(singles) == 1:
                         singles = np.atleast_2d(singles).transpose()
-                elif self.conf["NDetectors"] == 1 and self.conf["NQubits"] != 1:
-                    if singles.shape != (measurements.shape[0], self.conf["NQubits"]):
+                elif self.conf["n_detectors"] == 1 and self.conf["n_qubits"] != 1:
+                    if singles.shape != (measurements.shape[0], self.conf["n_qubits"]):
                         raise ValueError("Invalid singles matrix")
-                elif self.conf["NDetectors"] == 2:
+                elif self.conf["n_detectors"] == 2:
                     if singles.shape != (
                         measurements.shape[0],
-                        2 * self.conf["NQubits"],
+                        2 * self.conf["n_qubits"],
                     ):
                         raise ValueError("Invalid Singles matrix")
             # Check if window has right length
             if isinstance(window, int):
-                self.conf["Window"] = window
+                self.conf["window"] = window
             elif len(window.shape) == 1 and window.shape[0] == self.getNumCoinc():
-                self.conf["Window"] = window
+                self.conf["window"] = window
             else:
                 raise ValueError("Invalid window array")
         else:
             time = np.ones(measurements.shape[0])
             singles = np.zeros((measurements.shape[0], self.getNumSingles()))
-            self.conf["Window"] = window
+            self.conf["window"] = window
 
         #############
         # crosstalk #
         #############
         if isinstance(crosstalk, int):
-            self.conf["Crosstalk"] = np.identity(2 ** self.conf["NQubits"])
+            self.conf["crosstalk"] = np.identity(2 ** self.conf["n_qubits"])
         elif (
             len(crosstalk.shape) == 2
             and crosstalk.shape[0] == crosstalk.shape[1]
-            and crosstalk.shape[0] == 2 ** self.conf["NQubits"]
+            and crosstalk.shape[0] == 2 ** self.conf["n_qubits"]
         ):
-            self.conf["Crosstalk"] = crosstalk
+            self.conf["crosstalk"] = crosstalk
         else:
             raise ValueError("Invalid crosstalk matrix")
 
         #########
         # error #
         #########
-        self.conf["DoErrorEstimation"] = error
+        self.conf["do_error_estimation"] = error
 
         ##############
         # tomo_input #
         ##############
         # Here we build the tomo_input matrix and then return this to be fed to StateTomography_Matrix
-        n_qubit = self.conf["NQubits"]
-        if self.conf["NDetectors"] == 1:
+        n_qubit = self.conf["n_qubits"]
+        if self.conf["n_detectors"] == 1:
             tomo_input = np.zeros(
                 (measurements.shape[0], 3 * n_qubit + 2), dtype=complex
             )
@@ -1209,12 +1185,13 @@ class Tomography:
 
     def checkForInvalidSettings(self):
         # Check Accidentals and window
-        if self.conf["nqubits"] == 1:
-            if self.conf["DoAccidentalCorrection"]:
+        if self.conf["n_qubits"] == 1:
+            print(self.conf)
+            if self.conf["do_accidental_correction"]:
                 raise ValueError(
                     "Invalid Conf settings. Accidental Correction can not be done for single qubit tomography"
                 )
-        if self.conf["DoAccidentalCorrection"]:
+        if self.conf["do_accidental_correction"]:
             try:
                 win = np.array(self.conf["window"], dtype=float)
                 if len(win.shape) != 1 or len(win) != self.getNumCoinc():
@@ -1222,32 +1199,32 @@ class Tomography:
                 self.conf["window"] = win
             except:
                 raise ValueError(
-                    "Invalid Conf settings. Window should have length "
+                    "Invalid Conf settings. window should have length "
                     + str(self.getNumCoinc())
                     + " with the given settings."
                 )
         # Efficicieny and Ndetectors
-        if not self.conf["NDetectors"] in [1, 2]:
+        if not self.conf["n_detectors"] in [1, 2]:
             raise ValueError(
-                "Invalid Conf settings. NDetectors can be either 1 or 2, corresponding to the number of detectors per qubit."
+                "Invalid Conf settings. n_detectors can be either 1 or 2, corresponding to the number of detectors per qubit."
             )
-        elif self.conf["NDetectors"] == 2:
+        elif self.conf["n_detectors"] == 2:
             try:
-                eff = np.array(self.conf["Efficiency"], dtype=float)
-                if isinstance(self.conf["Efficiency"], int):
+                eff = np.array(self.conf["efficiency"], dtype=float)
+                if isinstance(self.conf["efficiency"], int):
                     eff = np.ones(self.getNumCoinc())
                 if len(eff.shape) != 1 or len(eff) != self.getNumCoinc():
                     raise
             except:
                 raise ValueError(
-                    "Invalid Conf settings. Efficiency should have length "
+                    "Invalid Conf settings. efficiency should have length "
                     + str(self.getNumCoinc())
                     + " with the given settings."
                 )
-        elif self.conf["NDetectors"] == 1:
+        elif self.conf["n_detectors"] == 1:
             eff = np.ones(1)
-        self.conf["Efficiency"] = eff
-        # Crosstalk
+        self.conf["efficiency"] = eff
+        # crosstalk
         try:
             correctSize = int(np.floor(2 ** self.getNumQubits() + 0.01))
             c = self.conf["crosstalk"]
@@ -1258,7 +1235,7 @@ class Tomography:
             # make sure it has the right shape
             if len(c.shape) != 2 or c.shape[0] != c.shape[1]:
                 raise ValueError(
-                    "Invalid Conf settings. Crosstalk should be an array with shape ("
+                    "Invalid Conf settings. crosstalk should be an array with shape ("
                     + str(correctSize)
                     + ","
                     + str(correctSize)
@@ -1269,7 +1246,7 @@ class Tomography:
                 if np.any(c - np.eye(c.shape[0]) > 10**-6):
                     # Throw error if not the right size
                     raise ValueError(
-                        "Invalid Conf settings. Crosstalk should be an array with shape ("
+                        "Invalid Conf settings. crosstalk should be an array with shape ("
                         + str(correctSize)
                         + ","
                         + str(correctSize)
@@ -1281,7 +1258,7 @@ class Tomography:
             self.conf["crosstalk"] = c
         except:
             raise ValueError(
-                "Invalid Conf settings. Crosstalk should be an array with shape ("
+                "Invalid Conf settings. crosstalk should be an array with shape ("
                 + str(correctSize)
                 + ","
                 + str(correctSize)
@@ -1298,18 +1275,18 @@ class Tomography:
     """
 
     def getCoincidences(self):
-        if self.conf["NDetectors"] == 2:
+        if self.conf["n_detectors"] == 2:
             return np.real(
                 self.last_input[
                     :,
                     np.arange(
-                        2 * self.conf["NQubits"] + 1,
-                        2 ** self.conf["NQubits"] + 2 * self.conf["NQubits"] + 1,
+                        2 * self.conf["n_qubits"] + 1,
+                        2 ** self.conf["n_qubits"] + 2 * self.conf["n_qubits"] + 1,
                     ),
                 ]
             )
         else:
-            return np.real(self.last_input[:, self.conf["NQubits"] + 1])
+            return np.real(self.last_input[:, self.conf["n_qubits"] + 1])
 
     """
     getSingles()
@@ -1317,12 +1294,12 @@ class Tomography:
     """
 
     def getSingles(self):
-        if self.conf["NDetectors"] == 2:
+        if self.conf["n_detectors"] == 2:
             return np.real(
-                self.last_input[:, np.arange(1, 2 * self.conf["NQubits"] + 1)]
+                self.last_input[:, np.arange(1, 2 * self.conf["n_qubits"] + 1)]
             )
         else:
-            return np.real(self.last_input[:, np.arange(1, self.conf["NQubits"] + 1)])
+            return np.real(self.last_input[:, np.arange(1, self.conf["n_qubits"] + 1)])
 
     """
     getTimes()
@@ -1338,17 +1315,17 @@ class Tomography:
     """
 
     def getMeasurements(self):
-        if self.conf["NDetectors"] == 2:
+        if self.conf["n_detectors"] == 2:
             return self.last_input[
                 :,
                 np.arange(
-                    2 ** self.conf["NQubits"] + 2 * self.conf["NQubits"] + 1,
-                    2 ** self.conf["NQubits"] + 4 * self.conf["NQubits"] + 1,
+                    2 ** self.conf["n_qubits"] + 2 * self.conf["n_qubits"] + 1,
+                    2 ** self.conf["n_qubits"] + 4 * self.conf["n_qubits"] + 1,
                 ),
             ]
         else:
             return self.last_input[
-                :, np.arange(self.conf["NQubits"] + 2, 3 * self.conf["NQubits"] + 2)
+                :, np.arange(self.conf["n_qubits"] + 2, 3 * self.conf["n_qubits"] + 2)
             ]
 
     """
@@ -1357,7 +1334,7 @@ class Tomography:
     """
 
     def getNumQubits(self):
-        return self.conf["NQubits"]
+        return self.conf["n_qubits"]
 
     """
     getNumCoinc()
@@ -1365,8 +1342,8 @@ class Tomography:
     """
 
     def getNumCoinc(self):
-        if self.conf["NDetectors"] == 2:
-            return 2 ** self.conf["NQubits"]
+        if self.conf["n_detectors"] == 2:
+            return 2 ** self.conf["n_qubits"]
         else:
             return 1
 
@@ -1376,7 +1353,7 @@ class Tomography:
     """
 
     def getNumSingles(self):
-        return self.conf["NDetectors"] * self.conf["NQubits"]
+        return self.conf["n_detectors"] * self.conf["n_qubits"]
 
     """
     getNumDetPerQubit()
@@ -1384,7 +1361,7 @@ class Tomography:
     """
 
     def getNumDetPerQubit(self):
-        return self.conf["NDetectors"]
+        return self.conf["n_detectors"]
 
     """
     getStandardBasis(numBit,numDet = -1)
@@ -1531,7 +1508,7 @@ class Tomography:
     def getProperties(self, bounds=-1):
         # if bounds not set use the conf settings
         if bounds == -1:
-            bounds = self.conf["DoErrorEstimation"]
+            bounds = self.conf["do_error_estimation"]
 
         # generate states if needed
         if bounds > len(self.mont_carlo_states) - 1:
@@ -1583,8 +1560,8 @@ class Tomography:
         # Save the last data so we can restore it later
         last_input = self.last_input.copy()
 
-        ndet = self.conf["NDetectors"]
-        acc = self.conf["DoAccidentalCorrection"]
+        ndet = self.conf["n_detectors"]
+        acc = self.conf["do_accidental_correction"]
         time = self.getTimes()
         meas = self.getMeasurements()
         singles = self.getSingles()
@@ -1616,14 +1593,14 @@ class Tomography:
     """
 
     def getBellSettings(self, partsize_init=9, partsize=5, t=3, bounds=-1):
-        if self.conf["nqubits"] != 2:
+        if self.conf["n_qubits"] != 2:
             raise ValueError(
                 "Invalid Conf settings. Bell state can only be found for 2 qubit tomography"
             )
         rho = self.last_rho
         # if bounds not set use the conf settings
         if bounds == -1:
-            bounds = self.conf["DoErrorEstimation"]
+            bounds = self.conf["do_error_estimation"]
 
         # generate states if needed
         if bounds > len(self.mont_carlo_states) - 1:
@@ -1691,50 +1668,9 @@ class Tomography:
     """
 
     def exportToEval(self, filePath="pythonEval.txt"):
-        TORREPLACE = ""
-        # Conf settings
-        for k in self.conf.keys():
-            if k == "method":
-                TORREPLACE += "conf['" + str(k) + "'] = '" + str(self.conf[k]) + "'\n"
-            elif isinstance(self.conf[k], np.ndarray):
-                A = self.conf[k]
-                TORREPLACE += "conf['" + str(k) + "'] = np.array([\n"
-                for i in range(A.shape[0]):
-                    if len(A.shape) == 2:
-                        TORREPLACE += "["
-                        for j in range(A.shape[1]):
-                            TORREPLACE += str(A[i, j]) + ","
-                        TORREPLACE = TORREPLACE[:-1] + "],\n"
-                    else:
-                        TORREPLACE += str(A[i]) + ","
-                if len(A.shape) == 2:
-                    TORREPLACE = TORREPLACE[:-2] + "])\n"
-                else:
-                    TORREPLACE = TORREPLACE[:-1] + "])\n"
-            else:
-                TORREPLACE += "conf['" + str(k) + "'] = " + str(self.conf[k]) + "\n"
-
-        # Tomoinput
-        A = self.last_input
-        TORREPLACE += "tomo_input = np.array([\n"
-        for i in range(A.shape[0]):
-            TORREPLACE += "["
-            for j in range(A.shape[1]):
-                TORREPLACE += str(A[i, j]) + ","
-            TORREPLACE = TORREPLACE[:-1] + "],\n"
-
-        TORREPLACE = TORREPLACE[:-2] + "])\n"
-
-        # intensity
-        A = self.intensities
-        TORREPLACE += "intensity = np.array(["
-        for i in range(A.shape[0]):
-            TORREPLACE += str(A[i]) + ","
-        TORREPLACE = TORREPLACE[:-1] + "])"
-
-        # print contents to file
-        with open(filePath, "w") as f:
-            f.write(TORREPLACE)
+        self.conf["tomo_input"] = self.last_input
+        self.conf["intensity"] = self.intensities
+        export_json(filePath, self.conf)
 
     """
     exportToConf(filePath)
@@ -1751,32 +1687,11 @@ class Tomography:
     """
 
     def exportToConf(self, filePath="pythonConf.txt"):
-        TORREPLACE = ""
-        # Conf settings
-        for k in self.conf.keys():
-            if k == "method":
-                TORREPLACE += "conf['" + str(k) + "'] = '" + str(self.conf[k]) + "'\n"
-            elif isinstance(self.conf[k], np.ndarray):
-                A = self.conf[k]
-                TORREPLACE += "conf['" + str(k) + "'] = np.array([\n"
-                for i in range(A.shape[0]):
-                    if len(A.shape) == 2:
-                        TORREPLACE += "["
-                        for j in range(A.shape[1]):
-                            TORREPLACE += str(A[i, j]) + ","
-                        TORREPLACE = TORREPLACE[:-1] + "],\n"
-                    else:
-                        TORREPLACE += str(A[i]) + ","
-                if len(A.shape) == 2:
-                    TORREPLACE = TORREPLACE[:-2] + "])\n"
-                else:
-                    TORREPLACE = TORREPLACE[:-1] + "])\n"
-            else:
-                TORREPLACE += "conf['" + str(k) + "'] = " + str(self.conf[k]) + "\n"
-
-            # print contents to file
-            with open(filePath, "w") as f:
-                f.write(TORREPLACE)
+        tomo_input = self.conf.pop("tomo_input", None)
+        intensity = self.conf.pop("intensity", None)
+        export_json(filePath, self.conf)
+        self.conf["tomo_input"] = tomo_input
+        self.conf["intensity"] = intensity
 
     """
      exportToData(filePath)
@@ -1793,33 +1708,8 @@ class Tomography:
      """
 
     def exportToData(self, filePath="pythonData.txt"):
-        TORREPLACE = ""
-
-        # Tomoinput
-        A = self.last_input
-        TORREPLACE += "tomo_input = np.array([\n"
-        for i in range(A.shape[0]):
-            TORREPLACE += "["
-            for j in range(A.shape[1]):
-                TORREPLACE += str(A[i, j]) + ","
-            TORREPLACE = TORREPLACE[:-1] + "],\n"
-
-        TORREPLACE = TORREPLACE[:-2] + "])\n"
-
-        # intensity
-        A = self.intensities
-        TORREPLACE += "intensity = np.array(["
-        for i in range(A.shape[0]):
-            TORREPLACE += str(A[i]) + ","
-        TORREPLACE = TORREPLACE[:-1] + "])"
-
-        # print contents to file
-        with open(filePath, "w") as f:
-            f.write(TORREPLACE)
-
-        # print contents to file
-        with open(filePath, "w") as f:
-            f.write(TORREPLACE)
+        eval_dict = {"tomo_input": self.last_input, "intensity": self.intensities}
+        export_json(filePath, eval_dict)
 
     """
     exportToConf_web(filePath)
@@ -1840,9 +1730,9 @@ class Tomography:
     def exportToConf_web(self, filePath="Config_web.txt"):
         # Conf settings
         TORREPLACE = (
-            "conf.NQubits=" + str(self.conf["NQubits"]) + ";\n"
-            "conf.NDetectors=" + str(self.conf["NQubits"]) + ";\n"
-            "conf.Crosstalk=["
+            "conf.n_qubits=" + str(self.conf["n_qubits"]) + ";\n"
+            "conf.n_detectors=" + str(self.conf["n_qubits"]) + ";\n"
+            "conf.crosstalk=["
         )
         A = self.conf["crosstalk"]
         for i in range(len(A)):
@@ -1852,22 +1742,22 @@ class Tomography:
             TORREPLACE = TORREPLACE[:-1] + "],"
         TORREPLACE = TORREPLACE[:-1] + "];\n"
 
-        TORREPLACE += "conf.UseDerivative=0;\n"
-        if self.conf["Bellstate"]:
-            TORREPLACE += "conf.Bellstate=1;\n"
+        TORREPLACE += "conf.use_derivative=0;\n"
+        if self.conf["bellstate"]:
+            TORREPLACE += "conf.bellstate=1;\n"
         else:
-            TORREPLACE += "conf.Bellstate=0;\n"
-        A = self.conf["Window"]
+            TORREPLACE += "conf.bellstate=0;\n"
+        A = self.conf["window"]
         if not (isinstance(A, np.ndarray) or isinstance(A, list)):
             A = [A]
-        TORREPLACE += "conf.Window=["
+        TORREPLACE += "conf.window=["
         for i in range(len(A)):
             TORREPLACE += str(A[i]).replace(" ", "") + ","
         TORREPLACE += TORREPLACE[:-1] + "];\n"
-        A = self.conf["Efficiency"]
+        A = self.conf["efficiency"]
         if not (isinstance(A, np.ndarray) or isinstance(A, list)):
             A = [A]
-        TORREPLACE += "conf.Efficiency=["
+        TORREPLACE += "conf.efficiency=["
         for i in range(len(A)):
             TORREPLACE += str(A[i]).replace(" ", "") + ","
         TORREPLACE += TORREPLACE[:-1] + "];\n"
@@ -1895,8 +1785,8 @@ class Tomography:
     #
     #     # Tomoinput
     #     A = self.last_input.astype("O")
-    #     n_qubit = self.conf['NQubits']
-    #     if self.conf['NDetectors'] == 2:
+    #     n_qubit = self.conf['n_qubits']
+    #     if self.conf['n_detectors'] == 2:
     #         # tomo_input[ :, 1 : 2 * n_qubit + 1 ]: singles
     #         A[:, 1: 2 * n_qubit + 1] = self.last_input[:, 1: 2 * n_qubit + 1].real.astype(int)
     #         # tomo_input[ :, 2 * n_qubit + 1 : 2 ** n_qubit + 2 * n_qubit + 1 ]: coincidences
