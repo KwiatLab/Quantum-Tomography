@@ -48,14 +48,17 @@ class TomographyType(Enum):
     BME = 4
 
 
+TOMOGRAPHY_TYPES = {
+    "LINEAR": TomographyType.LINEAR,
+    "MLE": TomographyType.MLE,
+    "HMLE": TomographyType.HMLE,
+    "BME": TomographyType.BME,
+}
+
+
 class TomoConfiguration(BaseModel):
-    n_qubits: int = 1
-    n_detectors: int = 1
-    n_measurements_per_qubit: int = 6
     use_derivative: bool = False
     get_bell_settings: bool = False
-    coincidence_window: float = 0.0
-    rel_efficiency: List[float] = [0, 0, 0, 0]
     do_error_estimation: bool = False
     do_drift_correction: bool = False
     do_accidental_correction: bool = False
@@ -64,7 +67,18 @@ class TomoConfiguration(BaseModel):
     xtol: Union[float, None] = None
     gtol: Union[float, None] = None
     maxfev: Union[int, None] = None
-    method: TomographyType = TomographyType.MLE
+    method: Union[TomographyType, str] = TomographyType.MLE
+
+    @model_validator(mode="after")
+    def check_method(self) -> Self:
+        if isinstance(self.method, str):
+            if self.method not in TOMOGRAPHY_TYPES.keys():
+                raise ValueError(
+                    f"Tomography Type {self.method} not supported! Must be one of {[key for key in TOMOGRAPHY_TYPES.keys()]}"
+                )
+            else:
+                self.method = TOMOGRAPHY_TYPES[self.method]
+        return self
 
 
 class TomoData(BaseModel):
@@ -72,24 +86,28 @@ class TomoData(BaseModel):
         arbitrary_types_allowed = True
 
     config: TomoConfiguration = TomoConfiguration()
+    n_qubits: int = 1
+    n_detectors: int = 1
+    n_measurements_per_qubit: int = 6
+    coincidence_window: float = 0.0
+    rel_efficiency: List[float] = [0, 0, 0, 0]
+    crosstalk: np.ndarray = np.zeros((2**n_qubits, 2**n_qubits))
     measurement_densities: np.ndarray = np.array(
         [density for _, density in POLARIZATION_DENSITIES.items()]
     )
     counts: Union[List, np.ndarray] = np.zeros(
-        (config.n_qubits**config.n_detectors, config.n_measurements_per_qubit)
+        (n_qubits**n_detectors, n_measurements_per_qubit)
     )
-    crosstalk: np.ndarray = np.zeros((2**config.n_qubits, 2**config.n_qubits))
 
     @model_validator(mode="after")
     def check_input_shape(self) -> Self:
-        config = self.config
         self.counts = np.atleast_2d(np.array(self.counts, dtype=np.complex128))
         if self.counts.shape != (
-            config.n_qubits**config.n_detectors,
-            config.n_measurements_per_qubit,
+            self.n_qubits**self.n_detectors,
+            self.n_measurements_per_qubit,
         ):
             raise ValueError(
-                f"Counts shape is wrong {self.counts.shape}, expected {config.n_qubits**config.n_detectors, config.n_measurements_per_qubit}"
+                f"Counts shape is wrong {self.counts.shape}, expected {self.n_qubits**self.n_detectors, self.n_measurements_per_qubit}"
             )
 
         return self
