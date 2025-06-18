@@ -68,6 +68,8 @@ class TomoConfiguration(BaseModel):
     gtol: Union[float, None] = None
     maxfev: Union[int, None] = None
     method: Union[TomographyType, str] = TomographyType.MLE
+    starting_matrix: Union[np.ndarray, None] = None
+    save_state = True
 
     @model_validator(mode="after")
     def check_method(self) -> Self:
@@ -95,9 +97,10 @@ class TomoData(BaseModel):
     measurement_densities: np.ndarray = np.array(
         [density for _, density in POLARIZATION_DENSITIES.items()]
     )
-    counts: Union[List, np.ndarray] = np.zeros(
-        (n_qubits**n_detectors, n_measurements_per_qubit)
-    )
+    counts: np.ndarray = np.zeros((n_qubits**n_detectors, n_measurements_per_qubit))
+    intensity: np.ndarray = np.ones(len(measurement_densities))
+    overall_norms: np.ndarray = np.kron(intensity, rel_efficiency)
+    accidentals: np.ndarray = np.zeros_like(counts)
 
     @model_validator(mode="after")
     def check_input_shape(self) -> Self:
@@ -115,61 +118,6 @@ class TomoData(BaseModel):
 
 """CHECK OUT THE REFERENCE PAGE ON OUR WEBSITE :
 https://quantumtomo.web.illinois.edu/Doc/"""
-
-
-class ConfDict(MutableMapping):
-    """A dictionary where the casing of the keys don't matter
-    and values can be automatically handled."""
-
-    def __init__(self, *args, **kwargs):
-        self.store = dict()
-        self.update(dict(*args, **kwargs))  # use the free update to set keys
-
-    def __getitem__(self, key):
-        return self.store[self._keytransform(key)]
-
-    def __setitem__(self, key, value):
-        self.store[self._keytransform(key)] = self._valuetransform(value)
-
-    def __delitem__(self, key):
-        del self.store[self._keytransform(key)]
-
-    def __iter__(self):
-        return iter(self.store)
-
-    def __len__(self):
-        return len(self.store)
-
-    def _keytransform(self, key):
-        return key.lower()
-
-    def _valuetransform(self, value):
-        if isinstance(value, str):
-            if (
-                value.lower() == "yes"
-                or value.lower() == "true"
-                or value.lower() == "t"
-                or value.lower() == "y"
-            ):
-                value = 1
-            elif (
-                value.lower() == "no"
-                or value.lower() == "false"
-                or value.lower() == "f"
-                or value.lower() == "f"
-            ):
-                value = 0
-            elif (
-                value.upper() == "LINEAR"
-                or value.upper() == "MLE"
-                or value.upper() == "HMLE"
-                or value.upper() == "BME"
-            ):
-                return value.upper()
-            else:
-                raise ValueError('Invalid Conf Setting of "' + value + '"')
-
-        return value
 
 
 def getValidFileName(fileName):

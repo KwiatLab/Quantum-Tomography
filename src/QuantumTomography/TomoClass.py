@@ -1,18 +1,26 @@
 from __future__ import print_function
-from .TomoFunctions import *
+from .TomoFunctions import generalized_pauli_basis, get_stokes_parameters
 from .TomoDisplay import floatToString
-from .TomoClassHelpers import *
+from .TomoClassHelpers import (
+    maxlike_fitness,
+    maxlike_fitness_hedged,
+    make_positive,
+    density2t,
+    t_to_density,
+)
 from .Utilities import (
-    ConfDict,
+    TomoConfiguration,
+    TomoData,
+    TomographyType,
     getValidFileName,
-    DEFAULT_CONF,
-    import_json,
-    export_json,
-    import_conf,
+    # DEFAULT_CONF,
+    import_config,
+    # import_conf,
 )
 import numpy as np
 from scipy.optimize import leastsq, minimize
 import warnings
+from typing import Union, List
 
 """
 Copyright 2020 University of Illinois Board of Trustees.
@@ -88,8 +96,8 @@ class Tomography:
     """
 
     def __init__(self, nQ=2):
-        self.conf = DEFAULT_CONF
-        print(self.conf)
+        # self.conf = DEFAULT_CONF
+        # print(self.conf)
         self.err_functions = [
             "concurrence",
             "tangle",
@@ -237,21 +245,23 @@ class Tomography:
 
     def StateTomography(
         self,
-        measurements,
-        counts,
-        crosstalk=-1,
-        efficiency=0,
-        time=-1,
-        singles=-1,
-        window=0,
-        error=0,
-        intensities=-1,
-        method="MLE",
+        tomo_data,
+        tomo_config,
+        # measurements,
+        # counts,
+        # crosstalk=-1,
+        # efficiency=0,
+        # time=-1,
+        # singles=-1,
+        # window=0,
+        # error=0,
+        # intensities=-1,
+        # method="MLE",
     ):
-        tomo_input = self.buildTomoInput(
-            measurements, counts, crosstalk, efficiency, time, singles, window, error
-        )
-        return self.StateTomography_Matrix(tomo_input, intensities, method=method)
+        # tomo_input = self.buildTomoInput(
+        #    measurements, counts, crosstalk, efficiency, time, singles, window, error
+        # )
+        return self.StateTomography_Matrix(tomo_data, tomo_config)
 
     """
     StateTomography_Matrix(tomo_input, intensities)
@@ -278,74 +288,47 @@ class Tomography:
     """
 
     def StateTomography_Matrix(
-        self, tomo_input, intensities=-1, method="MLE", _saveState=True
+        self,
+        tomo_data: TomoData,
+        tomo_config: TomoConfiguration,
     ):
-        # define a uniform intensity if not stated
-        if isinstance(intensities, int):
-            self.intensities = np.ones(tomo_input.shape[0])
-        elif (
-            len(intensities.shape) == 1 and intensities.shape[0] == tomo_input.shape[0]
-        ):
-            self.intensities = intensities
-        else:
-            raise ValueError("Invalid intensities array")
-        if any(self.intensities - np.ones_like(self.intensities)) > 10**-6:
-            self.conf["do_drift_correction"] = 1
+        if any(tomo_data.intensity):
+            tomo_config.do_drift_correction = True
 
         # filter the data
-        self.last_input = tomo_input
-        self.conf["tomo_input"] = tomo_input
-        self.conf["method"] = method
-        [
-            coincidences,
-            measurements_densities,
-            measurements_pures,
-            accidentals,
-            overall_norms,
-        ] = self.filter_data(tomo_input)
-
+        self.last_input = tomo_data
+        starting_matrix = tomo_config.starting_matrix
         # get the starting state from tomography_LINEAR if not defined
-        starting_matrix = self.conf["rho_start"]
-        if method.upper() == "LINEAR" or not isinstance(starting_matrix, np.ndarray):
+        if tomo_config.method == TomographyType.LINEAR or not starting_matrix:
             try:
                 [starting_matrix, inten_linear] = self.tomography_LINEAR(
-                    coincidences, measurements_pures, overall_norms
+                    tomo_data, tomo_config
                 )
                 # Currently linear tomography gets the phase wrong. So a temporary fix is to just transpose it.
                 starting_matrix = starting_matrix.transpose()
                 starting_matrix = make_positive(starting_matrix)
                 starting_matrix = starting_matrix / np.trace(starting_matrix)
+                [rhog, intensity, fvalp] = [starting_matrix, inten_linear, 0]
             except:
                 raise RuntimeError("Failed to run linear Tomography")
 
         # Run tomography and find an estimate for the state
-        if method == "MLE":
+        if tomo_config.method == TomographyType.MLE:
             [rhog, intensity, fvalp] = self.tomography_MLE(
-                starting_matrix,
-                coincidences,
-                measurements_densities,
-                accidentals,
-                overall_norms,
+                tomo_data, tomo_config, starting_matrix
             )
-        elif method.upper() == "HMLE":
+        elif tomo_config.method == TomographyType.HMLE:
             [rhog, intensity, fvalp] = self.tomography_HMLE(
-                starting_matrix,
-                coincidences,
-                measurements_densities,
-                accidentals,
-                overall_norms,
+                tomo_data, tomo_config, starting_matrix
             )
-        # elif method.upper() == "BME":
-        #     [rhog, intensity, fvalp] = self.tomography_BME(starting_matrix, coincidences, measurements_densities,accidentals,overall_norms)
-        elif method.upper() == "LINEAR":
-            [rhog, intensity, fvalp] = [starting_matrix, inten_linear, 0]
         else:
-            raise ValueError("Invalid Method name: " + str(method))
+            raise ValueError("Invalid Method name: " + str(tomo_config.method))
 
-        if _saveState:
+        if tomo_config.save_state:
             # save the results
+            self.last_data = tomo_data
+            self.last_config = tomo_config
             self.last_rho = rhog.copy()
-            self.last_intensity = intensity
             self.last_fval = fvalp
             # Reset the monte carlo states after doing a tomography
             self.mont_carlo_states = list([[rhog, intensity, fvalp]])
@@ -355,13 +338,15 @@ class Tomography:
     # This is a temporary function. It's here in case there is old code that still uses state_tomography.
     # Eventually this should be removed in a later version
     def state_tomography(
-        self, tomo_input, intensities=-1, method="MLE", _saveState=True
+        self,
+        tomo_data: TomoData,
+        tomo_config: TomoConfiguration,
     ):
         warnings.warn(
             "state_tomography will be removed in a future version. It is replaced by StateTomography_Matrix which does the same exact thing.",
             DeprecationWarning,
         )
-        return self.StateTomography_Matrix(tomo_input, intensities, method, _saveState)
+        return self.StateTomography_Matrix(tomo_data, tomo_config)
 
     """
     tomography_MLE(starting_matrix, coincidences, measurements, accidentals,overall_norms)
@@ -392,40 +377,44 @@ class Tomography:
     """
 
     def tomography_MLE(
-        self, starting_matrix, coincidences, measurements, accidentals, overall_norms=-1
+        self,
+        tomo_data: TomoData,
+        tomo_config: TomoConfiguration,
+        starting_matrix: np.ndarray,
     ):
         # If overall_norms not given then assume uniform
-        if not isinstance(overall_norms, np.ndarray):
-            overall_norms = np.ones(coincidences.shape[0])
-        elif not (
-            len(overall_norms.shape) == 1
-            and overall_norms.shape[0] == coincidences.shape[0]
-        ):
-            raise ValueError("Invalid intensities array")
-
         init_intensity = (
-            np.mean(np.multiply(coincidences, 1 / overall_norms))
+            np.mean(np.multiply(tomo_data.counts, 1 / tomo_data.overall_norms))
             * (starting_matrix.shape[0])
         )
         starting_tvals = density2t(starting_matrix)
         starting_tvals = starting_tvals + 0.0001
         starting_tvals = starting_tvals * np.sqrt(init_intensity)
 
-        coincidences = np.real(coincidences)
-        coincidences = coincidences.flatten()
+        counts = np.real(tomo_data.counts)
+        counts = counts.flatten()
 
         final_tvals = leastsq(
             maxlike_fitness,
             np.real(starting_tvals),
-            args=(coincidences, accidentals, measurements, overall_norms),
-            ftol=self.conf["ftol"],
-            xtol=self.conf["xtol"],
-            gtol=self.conf["gtol"],
-            maxfev=self.conf["maxfev"],
+            args=(
+                counts,
+                tomo_data.accidentals,
+                tomo_data.measurement_densities,
+                tomo_data.overall_norms,
+            ),
+            ftol=tomo_config.ftol,
+            xtol=tomo_config.xtol,
+            gtol=tomo_conifg.gtol,
+            maxfev=tomo_config.maxfev,
         )[0]
         fvalp = np.sum(
             maxlike_fitness(
-                final_tvals, coincidences, accidentals, measurements, overall_norms
+                final_tvals,
+                counts,
+                tomo_data.accidentals,
+                tomo_data.measurement_densities,
+                tomo_data.overall_norms,
             )
             ** 2
         )
@@ -467,34 +456,36 @@ class Tomography:
     """
 
     def tomography_HMLE(
-        self, starting_matrix, coincidences, measurements, accidentals, overall_norms=-1
+        self,
+        tomo_data: TomoData,
+        tomo_config: TomoConfiguration,
+        starting_matrix: np.ndarray,
     ):
+        if tomo_config.beta is None:
+            raise ValueError("Need to define a beta value for HMLE!")
         # If overall_norms not given then assume uniform
-        if not isinstance(overall_norms, np.ndarray):
-            overall_norms = np.ones(coincidences.shape[0])
-        elif not (
-            len(overall_norms.shape) == 1
-            and overall_norms.shape[0] == coincidences.shape[0]
-        ):
-            raise ValueError("Invalid intensities array")
-
         init_intensity = (
-            np.mean(np.multiply(coincidences, 1 / overall_norms))
+            np.mean(np.multiply(tomo_data.counts, 1 / tomo_data.overall_norms))
             * (starting_matrix.shape[0])
         )
         starting_tvals = density2t(starting_matrix)
         starting_tvals = starting_tvals + 0.0001
         starting_tvals = starting_tvals * np.sqrt(init_intensity)
 
-        coincidences = np.real(coincidences)
-        coincidences = coincidences.flatten()
+        counts = np.real(tomo_data.counts)
+        counts = counts.flatten()
 
-        bet = self.conf["Beta"]
-        if bet > 0:
+        if tomo_config.beta > 0:
             final_tvals = leastsq(
                 maxlike_fitness_hedged,
                 np.real(starting_tvals),
-                args=(coincidences, accidentals, measurements, bet, overall_norms),
+                args=(
+                    counts,
+                    tomo_data.accidentals,
+                    tomo_data.measurement_densities,
+                    tomo_config.beta,
+                    tomo_data.overall_norms,
+                ),
                 ftol=self.conf["ftol"],
                 xtol=self.conf["xtol"],
                 gtol=self.conf["gtol"],
@@ -503,11 +494,11 @@ class Tomography:
             fvalp = np.sum(
                 maxlike_fitness_hedged(
                     final_tvals,
-                    coincidences,
-                    accidentals,
-                    measurements,
-                    bet,
-                    overall_norms,
+                    counts,
+                    tomo_data.accidentals,
+                    tomo_data.measurement_densities,
+                    tomo_config.beta,
+                    tomo_data.overall_norms,
                 )
                 ** 2
             )
@@ -829,24 +820,22 @@ class Tomography:
         The predicted overall intensity used to normalize the state.
     """
 
-    def tomography_LINEAR(self, coincidences, measurements, overall_norms=-1):
-        # If overall_norms not given then assume uniform
-        if not isinstance(overall_norms, np.ndarray):
-            overall_norms = np.ones(coincidences.shape[0])
-        elif not (
-            len(overall_norms.shape) == 1
-            and overall_norms.shape[0] == coincidences.shape[0]
-        ):
-            raise ValueError("Invalid intensities array")
-
-        coincidences = coincidences.flatten()
+    def tomography_LINEAR(
+        self, tomo_data: TomoData, tomo_config: TomoConfiguration
+    ) -> List[np.ndarray]:
+        counts = tomo_data.counts.flatten()
 
         pauli_basis = generalized_pauli_basis(self.getNumQubits())
         stokes_measurements = (
-            np.array([get_stokes_parameters(m, pauli_basis) for m in measurements])
+            np.array(
+                [
+                    get_stokes_parameters(m, pauli_basis)
+                    for m in tomo_data.measurement_densities
+                ]
+            )
             / 2 ** self.getNumQubits()
         )
-        freq_array = coincidences / overall_norms
+        freq_array = counts / tomo_data.overall_norms
 
         B_inv = np.linalg.inv(np.matmul(stokes_measurements.T, stokes_measurements))
         stokes_params = np.matmul(stokes_measurements.T, freq_array)
