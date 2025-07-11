@@ -15,7 +15,7 @@ from .Utilities import (
     getValidFileName,
     # DEFAULT_CONF,
     import_config,
-    # import_conf,
+    import_data,
 )
 import numpy as np
 from scipy.optimize import leastsq, minimize
@@ -109,30 +109,6 @@ class Tomography:
         self.mont_carlo_states = list()
 
     """
-    setConfSetting(setting, val)
-    Desc: Sets a specific self.conf setting. This is no longer needed but will be kept in the class to
-    support old code.
-
-    Parameters
-    ----------
-    setting : string
-        The setting you want to update.
-        Possible values are ['n_qubits', 'n_detectors', 'crosstalk', 'bellstate', 'do_drift_correction', 
-        'do_accidental_correction', 'do_error_estimation', 'window', 'efficiency', 'rho_start', 'Beta','ftol','xtol','gtol'
-        'maxfev']
-    val : ndarray, int, or string
-            The new value you want to the setting to be.
-    """
-
-    def setConfSetting(self, setting, val):
-        warnings.warn(
-            "As of v1.0.3.7 setConfSetting() is no longer needed to set a conf setting. "
-            'Settings can now be set directly like a normal dictionary. ex: tomo.conf["do_drift_correction"] = 1',
-            DeprecationWarning,
-        )
-        self.conf[setting] = val
-
-    """
     importConf(conftxt)
     Desc: Import a text file containing the configuration settings.
 
@@ -143,7 +119,7 @@ class Tomography:
     """
 
     def importConf(self, conftxt):
-        self.conf = import_conf(conftxt)
+        self.conf = import_config(conftxt)
 
     """
     importData(datatxt)
@@ -166,38 +142,10 @@ class Tomography:
     """
 
     def importData(self, datatxt):
-        data_dict = import_conf(datatxt)
+        data_dict = import_config(datatxt)
         return self.StateTomography_Matrix(
             data_dict["tomo_input"],
             data_dict["intensity"],
-            method=self.conf.get("method"),
-        )
-
-    """
-    importEval(evaltxt)
-    Desc: Import a eval file containing the tomography data and the configuration setting, then run tomography.
-
-    Parameters
-    ----------
-    evaltxt : string
-        path to eval file
-
-    Returns
-    -------
-    rhog : ndarray with shape = (2^numQubits, 2^numQubits)
-        The predicted density matrix.
-    intensity : float
-        The predicted overall intensity used to normalize the state.
-    fvalp : float
-        Final value of the internal optimization function. Values greater than the number
-        of measurements indicate poor agreement with a quantum state.
-    """
-
-    def importEval(self, evaltxt):
-        eval_dict = import_conf(evaltxt)
-        return self.StateTomography_Matrix(
-            eval_dict["tomo_input"],
-            eval_dict["intensity"],
             method=self.conf.get("method"),
         )
 
@@ -243,25 +191,25 @@ class Tomography:
         of measurements indicate poor agreement with a quantum state.
     """
 
-    def StateTomography(
-        self,
-        tomo_data,
-        tomo_config,
-        # measurements,
-        # counts,
-        # crosstalk=-1,
-        # efficiency=0,
-        # time=-1,
-        # singles=-1,
-        # window=0,
-        # error=0,
-        # intensities=-1,
-        # method="MLE",
-    ):
-        # tomo_input = self.buildTomoInput(
-        #    measurements, counts, crosstalk, efficiency, time, singles, window, error
-        # )
-        return self.StateTomography_Matrix(tomo_data, tomo_config)
+    # def StateTomography(
+    #    self,
+    #    tomo_data,
+    #    tomo_config,
+    #    # measurements,
+    #    # counts,
+    #    # crosstalk=-1,
+    #    # efficiency=0,
+    #    # time=-1,
+    #    # singles=-1,
+    #    # window=0,
+    #    # error=0,
+    #    # intensities=-1,
+    #    # method="MLE",
+    # ):
+    #    # tomo_input = self.buildTomoInput(
+    #    #    measurements, counts, crosstalk, efficiency, time, singles, window, error
+    #    # )
+    #    return self.StateTomography_Matrix(tomo_data, tomo_config)
 
     """
     StateTomography_Matrix(tomo_input, intensities)
@@ -287,7 +235,7 @@ class Tomography:
         of measurements indicate poor agreement with a quantum state.
     """
 
-    def StateTomography_Matrix(
+    def StateTomography(
         self,
         tomo_data: TomoData,
         tomo_config: TomoConfiguration,

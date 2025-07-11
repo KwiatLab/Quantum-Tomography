@@ -17,7 +17,9 @@ Copyright 2020 University of Illinois Board of Trustees.
 Licensed under the terms of an MIT license
 """
 
-POLARIZATION_STATE_NAMES = ["H","V","D","A","R","L"]
+POLARIZATION_STATE_NAMES = ["H", "V", "D", "A", "R", "L"]
+
+
 class Polarizations(Enum):
     H = auto()
     V = auto()
@@ -25,6 +27,7 @@ class Polarizations(Enum):
     A = auto()
     R = auto()
     L = auto()
+
 
 POLARIZATION_STATES = {
     Polarizations.H: np.array([1, 0], dtype=np.complex128),
@@ -38,6 +41,8 @@ POLARIZATION_STATES = {
 POLARIZATION_DENSITIES = {}
 for name, state in POLARIZATION_STATES.items():
     POLARIZATION_DENSITIES[name] = np.outer(state, state.conj().T)
+
+print(POLARIZATION_DENSITIES)
 
 
 class TomographyType(Enum):
@@ -101,37 +106,65 @@ class TomoData(BaseModel):
     n_measurements_per_qubit: int = 6
     rel_efficiency: np.ndarray = np.array([1])
     crosstalk: np.ndarray = np.zeros((2**n_qubits, 2**n_qubits))
-    measurement_densities: Dict[str,np.ndarray] = {name: POLARIZATION_DENSITIES[i] for i, name in enumerate(POLARIZATION_STATE_NAMES)}
-    data: List[Dict] = [
-        {"basis": [POLARIZATION_STATE_NAMES[0]],
-        "integration_time": 1,
-        "counts": [50]},
 
-        {"basis": [POLARIZATION_STATE_NAMES[1]],
-        "integration_time": 1,
-        "counts": [50]},
-
-        {"basis": [POLARIZATION_STATE_NAMES[2]],
-        "integration_time": 1,
-        "counts": [50]},
-
-        {"basis": [POLARIZATION_STATE_NAMES[3]],
-        "integration_time": 1,
-        "counts": [50]},
-
-        {"basis": [POLARIZATION_STATE_NAMES[4]],
-        "integration_time": 1,
-        "counts": [100]},
-
-        {"basis": [POLARIZATION_STATE_NAMES[5]],
-        "integration_time": 1,
-        "counts": [0]},
-    ]
-    coincidence_window: np.ndarray = np.zeros((n_detectors,n_detectors))
+    coincidence_window: np.ndarray = np.zeros((n_detectors, n_detectors))
+    measurement_densities: Dict[str, np.ndarray] = {
+        POLARIZATION_STATE_NAMES[i]: POLARIZATION_DENSITIES[name]
+        for i, name in enumerate(POLARIZATION_STATES)
+    }
     intensity: np.ndarray = np.ones(len(measurement_densities))
     overall_norms: np.ndarray = np.kron(rel_efficiency, intensity)
-    accidentals: np.ndarray = np.zeros_like(singles)
 
+    data: List[Dict] = [
+        {
+            "basis": [POLARIZATION_STATE_NAMES[0]],
+            "integration_time": 1,
+            "counts": [50],
+            "accidentals": np.zeros(
+                len(np.choose(np.arange(0, n_detectors), np.arange(0, n_detectors)))
+            ),
+        },
+        {
+            "basis": [POLARIZATION_STATE_NAMES[1]],
+            "integration_time": 1,
+            "counts": [50],
+            "accidentals": np.zeros(
+                len(np.choose(np.arange(0, n_detectors), np.arange(0, n_detectors)))
+            ),
+        },
+        {
+            "basis": [POLARIZATION_STATE_NAMES[2]],
+            "integration_time": 1,
+            "counts": [50],
+            "accidentals": np.zeros(
+                len(np.choose(np.arange(0, n_detectors), np.arange(0, n_detectors)))
+            ),
+        },
+        {
+            "basis": [POLARIZATION_STATE_NAMES[3]],
+            "integration_time": 1,
+            "counts": [50],
+            "accidentals": np.zeros(
+                len(np.choose(np.arange(0, n_detectors), np.arange(0, n_detectors)))
+            ),
+        },
+        {
+            "basis": [POLARIZATION_STATE_NAMES[4]],
+            "integration_time": 1,
+            "counts": [100],
+            "accidentals": np.zeros(
+                len(np.choose(np.arange(0, n_detectors), np.arange(0, n_detectors)))
+            ),
+        },
+        {
+            "basis": [POLARIZATION_STATE_NAMES[5]],
+            "integration_time": 1,
+            "counts": [0],
+            "accidentals": np.zeros(
+                len(np.choose(np.arange(0, n_detectors), np.arange(0, n_detectors)))
+            ),
+        },
+    ]
     # @model_validator(mode="after")
     # def check_input_shape(self) -> Self:
     # self.counts = np.atleast_2d(np.array(self.counts, dtype=np.complex128))
@@ -145,22 +178,39 @@ class TomoData(BaseModel):
 
     #    return self
 
-    @model_validator(mode="after")
-    def make_window_symmetric(self)->Self:
-
+    # @model_validator(mode="after")
+    # def make_window_symmetric(self)->Self:
 
     @model_validator(mode="after")
     def cast_lists_to_array(self) -> Self:
+        for key, density in self.measurement_densities.items():
+            self.measurement_densities[key] = np.array(density)
+
         self.measurement_densities = np.array(self.measurement_densities)
         self.rel_efficiency = np.array(self.rel_efficiency)
+        for datum in self.data:
+            datum["data"] = np.array(datum["data"])
+            datum["accidentals"] = np.array(datum["accidentals"])
         return self
+
+    @model_validator(mode="after")
+    def check_accidental_shape(self) -> Self:
+        if self.config.do_accidental_correction == 1:
+            expected_accidental_shape = len(
+                np.choose(np.arange(0, n_detectors), np.arange(0, n_detectors))
+            )
+            for datum in self.data:
+                if datum["accidentals"].shape != expected_accidental_shape:
+                    raise ValueError(
+                        f"Accidentals aren't the correct shape. Expected {expected_accidental_shape} but got {datum['accidentals'].shape} for basis {datum['basis']}."
+                    )
 
     @model_validator(mode="after")
     def accidental_correction(self) -> Self:
         if self.config.do_accidental_correction == 1:
-            scalerIndex = np.concatenate((np.ones(nbits - 2), [2, 2]))
+            scalerIndex = np.concatenate((np.ones(self.n_qubits - 2), [2, 2]))
             additiveIndex = np.array([0, 1])
-            for j in range(2, nbits):
+            for j in range(2, self.n_qubits):
                 additiveIndex = np.concatenate(([2 * j], additiveIndex))
             if len(coinc.shape) == 1:
                 acc = acc[:, np.newaxis]
