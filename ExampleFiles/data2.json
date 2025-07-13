@@ -16,7 +16,7 @@
   "data": [
     {
       "basis": ["H"],
-      "time": 1,
+      "integration_time": 1,
       "counts": [0]
     },
     {

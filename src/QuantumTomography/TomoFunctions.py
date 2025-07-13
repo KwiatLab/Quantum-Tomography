@@ -185,6 +185,8 @@ def generalized_pauli_basis(num_qubits):
 """
 get_stokes_parameters(state,basis)
 Desc: Given a density or pure state, return the stokes parameters.
+    For more info see Altpeter, J. et al., "Photonic State Tomography", sec. 1.1.2.
+    https://research.physics.illinois.edu/QI/Photonics/tomography-files/amo_tomo_chapter.pdf
 
 Parameters
 ----------

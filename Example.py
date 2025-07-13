@@ -20,10 +20,10 @@ tomo_obj = qtomo.Tomography()
 
 tomo_config = qtomo.import_config("ExampleFiles/conf.toml")
 
-tomo_data = qtomo.import_data("ExampleFiles/data2.json")
+tomo_data = qtomo.import_data("ExampleFiles/data2.json", tomo_config)
 
 # Step 3. Run Tomography on The data
-results = tomo_obj.StateTomography(tomo_config, tomo_data)
+results = tomo_obj.StateTomography(tomo_data, tomo_config)
 print(results)
 
 # import data file

@@ -1,4 +1,6 @@
 from __future__ import print_function
+
+from numpy.testing import measure
 from .TomoFunctions import generalized_pauli_basis, get_stokes_parameters
 from .TomoDisplay import floatToString
 from .TomoClassHelpers import (
@@ -18,6 +20,7 @@ from .Utilities import (
     import_data,
 )
 import numpy as np
+import scipy as sp
 from scipy.optimize import leastsq, minimize
 import warnings
 from typing import Union, List
@@ -240,9 +243,6 @@ class Tomography:
         tomo_data: TomoData,
         tomo_config: TomoConfiguration,
     ):
-        if any(tomo_data.intensity):
-            tomo_config.do_drift_correction = True
-
         # filter the data
         self.last_input = tomo_data
         starting_matrix = tomo_config.starting_matrix
@@ -771,27 +771,74 @@ class Tomography:
     def tomography_LINEAR(
         self, tomo_data: TomoData, tomo_config: TomoConfiguration
     ) -> List[np.ndarray]:
-        counts = tomo_data.counts.flatten()
+        counts = np.array(
+            [
+                datum.counts * tomo_data.rel_efficiency * datum.intensity
+                for datum in tomo_data.data
+            ]
+        )
+        pauli_basis = generalized_pauli_basis(tomo_data.n_qubits)
 
-        pauli_basis = generalized_pauli_basis(self.getNumQubits())
+        measurement_densities = list(tomo_data.measurement_densities.values())
+
+        # Find a list of 4**n_qubits linearly independent measurement densities
+        test_matrix = np.zeros(
+            (len(pauli_basis), len(pauli_basis)), dtype=np.complex128
+        )
+        linearly_independent_indices = []
+        best_rank = 0
+        test_index = 0
+
+        # Test linear independence by adding each flattened density as a column to a matrix
+        # and checking the rank
+        for i in range(len(measurement_densities)):
+            test_matrix.T[test_index] = measurement_densities[i].flatten()
+
+            # If adding this measurement density increased our rank, then keep it
+            if np.linalg.matrix_rank(test_matrix) > best_rank:
+                best_rank = np.linalg.matrix_rank(test_matrix)
+                test_index += 1
+                linearly_independent_indices.append(i)
+            else:
+                # otherwise remove it
+                test_matrix.T[test_index] = np.zeros(len(pauli_basis))
+
+            # If we have enough linearly independent measurements, we can stop
+            if best_rank == len(pauli_basis):
+                break
+
+        # Get the linearly independent measurements and counts corresponding to those measurements
+        linearly_independent_densities = np.array(measurement_densities)[
+            linearly_independent_indices
+        ]
+        linearly_independent_counts = np.array(counts)[linearly_independent_indices]
+
+        # Get the Stokes parameters corresponding to the measurements
         stokes_measurements = (
             np.array(
                 [
                     get_stokes_parameters(m, pauli_basis)
-                    for m in tomo_data.measurement_densities
+                    for m in linearly_independent_densities
                 ]
             )
-            / 2 ** self.getNumQubits()
+            / 2**tomo_data.n_qubits
         )
-        freq_array = counts / tomo_data.overall_norms
 
-        B_inv = np.linalg.inv(np.matmul(stokes_measurements.T, stokes_measurements))
-        stokes_params = np.matmul(stokes_measurements.T, freq_array)
-        stokes_params = np.matmul(B_inv, stokes_params)
-        linear_rhog = np.multiply(pauli_basis, stokes_params[:, np.newaxis, np.newaxis])
+        # Correct for experimental errors (accidental coincidences, crosstalk, detector inefficiency)
+        corrected_counts = (
+            linearly_independent_counts
+            * np.array(tomo_data.overall_norms)[linearly_independent_indices]
+        )
+
+        print(freq_array)
+        print(stokes_measurements)
+        # stokes_params = np.matmul(stokes_measurements, freq_array)
+        stokes_params = np.linalg.solve(stokes_measurements, freq_array)
+
+        linear_rhog = stokes_params[:, :, np.newaxis] * pauli_basis
         linear_rhog = np.sum(linear_rhog, axis=0)
-
         intensity = np.trace(linear_rhog)
+
         rhog = linear_rhog / intensity
 
         return [rhog, intensity]
