@@ -98,9 +98,10 @@ class Tomography:
     Desc: This initializes a default tomography object
     """
 
-    def __init__(self, nQ=2):
+    def __init__(self, tomo_data: TomoData, tomo_config: TomoConfiguration):
         # self.conf = DEFAULT_CONF
         # print(self.conf)
+
         self.err_functions = [
             "concurrence",
             "tangle",

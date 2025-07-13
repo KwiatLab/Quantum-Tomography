@@ -11,6 +11,7 @@ import numpy as np
 from pydantic import BaseModel, model_validator, field_validator
 from typing import Union, List, Tuple, get_type_hints, Type, Dict, Any, Optional
 from typing_extensions import Self
+import functools
 
 """
 Copyright 2020 University of Illinois Board of Trustees.
@@ -141,6 +142,10 @@ class Measurement(BaseModel):
     accidentals: A square 2d array of size (n_detectors**n_qubits, n_detectors**n_qubits) describing the accidental counts between each pair of detectors.
         Because of this, the matrix is symmetric and the diagonal ignored. Note that this is only used for coincidence measurements
 
+    detectors_used: A list of indices describing what detectors are used for this specific measurement. This is used for accidental correction, in correlation
+        to the coincidence_window field in TomoData. It is also used for calculation of relative detector pair inefficiency in correlation with relative_efficiency.
+        Note: this is not used for n_detectors = 1.
+
     relative_intensity: Relative intensity of this measurement. Used to correct for intensity drift. Note that this is not used when n_detectors > 1. This scales the counts relative to the other measurements.
     """
 
@@ -152,9 +157,13 @@ class Measurement(BaseModel):
 
     counts: Union[np.ndarray, List[int]]
 
-    accidentals: Optional[np.ndarray] = None
+    accidentals: int = 0
 
     relative_intensity: Optional[float] = 1.0
+
+    detectors_used: List[int] = [0]
+
+    _crosstalk_corrected_density: Optional[np.ndarray] = None
 
     @field_validator("counts", mode="before")
     @classmethod
@@ -173,12 +182,15 @@ class TomoData(BaseModel):
 
     n_detectors: Number of detectors used for measurements in this dataset.
 
-    rel_efficiency: A square 2d array of size (n_detectors**n_qubits, n_detectors**n_qubits) describing the relative efficiencies between each pair of detectors.
+    relative_efficiency: A square 2d array of size (n_detectors**n_qubits, n_detectors**n_qubits) describing the relative efficiencies between each pair of detectors.
         Because of this, the matrix will be symmetric and the diagonal ignored.
         Note that this is only used when n_detectors > 1 for the purpose of coincidence inefficiency correction.
 
-    crosstalk:  A square 2d array of size (n_detectors**n_qubits, n_detectors**n_qubits) describing the crosstalk between each detector.
+    crosstalk:  A square 2d array of size (n_measurements_per_qubit * n_qubits, n_measurements_per_qubit * n_qubits) describing the crosstalk between each measurement.
         This matrix may NOT be column stochastic to allow for absorbance correction.
+        Note the convention of this matrix is dependent on the order of the data given.
+        Ex. if data = ["HH", "HV", "VH", "VV"],
+            then crosstalk[1,2] is the probability that measurement "HV" will be measured as "VH"
 
     coincidence_window: A square 2d array of size (n_detectors**n_qubits, n_detectors**qubits) describing the coincidence window between each pair of detectors.
 
@@ -203,9 +215,11 @@ class TomoData(BaseModel):
 
     n_measurements_per_qubit: int = 6
 
-    rel_efficiency: np.ndarray = np.array([1])
+    relative_efficiency: np.ndarray = np.array([1])
 
-    crosstalk: np.ndarray = np.eye(n_qubits * n_detectors, n_qubits * n_detectors)
+    crosstalk: np.ndarray = np.eye(
+        n_measurements_per_qubit * n_qubits, n_measurements_per_qubit * n_qubits
+    )
 
     coincidence_window: np.ndarray = np.zeros(
         (n_qubits * n_detectors, n_qubits * n_detectors)
@@ -223,60 +237,87 @@ class TomoData(BaseModel):
             basis=[POLARIZATION_STATE_NAMES[0]],
             integration_time=1.0,
             counts=[50],
-            accidentals=np.zeros((n_detectors**n_qubits, n_detectors**n_qubits)),
+            accidentals=0,
             relative_intensity=1.0,
+            detectors_used=[0],
         ),
         Measurement(
             basis=[POLARIZATION_STATE_NAMES[1]],
             integration_time=1.0,
             counts=[50],
-            accidentals=np.zeros((n_detectors**n_qubits, n_detectors**n_qubits)),
+            accidentals=0,
             relative_intensity=1.0,
+            detectors_used=[0],
         ),
         Measurement(
             basis=[POLARIZATION_STATE_NAMES[2]],
             integration_time=1.0,
             counts=[50],
-            accidentals=np.zeros((n_detectors**n_qubits, n_detectors**n_qubits)),
+            accidentals=0,
             relative_intensity=1.0,
+            detectors_used=[0],
         ),
         Measurement(
             basis=[POLARIZATION_STATE_NAMES[3]],
             integration_time=1.0,
             counts=[50],
-            accidentals=np.zeros((n_detectors**n_qubits, n_detectors**n_qubits)),
+            accidentals=0,
             relative_intensity=1.0,
+            detectors_used=[0],
         ),
         Measurement(
             basis=[POLARIZATION_STATE_NAMES[4]],
             integration_time=1.0,
             counts=[100],
-            accidentals=np.zeros((n_detectors**n_qubits, n_detectors**n_qubits)),
+            accidentals=0,
             relative_intensity=1.0,
+            detectors_used=[0],
         ),
         Measurement(
             basis=[POLARIZATION_STATE_NAMES[5]],
             integration_time=1.0,
             counts=[0],
-            accidentals=np.zeros((n_detectors**n_qubits, n_detectors**n_qubits)),
+            accidentals=0,
             relative_intensity=1.0,
+            detectors_used=[0],
         ),
     ]
-    # @model_validator(mode="after")
-    # def check_input_shape(self) -> Self:
-    # self.counts = np.atleast_2d(np.array(self.counts, dtype=np.complex128))
-    # if self.counts.shape != (
-    #    self.n_qubits**self.n_detectors,
-    #    self.n_measurements_per_qubit,
-    # ):
-    #    raise ValueError(
-    #        f"Counts shape is wrong {self.counts.shape}, expected {self.n_qubits**self.n_detectors, self.n_measurements_per_qubit}"
-    #    )
 
-    #    return self
+    @field_validator("coincidence_window", mode="after")
+    @classmethod
+    def make_coincidence_window_symmetric(cls, coincidence_window) -> np.ndarray:
+        coincidence_window = coincidence_window + coincidence_window.T
+        return coincidence_window
 
-    # @model_validator(mode="after")
-    # def make_window_symmetric(self)->Self:
+    @field_validator("relative_efficiency", mode="after")
+    @classmethod
+    def make_rel_efficiency_symmetric(cls, relative_efficiency) -> np.ndarray:
+        relative_efficiency = relative_efficiency + relative_efficiency.T
+        return relative_efficiency
+
+    @model_validator(mode="after")
+    def calculate_crosstalk_corrected_densities(self) -> Self:
+        """Get corrected measurement projectors that account for crosstalk.
+
+        For more info see Altpeter, J. et al., "Photonic State Tomography", p.33-34.
+        https://research.physics.illinois.edu/QI/Photonics/tomography-files/amo_tomo_chapter.pdf
+        """
+
+        meas_basis_len = len(self.data[0].basis)
+        density_shape = (2**meas_basis_len, 2**meas_basis_len)
+
+        # Precompute the measurement densities using the basis definitions
+        all_densities = get_all_densities_from_data(self)
+
+        # Do crosstalk correction
+        for i in range(meas_basis_len):
+            corrected_density = np.zeros(density_shape)
+            for j in range(meas_basis_len):
+                corrected_density += self.crosstalk[i, j] * all_densities[j]
+
+            self.data[i]._crosstalk_corrected_density = corrected_density
+
+        return self
 
     @field_validator("data", mode="before")
     @classmethod
@@ -292,7 +333,6 @@ class TomoData(BaseModel):
     @model_validator(mode="after")
     def cast_lists_to_array(self) -> Self:
         for key, density in self.measurement_densities.items():
-            print("casting11")
             self.measurement_densities[key] = np.array(density)
 
         self.measurement_densities = self.measurement_densities
@@ -300,41 +340,33 @@ class TomoData(BaseModel):
         return self
 
     @model_validator(mode="after")
-    def check_accidental_shape(self) -> Self:
+    def accidental_correction(self) -> Self:
+        """Accidental correction.
+        For more info see Altpeter, J. et al., "Photonic State Tomography", p.33.
+        https://research.physics.illinois.edu/QI/Photonics/tomography-files/amo_tomo_chapter.pdf
+        """
+
         if self.config.do_accidental_correction == 1:
-            expected_accidental_shape = len(
-                np.choose(
-                    np.arange(0, self.n_detectors), np.arange(0, self.n_detectors)
-                )
-            )
             for datum in self.data:
-                if datum.accidentals.shape != expected_accidental_shape:
-                    raise ValueError(
-                        f"Accidentals aren't the correct shape. Expected {expected_accidental_shape} but got {datum['accidentals'].shape} for basis {datum['basis']}."
-                    )
+                accidental_count_factor = np.prod(datum.counts[0 : len(datum.basis)])
+                datum.accidentals = (
+                    accidental_count_factor
+                    * self.coincidence_window[
+                        datum.detectors_used[0], datum.detectors_used[1]
+                    ]
+                    / datum.integration_time
+                )
+
         return self
 
-    @model_validator(mode="after")
-    def accidental_correction(self) -> Self:
-        if self.config.do_accidental_correction == 1:
-            scalerIndex = np.concatenate((np.ones(self.n_qubits - 2), [2, 2]))
-            additiveIndex = np.array([0, 1])
-            for j in range(2, self.n_qubits):
-                additiveIndex = np.concatenate(([2 * j], additiveIndex))
-            if len(coinc.shape) == 1:
-                acc = acc[:, np.newaxis]
-            for j in range(n_coinc):
-                index = bin(j).split("b")[1]
-                index = "0" * (nbits - len(index)) + index
-                index = [int(char) for char in index]
-                index = index * scalerIndex + additiveIndex
-                index = np.array(index, dtype=int)
-                acc[:, j] = np.prod(np.real(sings[:, tuple(index)]), axis=1) * (
-                    window[j] * 1e-9 / np.real(times)
-                ) ** (nbits - 1)
-            if acc.shape != coinc.shape:
-                acc = acc[:, 0]
-        return self
+
+def get_all_densities_from_data(tomo_data: TomoData) -> List[np.ndarray]:
+    all_densities = []
+    for datum in tomo_data.data:
+        densities = [tomo_data.measurement_densities[name] for name in datum.basis]
+        all_densities.append(functools.reduce(lambda x, y: np.kron(x, y), densities))
+
+    return all_densities
 
 
 def cast_to_numpy(json_dict, key):
