@@ -12,6 +12,7 @@ from pydantic import BaseModel, model_validator, field_validator
 from typing import Union, List, Tuple, get_type_hints, Type, Dict, Any, Optional
 from typing_extensions import Self
 import functools
+from math import comb
 
 """
 Copyright 2020 University of Illinois Board of Trustees.
@@ -104,7 +105,7 @@ class TomoConfiguration(BaseModel):
     method: Union[TomographyType, str] = TomographyType.MLE
     starting_matrix: Union[np.ndarray, None] = None
     save_state: bool = True
-    minimizer_kwargs: Dict = {
+    _minimizer_kwargs: Dict = {
         "ftol": ftol,
         "xtol": xtol,
         "gtol": gtol,
@@ -121,6 +122,20 @@ class TomoConfiguration(BaseModel):
             else:
                 self.method = TOMOGRAPHY_TYPES[self.method]
         return self
+
+    @model_validator(mode="after")
+    def get_not_none_minimizer_kwargs(self) -> Self:
+        self._minimizer_kwargs = {
+            k: v for k, v in self._minimizer_kwargs.items() if v is not None
+        }
+        return self
+
+
+def get_highest_fold_coincidence_count_index(n_fold):
+    idx = 0
+    for i in range(n_fold):
+        idx += comb(n_fold, i)
+    return idx - 1
 
 
 class Measurement(BaseModel):
@@ -139,14 +154,14 @@ class Measurement(BaseModel):
         Ex 1: basis = [H,V], counts = [{H counts}, {V counts}, {H-V coincidences}]
         Ex 2: basis = [H,V,D], counts = [{H counts}, {V counts}, {H-V coincidences}, {H-D coincidences}, {H-V-D coincidences}]
 
-    accidentals: A square 2d array of size (n_detectors**n_qubits, n_detectors**n_qubits) describing the accidental counts between each pair of detectors.
+    accidentals: A square 2d array of size (n_detectors_per_qubit**n_qubits, n_detectors_per_qubit**n_qubits) describing the accidental counts between each pair of detectors.
         Because of this, the matrix is symmetric and the diagonal ignored. Note that this is only used for coincidence measurements
 
     detectors_used: A list of indices describing what detectors are used for this specific measurement. This is used for accidental correction, in correlation
         to the coincidence_window field in TomoData. It is also used for calculation of relative detector pair inefficiency in correlation with relative_efficiency.
-        Note: this is not used for n_detectors = 1.
+        Note: this is not used when there is only 1 detector per measurement.
 
-    relative_intensity: Relative intensity of this measurement. Used to correct for intensity drift. Note that this is not used when n_detectors > 1. This scales the counts relative to the other measurements.
+    relative_intensity: Relative intensity of this measurement. Used to correct for intensity drift. Note that this is not used when n_detectors_per_qubit > 1. This scales the counts relative to the other measurements.
     """
 
     class Config:
@@ -155,7 +170,9 @@ class Measurement(BaseModel):
     basis: List[str]
     integration_time: float
 
-    counts: Union[np.ndarray, List[int]]
+    counts: np.ndarray
+
+    overall_norm: Optional[float] = 1.0
 
     accidentals: int = 0
 
@@ -165,10 +182,19 @@ class Measurement(BaseModel):
 
     _crosstalk_corrected_density: Optional[np.ndarray] = None
 
+    _coincidence_counts: Optional[np.ndarray] = None
+
     @field_validator("counts", mode="before")
     @classmethod
     def cast_to_ndarray(cls, counts: Any) -> np.ndarray:
         return np.array(counts)
+
+    @model_validator(mode="after")
+    def get_coincidences_only(self) -> Self:
+        self._coincidence_counts = np.array(
+            self.counts[get_highest_fold_coincidence_count_index(len(self.basis))]
+        )
+        return self
 
 
 class TomoData(BaseModel):
@@ -197,11 +223,11 @@ class TomoData(BaseModel):
     measurement_densities: A dictionary mapping names (strings) of measurements to projectors (ndarray).
         This allows users to name and define their own measurement projectors used in their experiment.
 
-    orthogonal_measurement_indices: A list of tuples describing which measurements are done simultaneously. Note this is only used for n_detectors > 1.
+    simultaneous_measurement_indices: A list of lists of indices describing which measurements are done simultaneously. Note this is only used for n_detectors > 1.
         This is used to normalize counts between orthogonal and simultaneous measurements to correct for intensity drift.
         Ex:
             measurement_densities = {"H", "V", "D", "A", "R","L"},
-            orthogonal_measurement_indices = [(0,1), (2,3), (4,5)]
+            simultaneous_measurement_indices = [(0,1), (2,3), (4,5)]
 
     data: A list of Measurement objects.
     """
@@ -211,7 +237,7 @@ class TomoData(BaseModel):
 
     config: TomoConfiguration = TomoConfiguration()
     n_qubits: int = 1
-    n_detectors: int = 1
+    n_detectors_per_qubit: int = 1
 
     n_measurements_per_qubit: int = 6
 
@@ -222,7 +248,7 @@ class TomoData(BaseModel):
     )
 
     coincidence_window: np.ndarray = np.zeros(
-        (n_qubits * n_detectors, n_qubits * n_detectors)
+        (n_qubits * n_detectors_per_qubit, n_qubits * n_detectors_per_qubit)
     )
 
     measurement_densities: Dict[str, np.ndarray] = {
@@ -230,13 +256,15 @@ class TomoData(BaseModel):
         for i, name in enumerate(POLARIZATION_STATES)
     }
 
-    orthogonal_measurement_indices: Optional[List[Tuple[int]]] = None
+    simultaneous_measurement_indices: Optional[List[List[int]]] = None
+
+    _all_measurement_densities: Optional[np.ndarray] = None
 
     data: List[Measurement] = [
         Measurement(
             basis=[POLARIZATION_STATE_NAMES[0]],
             integration_time=1.0,
-            counts=[50],
+            counts=np.array([50]),
             accidentals=0,
             relative_intensity=1.0,
             detectors_used=[0],
@@ -244,7 +272,7 @@ class TomoData(BaseModel):
         Measurement(
             basis=[POLARIZATION_STATE_NAMES[1]],
             integration_time=1.0,
-            counts=[50],
+            counts=np.array([50]),
             accidentals=0,
             relative_intensity=1.0,
             detectors_used=[0],
@@ -252,7 +280,7 @@ class TomoData(BaseModel):
         Measurement(
             basis=[POLARIZATION_STATE_NAMES[2]],
             integration_time=1.0,
-            counts=[50],
+            counts=np.array([50]),
             accidentals=0,
             relative_intensity=1.0,
             detectors_used=[0],
@@ -260,7 +288,7 @@ class TomoData(BaseModel):
         Measurement(
             basis=[POLARIZATION_STATE_NAMES[3]],
             integration_time=1.0,
-            counts=[50],
+            counts=np.array([50]),
             accidentals=0,
             relative_intensity=1.0,
             detectors_used=[0],
@@ -268,7 +296,7 @@ class TomoData(BaseModel):
         Measurement(
             basis=[POLARIZATION_STATE_NAMES[4]],
             integration_time=1.0,
-            counts=[100],
+            counts=np.array([100]),
             accidentals=0,
             relative_intensity=1.0,
             detectors_used=[0],
@@ -276,12 +304,23 @@ class TomoData(BaseModel):
         Measurement(
             basis=[POLARIZATION_STATE_NAMES[5]],
             integration_time=1.0,
-            counts=[0],
+            counts=np.array([0]),
             accidentals=0,
             relative_intensity=1.0,
             detectors_used=[0],
         ),
     ]
+
+    @model_validator(mode="after")
+    def calculate_overall_norm(self) -> Self:
+        if self.config.do_drift_correction:
+            for datum in self.data:
+                datum.overall_norm = datum.relative_intensity
+                if self.n_detectors_per_qubit > 1:
+                    det_1, det_2 = datum.detectors_used
+                    datum.overall_norm *= self.relative_efficiency[det_1, det_2]
+
+        return self
 
     @field_validator("coincidence_window", mode="after")
     @classmethod
@@ -311,8 +350,9 @@ class TomoData(BaseModel):
 
         # Do crosstalk correction
         for i in range(meas_basis_len):
-            corrected_density = np.zeros(density_shape)
+            corrected_density = np.zeros(density_shape, dtype=np.complex128)
             for j in range(meas_basis_len):
+                # New densities are linear combinations of all measurement projectors multiplied by a scalar
                 corrected_density += self.crosstalk[i, j] * all_densities[j]
 
             self.data[i]._crosstalk_corrected_density = corrected_density
@@ -336,19 +376,21 @@ class TomoData(BaseModel):
             self.measurement_densities[key] = np.array(density)
 
         self.measurement_densities = self.measurement_densities
-        self.rel_efficiency = np.array(self.rel_efficiency)
+        self.relative_efficiency = np.array(self.relative_efficiency)
         return self
 
     @model_validator(mode="after")
-    def accidental_correction(self) -> Self:
-        """Accidental correction.
+    def calculate_accidentals(self) -> Self:
+        """Calculate accidentals to use for correction.
         For more info see Altpeter, J. et al., "Photonic State Tomography", p.33.
         https://research.physics.illinois.edu/QI/Photonics/tomography-files/amo_tomo_chapter.pdf
         """
 
         if self.config.do_accidental_correction == 1:
             for datum in self.data:
+                # multiply all of the singles together
                 accidental_count_factor = np.prod(datum.counts[0 : len(datum.basis)])
+                # Multiply by the coincidence window and divide by integration time
                 datum.accidentals = (
                     accidental_count_factor
                     * self.coincidence_window[
@@ -360,13 +402,15 @@ class TomoData(BaseModel):
         return self
 
 
-def get_all_densities_from_data(tomo_data: TomoData) -> List[np.ndarray]:
+def get_all_densities_from_data(tomo_data: TomoData) -> np.ndarray:
     all_densities = []
     for datum in tomo_data.data:
+        # Get all of the densities used in this Measurement
         densities = [tomo_data.measurement_densities[name] for name in datum.basis]
+        # Kronecker product all of them together
         all_densities.append(functools.reduce(lambda x, y: np.kron(x, y), densities))
 
-    return all_densities
+    return np.array(all_densities)
 
 
 def cast_to_numpy(json_dict, key):

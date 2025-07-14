@@ -1,5 +1,6 @@
 from __future__ import print_function
 import numpy as np
+from numpy.testing import measure
 from .TomoFunctions import *
 
 """
@@ -46,6 +47,7 @@ val : float
 
 
 def maxlike_fitness(t, coincidences, accidentals, measurements, overall_norms):
+    print(measurements)
     rhog = t_to_density(t, normalize=False)
     prediction = np.zeros_like(coincidences)
     for j in range(len(prediction)):
@@ -127,15 +129,6 @@ def normalizeLikelihoods(likelihoods):
 #     ind[len(ind)-1] = j+1
 #
 #     return ind
-
-
-def make_positive(rhog_in):
-    d, v = np.linalg.eig(rhog_in)
-    rhog = np.zeros(rhog_in.shape)
-    for j in range(len(d)):
-        rhog = rhog + np.abs(d[j]) * np.outer(v[:, j], v[:, j].conj().transpose())
-    rhog = (rhog + rhog.conj().transpose()) / 2.0
-    return rhog
 
 
 # Helper function for calculating the bell settings

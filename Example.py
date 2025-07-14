@@ -1,4 +1,5 @@
 from __future__ import print_function
+from traceback import print_exc
 import numpy as np
 import matplotlib.pyplot as plt
 import QuantumTomography as qtomo
@@ -12,15 +13,16 @@ Licensed under the terms of an MIT license
 """CHECK OUT THE REFERENCE PAGE ON OUR WEBSITE :
 https://quantumtomo.web.illinois.edu/Doc/"""
 
-
-# Step 1. Initialize Tomography Object if you want storage of previous run results
-tomo_obj = qtomo.Tomography()
-
-# Step 2: Import configuration and data files
+np.set_printoptions(precision=3, suppress=True)
+# Step 1: Import configuration and data files
 
 tomo_config = qtomo.import_config("ExampleFiles/conf.toml")
 
-tomo_data = qtomo.import_data("ExampleFiles/data2.json", tomo_config)
+tomo_data = qtomo.import_data("ExampleFiles/1_qubit_example.json", tomo_config)
+
+# Step 2: Initialize tomography object
+
+tomo_obj = qtomo.Tomography(tomo_data, tomo_config)
 
 # Step 3. Run Tomography on The data
 results = tomo_obj.StateTomography(tomo_data, tomo_config)

@@ -14,6 +14,8 @@ from .Utilities import (
     TomoConfiguration,
     TomoData,
     TomographyType,
+    get_all_densities_from_data,
+    get_highest_fold_coincidence_count_index,
     getValidFileName,
     # DEFAULT_CONF,
     import_config,
@@ -253,6 +255,8 @@ class Tomography:
                 [starting_matrix, inten_linear] = self.tomography_LINEAR(
                     tomo_data, tomo_config
                 )
+                print(starting_matrix)
+                print(np.linalg.eigvals(starting_matrix))
                 # Currently linear tomography gets the phase wrong. So a temporary fix is to just transpose it.
                 starting_matrix = starting_matrix.transpose()
                 starting_matrix = make_positive(starting_matrix)
@@ -331,39 +335,34 @@ class Tomography:
         tomo_config: TomoConfiguration,
         starting_matrix: np.ndarray,
     ):
+        counts = np.array([datum._coincidence_counts for datum in tomo_data.data])
+        overall_norms = np.array([datum.overall_norm for datum in tomo_data.data])
+        accidentals = np.array([datum.accidentals for datum in tomo_data.data])
+
         # If overall_norms not given then assume uniform
-        init_intensity = (
-            np.mean(np.multiply(tomo_data.counts, 1 / tomo_data.overall_norms))
-            * (starting_matrix.shape[0])
-        )
+        init_intensity = np.mean(counts / overall_norms) * (starting_matrix.shape[0])
         starting_tvals = density2t(starting_matrix)
         starting_tvals = starting_tvals + 0.0001
         starting_tvals = starting_tvals * np.sqrt(init_intensity)
-
-        counts = np.real(tomo_data.counts)
-        counts = counts.flatten()
 
         final_tvals = leastsq(
             maxlike_fitness,
             np.real(starting_tvals),
             args=(
                 counts,
-                tomo_data.accidentals,
-                tomo_data.measurement_densities,
-                tomo_data.overall_norms,
+                accidentals,
+                get_all_densities_from_data(tomo_data),
+                overall_norms,
             ),
-            ftol=tomo_config.ftol,
-            xtol=tomo_config.xtol,
-            gtol=tomo_conifg.gtol,
-            maxfev=tomo_config.maxfev,
+            **tomo_config._minimizer_kwargs,
         )[0]
         fvalp = np.sum(
             maxlike_fitness(
                 final_tvals,
                 counts,
-                tomo_data.accidentals,
-                tomo_data.measurement_densities,
-                tomo_data.overall_norms,
+                accidentals,
+                get_all_densities_from_data(tomo_data),
+                overall_norms,
             )
             ** 2
         )
@@ -772,15 +771,9 @@ class Tomography:
     def tomography_LINEAR(
         self, tomo_data: TomoData, tomo_config: TomoConfiguration
     ) -> List[np.ndarray]:
-        counts = np.array(
-            [
-                datum.counts * tomo_data.rel_efficiency * datum.intensity
-                for datum in tomo_data.data
-            ]
-        )
         pauli_basis = generalized_pauli_basis(tomo_data.n_qubits)
 
-        measurement_densities = list(tomo_data.measurement_densities.values())
+        measurement_densities = get_all_densities_from_data(tomo_data)
 
         # Find a list of 4**n_qubits linearly independent measurement densities
         test_matrix = np.zeros(
@@ -812,7 +805,6 @@ class Tomography:
         linearly_independent_densities = np.array(measurement_densities)[
             linearly_independent_indices
         ]
-        linearly_independent_counts = np.array(counts)[linearly_independent_indices]
 
         # Get the Stokes parameters corresponding to the measurements
         stokes_measurements = (
@@ -825,18 +817,22 @@ class Tomography:
             / 2**tomo_data.n_qubits
         )
 
+        linearly_independent_measurements = [
+            tomo_data.data[i] for i in linearly_independent_indices
+        ]
+
         # Correct for experimental errors (accidental coincidences, crosstalk, detector inefficiency)
-        corrected_counts = (
-            linearly_independent_counts
-            * np.array(tomo_data.overall_norms)[linearly_independent_indices]
+        linearly_independent_counts = [
+            datum._coincidence_counts * datum.overall_norm
+            for datum in linearly_independent_measurements
+        ]
+
+        # stokes_params = np.matmul(stokes_measurements, freq_array)
+        stokes_params = np.linalg.solve(
+            stokes_measurements, linearly_independent_counts
         )
 
-        print(freq_array)
-        print(stokes_measurements)
-        # stokes_params = np.matmul(stokes_measurements, freq_array)
-        stokes_params = np.linalg.solve(stokes_measurements, freq_array)
-
-        linear_rhog = stokes_params[:, :, np.newaxis] * pauli_basis
+        linear_rhog = stokes_params[:, np.newaxis, np.newaxis] * pauli_basis
         linear_rhog = np.sum(linear_rhog, axis=0)
         intensity = np.trace(linear_rhog)
 
