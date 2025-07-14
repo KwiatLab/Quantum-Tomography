@@ -21,31 +21,11 @@ tomo_config = qtomo.import_config("ExampleFiles/conf.toml")
 tomo_data = qtomo.import_data("ExampleFiles/1_qubit_example.json", tomo_config)
 
 # Step 2: Initialize tomography object
-
 tomo_obj = qtomo.Tomography(tomo_data, tomo_config)
 
 # Step 3. Run Tomography on The data
 results = tomo_obj.StateTomography(tomo_data, tomo_config)
 print(results)
-
-# import data file
-# or call the object's tomography function
-tomo_input = np.array(
-    [
-        [1, 0, 500, 1, 0],
-        [1, 0, 0, 0, 1],
-        [1, 0, 250, 0.7071, 0.7071],
-        [1, 0, 250, 0.7071, -0.7071],
-        [1, 0, 250, 0.7071, 0.7071j],
-        [1, 0, 250, 0.7071, -0.7071j],
-    ]
-)
-intensity = np.array([1, 1, 1, 1, 1, 1])
-
-
-# [rho, intens, fval] = t.state_tomography(tomo_input, intensity)
-# or import the eval file to import both the config and data
-# [rho, intensity, fval] = t.importEval("ExampleFiles/pythoneval.txt")
 
 # Step 4. Optional Methods
 # The library also include useful functions you may use included in TomoFunctions.py.
