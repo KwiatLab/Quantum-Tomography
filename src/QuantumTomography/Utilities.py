@@ -63,7 +63,7 @@ TOMOGRAPHY_TYPES = {
 
 
 class TomoConfiguration(BaseModel):
-    """Model describing how the tomography should be performed. This is used along with TomoData.
+    """Model describing how the tomography should be performed. This is used along with TomoData. This is loaded from TOML.
 
     Fields:
 
@@ -198,7 +198,7 @@ class Measurement(BaseModel):
 
 
 class TomoData(BaseModel):
-    """Model describing a collection of tomographic measurements
+    """Model describing a collection of tomographic measurements. This is loaded from JSON.
 
     Fields:
 
@@ -227,7 +227,7 @@ class TomoData(BaseModel):
         This is used to normalize counts between orthogonal and simultaneous measurements to correct for intensity drift.
         Ex:
             measurement_densities = {"H", "V", "D", "A", "R","L"},
-            simultaneous_measurement_indices = [(0,1), (2,3), (4,5)]
+            simultaneous_measurement_indices = [[0,1], [2,3], [4,5]]
 
     data: A list of Measurement objects.
     """
