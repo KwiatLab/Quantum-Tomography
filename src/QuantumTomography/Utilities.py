@@ -98,19 +98,10 @@ class TomoConfiguration(BaseModel):
     do_drift_correction: bool = False
     do_accidental_correction: bool = False
     beta: Optional[float] = None
-    ftol: Optional[float] = None
-    xtol: Optional[float] = None
-    gtol: Optional[float] = None
-    maxfev: Optional[int] = None
     method: Union[TomographyType, str] = TomographyType.MLE
     starting_matrix: Union[np.ndarray, None] = None
     save_state: bool = True
-    _minimizer_kwargs: Dict = {
-        "ftol": ftol,
-        "xtol": xtol,
-        "gtol": gtol,
-        "maxfev": maxfev,
-    }
+    minimizer_kwargs: Dict[str, Any] = dict()
 
     @model_validator(mode="after")
     def check_method(self) -> Self:
@@ -125,8 +116,8 @@ class TomoConfiguration(BaseModel):
 
     @model_validator(mode="after")
     def get_not_none_minimizer_kwargs(self) -> Self:
-        self._minimizer_kwargs = {
-            k: v for k, v in self._minimizer_kwargs.items() if v is not None
+        self.minimizer_kwargs = {
+            k: v for k, v in self.minimizer_kwargs.items() if v is not None
         }
         return self
 
@@ -152,7 +143,7 @@ class Measurement(BaseModel):
     counts: The singles and coincidence counts for the detectors.
         For a multi-qubit measurement,the first len(basis) entries are the singles and the rest are coincidences.
         Ex 1: basis = [H,V], counts = [{H counts}, {V counts}, {H-V coincidences}]
-        Ex 2: basis = [H,V,D], counts = [{H counts}, {V counts}, {H-V coincidences}, {H-D coincidences}, {H-V-D coincidences}]
+        Ex 2: basis = [H,V,D], counts = [{H counts}, {V counts},{D counts}, {H-V coincidences}, {H-D coincidences}, {V-D coincidences}, {H-V-D coincidences}]
 
     accidentals: A square 2d array of size (n_detectors_per_qubit**n_qubits, n_detectors_per_qubit**n_qubits) describing the accidental counts between each pair of detectors.
         Because of this, the matrix is symmetric and the diagonal ignored. Note that this is only used for coincidence measurements
@@ -206,7 +197,7 @@ class TomoData(BaseModel):
 
     n_qubits: Number of qubits in this dataset.
 
-    n_detectors: Number of detectors used for measurements in this dataset.
+    n_detectors_per_qubit: Number of detectors used for measurements in this dataset.
 
     relative_efficiency: A square 2d array of size (n_detectors**n_qubits, n_detectors**n_qubits) describing the relative efficiencies between each pair of detectors.
         Because of this, the matrix will be symmetric and the diagonal ignored.
@@ -223,7 +214,7 @@ class TomoData(BaseModel):
     measurement_densities: A dictionary mapping names (strings) of measurements to projectors (ndarray).
         This allows users to name and define their own measurement projectors used in their experiment.
 
-    simultaneous_measurement_indices: A list of lists of indices describing which measurements are done simultaneously. Note this is only used for n_detectors > 1.
+    simultaneous_measurement_indices: A list of lists of indices describing which measurements are done simultaneously. Note this is only used for n_detectors_per_qubit > 1.
         This is used to normalize counts between orthogonal and simultaneous measurements to correct for intensity drift.
         Ex:
             measurement_densities = {"H", "V", "D", "A", "R","L"},
