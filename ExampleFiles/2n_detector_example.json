@@ -1,0 +1,70 @@
+{
+  "n_qubits": 2,
+  "n_detectors_per_qubit": 2,
+  "coincidence_window": [0],
+  "n_measurements_per_qubit": 6,
+  "relative_efficiency": [[1,0,0,0],[0,1,0,0],[0,0,0,1]],
+  "cross_talk": [[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]],
+  "measurement_densities": {
+    "H": [[1,0],[0,0]],
+    "V": [[0,0],[0,1]],
+    "D": [[0.5,0.5],[0.5,0.5]],
+    "A": [[0.5,-0.5],[-0.5,0.5]],
+    "R": [[0.5,"-0.5j"],["0.5j",0.5]],
+    "L": [[0.5,"0.5j"],["-0.5j",0.5]]
+  },
+  "simultaneous_measurement_indices" : [
+    [0, 1, 6, 7],
+    [2, 3, 8, 9],
+    [4, 5, 10, 11],
+    [12, 13, 18, 19],
+    [14, 15, 20, 21],
+    [16, 17, 22, 23],
+    [24, 25, 30, 31],
+    [26, 27, 32, 33],
+    [28, 29, 34, 35]
+  ],
+  "data": [
+    { "basis": ["H","H"], "integration_time": 1, "counts": [0,0,100], "detectors_used": [1,2] },
+    { "basis": ["H","V"], "integration_time": 1, "counts": [0,0,0],   "detectors_used": [1,4] },
+    { "basis": ["H","D"], "integration_time": 1, "counts": [0,0,50],  "detectors_used": [1,2] },
+    { "basis": ["H","A"], "integration_time": 1, "counts": [0,0,50],  "detectors_used": [1,4] },
+    { "basis": ["H","R"], "integration_time": 1, "counts": [0,0,50],  "detectors_used": [1,2] },
+    { "basis": ["H","L"], "integration_time": 1, "counts": [0,0,50],  "detectors_used": [1,4] },
+
+    { "basis": ["V","H"], "integration_time": 1, "counts": [0,0,0],   "detectors_used": [3,2] },
+    { "basis": ["V","V"], "integration_time": 1, "counts": [0,0,100], "detectors_used": [3,4] },
+    { "basis": ["V","D"], "integration_time": 1, "counts": [0,0,50],  "detectors_used": [3,2] },
+    { "basis": ["V","A"], "integration_time": 1, "counts": [0,0,50],  "detectors_used": [3,4] },
+    { "basis": ["V","R"], "integration_time": 1, "counts": [0,0,50],  "detectors_used": [3,2] },
+    { "basis": ["V","L"], "integration_time": 1, "counts": [0,0,50],  "detectors_used": [3,4] },
+
+    { "basis": ["D","H"], "integration_time": 1, "counts": [0,0,50],  "detectors_used": [1,2] },
+    { "basis": ["D","V"], "integration_time": 1, "counts": [0,0,50],  "detectors_used": [1,4] },
+    { "basis": ["D","D"], "integration_time": 1, "counts": [0,0,100], "detectors_used": [1,2] },
+    { "basis": ["D","A"], "integration_time": 1, "counts": [0,0,0],   "detectors_used": [1,4] },
+    { "basis": ["D","R"], "integration_time": 1, "counts": [0,0,50],  "detectors_used": [1,2] },
+    { "basis": ["D","L"], "integration_time": 1, "counts": [0,0,50],  "detectors_used": [1,4] },
+
+    { "basis": ["A","H"], "integration_time": 1, "counts": [0,0,50],  "detectors_used": [3,2] },
+    { "basis": ["A","V"], "integration_time": 1, "counts": [0,0,50],  "detectors_used": [3,4] },
+    { "basis": ["A","D"], "integration_time": 1, "counts": [0,0,0],   "detectors_used": [3,2] },
+    { "basis": ["A","A"], "integration_time": 1, "counts": [0,0,100], "detectors_used": [3,4] },
+    { "basis": ["A","R"], "integration_time": 1, "counts": [0,0,50],  "detectors_used": [3,2] },
+    { "basis": ["A","L"], "integration_time": 1, "counts": [0,0,50],  "detectors_used": [3,4] },
+
+    { "basis": ["R","H"], "integration_time": 1, "counts": [0,0,50],  "detectors_used": [1,2] },
+    { "basis": ["R","V"], "integration_time": 1, "counts": [0,0,50],  "detectors_used": [1,4] },
+    { "basis": ["R","D"], "integration_time": 1, "counts": [0,0,50],  "detectors_used": [1,2] },
+    { "basis": ["R","A"], "integration_time": 1, "counts": [0,0,50],  "detectors_used": [1,4] },
+    { "basis": ["R","R"], "integration_time": 1, "counts": [0,0,0],   "detectors_used": [1,2] },
+    { "basis": ["R","L"], "integration_time": 1, "counts": [0,0,100], "detectors_used": [1,4] },
+
+    { "basis": ["L","H"], "integration_time": 1, "counts": [0,0,50],  "detectors_used": [3,2] },
+    { "basis": ["L","V"], "integration_time": 1, "counts": [0,0,50],  "detectors_used": [3,4] },
+    { "basis": ["L","D"], "integration_time": 1, "counts": [0,0,50],  "detectors_used": [3,2] },
+    { "basis": ["L","A"], "integration_time": 1, "counts": [0,0,50],  "detectors_used": [3,4] },
+    { "basis": ["L","R"], "integration_time": 1, "counts": [0,0,100], "detectors_used": [3,2] },
+    { "basis": ["L","L"], "integration_time": 1, "counts": [0,0,0],   "detectors_used": [3,4] }
+  ]
+}

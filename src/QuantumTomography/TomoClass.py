@@ -2,10 +2,19 @@ from __future__ import print_function
 from .TomoFunctions import *
 from .TomoDisplay import floatToString
 from .TomoClassHelpers import *
-from .Utilities import ConfDict, getValidFileName
+from .Utilities import (
+    ConfDict,
+    getValidFileName,
+    cast_to_numpy,
+    get_all_densities_from_data,
+    get_highest_fold_coincidence_count_index,
+)
 import numpy as np
 from scipy.optimize import leastsq, minimize
 import warnings
+from pathlib import Path
+import json
+import tomllib
 
 """
 Copyright 2020 University of Illinois Board of Trustees.
@@ -184,6 +193,56 @@ class Tomography:
             method=self.conf["method"],
         )
 
+    def importData_new(self, filename):
+        with open(Path(filename)) as f:
+            json_dict = json.load(f)
+
+        for state_name in json_dict["measurement_states"].keys():
+            cast_to_numpy(json_dict, state_name)
+
+        self.measurements = get_all_densities_from_data(json_dict)
+        self.conf["NQubits"] = json_dict["n_qubits"]
+        self.conf["NDetectors"] = json_dict["n_detectors_per_qubit"]
+        self.conf["Efficiency"] = np.array(json_dict["Efficiency"])
+
+        singles = []
+        coincidences = []
+        times = []
+        for datum in json_dict["data"]:
+            idx = get_highest_fold_coincidence_count_index(len(datum["basis"]))
+            singles.append(np.array(datum["counts"])[0 : len(datum["basis"])])
+            coincidences.append(np.array(datum["counts"])[idx])
+            times.append(float(datum["integration_time"]))
+
+        self.time = np.array(times)
+        self.singles = np.array(singles)
+        self.counts = np.array(coincidences)
+        self.conf["Crosstalk"] = np.array(json_dict["crosstalk"])
+
+       # (
+       #             "Crosstalk",
+       #             np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]),
+       #         ),
+       #         ("Bellstate", 0),
+       #         ("DoDriftCorrection", 0),
+       #         ("DoAccidentalCorrection", 0),
+       #         ("DoErrorEstimation", 0),
+       #         ("Window", [1]),
+       #         ("Efficiency", [1]),
+       #         ("RhoStart", []),
+       #         ("Beta", 0),
+       #         ("ftol", 1.49012e-08),
+       #         ("xtol", 1.49012e-08),
+       #         ("gtol", 0.0),
+       #         ("maxfev", 0),
+
+
+    def importConf_new(self, filename):
+        with open(Path(filename)) as f:
+            conf = tomllib.load(f)
+
+        self.conf["
+
     """
     importEval(evaltxt)
     Desc: Import a eval file containing the tomography data and the configuration setting, then run tomography.
@@ -277,6 +336,21 @@ class Tomography:
             measurements, counts, crosstalk, efficiency, time, singles, window, error
         )
         return self.StateTomography_Matrix(tomo_input, intensities, method=method)
+
+    def run_tomography(self):
+        tomo_input = self.buildTomoInput(
+            self.measurements,
+            self.counts,
+            self.conf["Crosstalk"],
+            self.conf["Efficiency"],
+            self.time,
+            self.singles,
+            self.conf["Window"],
+            error=0,
+        )
+        return self.StateTomography_Matrix(
+            tomo_input, intensities, method=self.conf["Method"]
+        )
 
     """
     StateTomography_Matrix(tomo_input, intensities)

@@ -3,6 +3,9 @@ try:
 except ImportError:
     from collections import MutableMapping
 import re
+import numpy as np
+import functools
+from math import comb
 
 """
 Copyright 2020 University of Illinois Board of Trustees.
@@ -67,6 +70,28 @@ class ConfDict(MutableMapping):
                 raise ValueError('Invalid Conf Setting of "' + value + '"')
 
         return value
+
+
+def get_all_densities_from_data(tomo_data) -> np.ndarray:
+    all_densities = []
+    for datum in tomo_data["data"]:
+        # Get all of the densities used in this Measurement
+        densities = [tomo_data["measurement_states"][name] for name in datum.basis]
+        # Kronecker product all of them together
+        all_densities.append(functools.reduce(lambda x, y: np.kron(x, y), densities))
+
+    return np.array(all_densities)
+
+
+def get_highest_fold_coincidence_count_index(n_fold):
+    idx = 0
+    for i in range(n_fold):
+        idx += comb(n_fold, i)
+    return idx - 1
+
+
+def cast_to_numpy(json_dict, key):
+    json_dict[key] = np.array(json_dict[key], dtype=np.complex128)
 
 
 def getValidFileName(fileName):
