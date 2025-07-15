@@ -135,6 +135,44 @@ class Tomography():
     #    conf = self.conf
     #    exec(compile(open(conftxt, "rb").read(), conftxt, "exec"))
 
+    def importConf(self, filename):
+        with open(Path(filename), "rb") as f:
+            conf = tomllib.load(f)
+
+        if "get_bell_settings" in conf:
+            self.conf["Bellstate"] = conf["get_bell_settings"]
+
+        if "do_drift_correction" in conf:
+            self.conf["DoDriftCorrection"] = conf["do_drift_correction"]
+
+        if "do_error_estimation" in conf:
+            self.conf["DoErrorEstimation"] = conf["do_error_estimation"]
+
+        if "do_accidental_correction" in conf:
+            self.conf["DoAccidentalCorrection"] = conf["do_accidental_correction"]
+
+        if "method" in conf:
+            self.conf["Method"] = conf["method"]
+
+        if "starting_matrix" in conf:
+            self.conf["RhoStart"] = np.array(conf["starting_matrix"])
+
+        if "beta" in conf:
+            self.conf["beta"] = conf["beta"]
+
+        if "ftol" in conf:
+            self.conf["ftol"] = conf["ftol"]
+
+        if "xtol" in conf:
+            self.conf["xtol"] = conf["xtol"]
+
+        if "gtol" in conf:
+            self.conf["gtol"] = conf["gtol"]
+
+        if "maxfev" in conf:
+            self.conf["maxfev"] = conf["maxfev"]
+
+            
     """
     importData(datatxt)
     Desc: Import a text file containing the tomography data and run tomography.
@@ -201,67 +239,6 @@ class Tomography():
         self.intensities = intensities
         self.conf["Crosstalk"] = np.array(json_dict["crosstalk"])
         self.conf["Window"] = np.array(json_dict["coincidence_window"])
-
-    # (
-    #             "Crosstalk",
-    #             np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]]),
-    #         ),
-    #         ("Bellstate", 0),
-    #         ("DoDriftCorrection", 0),
-    #         ("DoAccidentalCorrection", 0),
-    #         ("DoErrorEstimation", 0),
-    #         ("Window", [1]),
-    #         ("Efficiency", [1]),
-    #         ("RhoStart", []),
-    #         ("Beta", 0),
-    #         ("ftol", 1.49012e-08),
-    #         ("xtol", 1.49012e-08),
-    #         ("gtol", 0.0),
-    #         ("maxfev", 0),
-
-    # use_derivative = false
-    # get_bell_settings = false
-    # do_drift_correction = false
-    # do_error_estimation = false
-    # do_accidental_correction = false
-    # method = "MLE"
-
-    def importConf(self, filename):
-        with open(Path(filename), "rb") as f:
-            conf = tomllib.load(f)
-
-        if "get_bell_settings" in conf:
-            self.conf["Bellstate"] = conf["get_bell_settings"]
-
-        if "do_drift_correction" in conf:
-            self.conf["DoDriftCorrection"] = conf["do_drift_correction"]
-
-        if "do_error_estimation" in conf:
-            self.conf["DoErrorEstimation"] = conf["do_error_estimation"]
-
-        if "do_accidental_correction" in conf:
-            self.conf["DoAccidentalCorrection"] = conf["do_accidental_correction"]
-
-        if "method" in conf:
-            self.conf["Method"] = conf["method"]
-
-        if "starting_matrix" in conf:
-            self.conf["RhoStart"] = np.array(conf["starting_matrix"])
-
-        if "beta" in conf:
-            self.conf["beta"] = conf["beta"]
-
-        if "ftol" in conf:
-            self.conf["ftol"] = conf["ftol"]
-
-        if "xtol" in conf:
-            self.conf["xtol"] = conf["xtol"]
-
-        if "gtol" in conf:
-            self.conf["gtol"] = conf["gtol"]
-
-        if "maxfev" in conf:
-            self.conf["maxfev"] = conf["maxfev"]
 
     """
     importEval(evaltxt)
@@ -952,10 +929,6 @@ class Tomography():
             for k in range(nbits):
                 alpha = measurements_raw[j][2 * k]
                 beta = measurements_raw[j][2 * k + 1]
-                print(measurements_raw[j])
-                print(measurements_raw[j][2 * k + 1])
-                print(f"alpha {alpha}")
-                print(f"beta {beta}")
                 psi_transmit = np.array([alpha, beta])
                 psi_reflect = np.array([np.conj(beta), np.conj(-alpha)])
                 meas_pure = np.outer((np.array([1, 0])), psi_transmit) + np.outer((np.array([0, 1])), psi_reflect)
