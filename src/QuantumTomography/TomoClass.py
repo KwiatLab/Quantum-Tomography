@@ -1054,7 +1054,6 @@ class Tomography():
         # time/singles #
         ################
         if ((not isinstance(time, int)) or (not isinstance(singles, int)) or (not isinstance(window, int))):
-            self.conf['DoAccidentalCorrection'] = 1
             # Check if time has right length
             if (isinstance(time, int)):
                 time = np.ones(measurements.shape[0])
