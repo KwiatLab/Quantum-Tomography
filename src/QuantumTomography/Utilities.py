@@ -72,11 +72,28 @@ class ConfDict(MutableMapping):
         return value
 
 
+def get_raw_measurement_bases_from_data(tomo_data) -> np.ndarray:
+    all_densities = []
+    for datum in tomo_data["data"]:
+        # Get all of the densities used in this Measurement
+        densities = [
+            np.array(tomo_data["measurement_states"][name], dtype=np.complex128)
+            for name in datum["basis"]
+        ]
+        # Kronecker product all of them together
+        all_densities.append(np.array(densities).flatten())
+
+    return np.array(all_densities)
+
+
 def get_all_densities_from_data(tomo_data) -> np.ndarray:
     all_densities = []
     for datum in tomo_data["data"]:
         # Get all of the densities used in this Measurement
-        densities = [tomo_data["measurement_states"][name] for name in datum.basis]
+        densities = [
+            np.array(tomo_data["measurement_states"][name], dtype=np.complex128)
+            for name in datum["basis"]
+        ]
         # Kronecker product all of them together
         all_densities.append(functools.reduce(lambda x, y: np.kron(x, y), densities))
 
