@@ -1,19 +1,16 @@
 from __future__ import print_function
 
-from numpy.testing import measure
 from .TomoFunctions import *
 from .TomoDisplay import floatToString
 from .TomoClassHelpers import *
 from .Utilities import (
     ConfDict,
-    getValidFileName,
     cast_to_numpy,
-    get_all_densities_from_data,
     get_raw_measurement_bases_from_data,
     get_highest_fold_coincidence_count_index,
 )
 import numpy as np
-from scipy.optimize import leastsq, minimize
+from scipy.optimize import leastsq
 import warnings
 from pathlib import Path
 import json
