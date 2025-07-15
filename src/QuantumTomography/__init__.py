@@ -1,7 +1,6 @@
 import sys
 from .TomoClass import *
 from .TomoDisplay import *
-
 """
 Copyright 2020 University of Illinois Board of Trustees.
 Licensed under the terms of an MIT license
@@ -12,7 +11,8 @@ Licensed under the terms of an MIT license
 https://quantumtomo.web.illinois.edu/Doc/"""
 
 
-"""
+
+'''
     Comments Should be formatted like the following:
     (this comment is written in single quotes so that it is not picked up by the documentation generator).
 
@@ -36,7 +36,7 @@ https://quantumtomo.web.illinois.edu/Doc/"""
     See Also
      ------   (space, 6 hyphens, another space)
     function1;function2;function2      (these should be the functionTitle without parentheses, as it appears on the Table of Contents
-"""
+'''
 
 
 # # # # # # # # # #  #
