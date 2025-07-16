@@ -3,7 +3,6 @@
   "n_detectors_per_qubit": 1,
   "coincidence_window": [0],
   "n_measurements_per_qubit": 6,
-  "relative_efficiency": [1],
   "crosstalk": [[1,0,0,0],[0,1,0,0],[0,0,1,0],[0,0,0,1]],
   "measurement_states": {
     "H": [1,0],

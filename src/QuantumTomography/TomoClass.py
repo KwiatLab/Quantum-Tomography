@@ -16,6 +16,7 @@ from pathlib import Path
 import json
 import tomllib
 from types import NoneType
+import re
 
 """
 Copyright 2020 University of Illinois Board of Trustees.
@@ -112,14 +113,15 @@ class Tomography():
             The new value you want to the setting to be.
     """
     def setConfSetting(self, setting, val):
-        warnings.warn('As of v1.0.3.7 setConfSetting() is no longer needed to set a conf setting. '
-                                 'Settings can now be set directly like a normal dictionary. ex: tomo.conf["DoDriftCorrection"] = 1', DeprecationWarning)
-        if (isinstance(val, str)):
-            if (val.lower() == "yes" or val.lower() == "true"):
-                valC = 1
-            elif (val.lower() == "no" or val.lower() == "false"):
-                valC = 0
-        self.conf[setting] = valC
+        if setting == "get_bell_settings":
+            internal_setting = "Bellstate"
+        else:
+            split = setting.split('_')
+            internal_setting = ''.join(word.capitalize() for word in split)
+
+        if internal_setting not in self.conf:
+            raise ValueError(f"{setting} is not a valid setting for the configuration.")
+        self.conf[internal_setting] = val
 
     """
     importConf(conftxt)
@@ -207,14 +209,46 @@ class Tomography():
 
         for state_name in json_dict["measurement_states"].keys():
             cast_to_numpy(json_dict["measurement_states"], state_name)
-
-        # self.measurements = get_all_densities_from_data(json_dict)
-        self.measurements = get_raw_measurement_bases_from_data(json_dict)
-        print(self.measurements)
+        
         self.conf["NQubits"] = json_dict["n_qubits"]
         self.conf["NDetectors"] = json_dict["n_detectors_per_qubit"]
         self.conf["NMeasurementsPerQubit"] = json_dict["n_measurements_per_qubit"]
-        self.conf["Efficiency"] = np.array(json_dict["relative_efficiency"])
+        if "relative_efficiency" in json_dict:
+            self.conf["Efficiency"] = np.array(json_dict["relative_efficiency"])
+        self.measurements = get_raw_measurement_bases_from_data(json_dict)
+
+        # Find which basis states are orthogonal to each other
+        orthogonal_bases = {} 
+        for key1, measurement_1 in json_dict["measurement_states"].items():
+            for key2, measurement_2 in json_dict["measurement_states"].items():
+                if isStateVector(measurement_1):
+                    measurement_1 = np.outer(measurement_1,measurement_1.conj().T)
+                    measurement_2 = np.outer(measurement_2,measurement_2.conj().T)
+                    
+                orthogonal_check = measurement_1@measurement_2
+                if (orthogonal_check == np.zeros_like(measurement_1)).all() and key1 not in orthogonal_bases:
+                    orthogonal_bases[key1] = key2
+
+        
+        if self.conf["NDetectors"] > 1:
+            if "relative_efficiency" in json_dict and not all(["detectors_used" in datum for datum in json_dict["data"]]):
+                raise ValueError("Need to have 'detectors_used' fields filled out in your data array if using more than 1 detector per qubit and you want to account for detector efficiencies!")
+
+            # Find out which measurements occured simultaneously (for normalization) 
+            simultaneous_measurements = []
+            for i,datum1 in enumerate(json_dict["data"]):
+                measurement = []
+                measurement_basis_1 = [[k,orthogonal_bases[k]] for k in datum1["basis"]]
+                measurement_basis_1 = [set(basis) for basis in measurement_basis_1]
+
+                for j,datum2 in enumerate(json_dict["data"]):
+                    measurement_basis_2 = [[k,orthogonal_bases[k]] for k in datum2["basis"]]
+                    measurement_basis_check = [set(basis) == measurement_basis_1[k] for k,basis in enumerate(measurement_basis_2)]
+                    if all(measurement_basis_check):
+                        measurement.append(j)
+
+                if measurement not in simultaneous_measurements:
+                    simultaneous_measurements.append(measurement)
 
         singles = []
         coincidences = []

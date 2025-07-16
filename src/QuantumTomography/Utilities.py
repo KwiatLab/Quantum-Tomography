@@ -63,7 +63,6 @@ class ConfDict(MutableMapping):
 
         return value
 
-
 def get_raw_measurement_bases_from_data(tomo_data) -> np.ndarray:
     all_densities = []
     for datum in tomo_data["data"]:
@@ -78,7 +77,7 @@ def get_raw_measurement_bases_from_data(tomo_data) -> np.ndarray:
     return np.array(all_densities)
 
 
-def get_all_densities_from_data(tomo_data) -> np.ndarray:
+def get_all_product_states_from_data(tomo_data) -> np.ndarray:
     all_densities = []
     for datum in tomo_data["data"]:
         # Get all of the densities used in this Measurement
