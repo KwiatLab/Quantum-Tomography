@@ -8,6 +8,7 @@ from .Utilities import (
     cast_to_numpy,
     get_raw_measurement_bases_from_data,
     get_highest_fold_coincidence_count_index,
+    parse_np_array
 )
 import numpy as np
 from scipy.optimize import leastsq
@@ -90,11 +91,12 @@ class Tomography():
     """
 
     def __init__(self,nQ = 2):
+        self.tomo_input = None
         self.conf = ConfDict([('NQubits',nQ), ('NDetectors', 1),
                               ('Crosstalk', np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])),
                               ('Bellstate', 0),('DoDriftCorrection', 0), ('DoAccidentalCorrection', 0),
                               ('DoErrorEstimation', 0),('Window', [1]),('Efficiency', [1]),('RhoStart', None),
-                              ('Beta', 0),('ftol', 1.49012e-08),('xtol', 1.49012e-08),('gtol', 0.0),('maxfev', 0)])
+                              ('Beta', 0),('ftol', 1.49012e-08),('xtol', 1.49012e-08),('gtol', 0.0),('maxfev', 0), ('Method', 'MLE')])
         self.err_functions = ['concurrence', 'tangle', 'entropy', 'linear_entropy', 'negativity', 'purity']
         self.mont_carlo_states = list()
     """
@@ -133,7 +135,15 @@ class Tomography():
         path to configuration file
     """
 
+    def importConf(self, filename):
+        warnings.warn(
+            "The old file format (pythoneval.txt, conf.txt, data.txt) will be removed in future versions. This is the last version for which it will be supported." \
+            "Please switch to using the new configuration (.toml) and data (.json) formats as shown in ExampleFiles. You can import the new files with import_conf()."
+        )
+        self.import_eval(filename)
+
     def import_conf(self, filename):
+        """Import configuration file with new file format (toml)."""
         with open(Path(filename), "rb") as f:
             conf = tomllib.load(f)
             self._import_conf(conf)
@@ -172,7 +182,6 @@ class Tomography():
         if "maxfev" in conf:
             self.conf["maxfev"] = conf["maxfev"]
 
-            
     """
     importData(datatxt)
     Desc: Import a text file containing the tomography data and run tomography.
@@ -194,12 +203,22 @@ class Tomography():
     """
 
     def importData(self, datatxt):
-        import_eval(datatxt)
+        warnings.warn(
+            "The old file format (pythoneval.txt, conf.txt, data.txt) will be removed in future versions. This is the last version for which it will be supported." \
+            "Please switch to using the new configuration (.toml) and data (.json) formats as shown in ExampleFiles. You can import the new files with import_conf()."
+        )
+        return self.import_eval(datatxt)
+
+    def import_data(self, filename):
+        """Import data with new file format (json)."""
+        with open(Path(filename), "rb") as f:
+            json_dict = json.load(f)
+            self._import_data(json_dict)
 
     def _import_data(self, json_dict):
         for state_name in json_dict["measurement_states"].keys():
             cast_to_numpy(json_dict["measurement_states"], state_name)
-        
+
         self.conf["NQubits"] = json_dict["n_qubits"]
         self.conf["NDetectors"] = json_dict["n_detectors_per_qubit"]
         self.conf["NMeasurementsPerQubit"] = json_dict["n_measurements_per_qubit"]
@@ -208,32 +227,44 @@ class Tomography():
         self.measurements = get_raw_measurement_bases_from_data(json_dict)
 
         # Find which basis states are orthogonal to each other
-        orthogonal_bases = {} 
+        orthogonal_bases = {}
         for key1, measurement_1 in json_dict["measurement_states"].items():
             for key2, measurement_2 in json_dict["measurement_states"].items():
                 if isStateVector(measurement_1):
-                    measurement_1 = np.outer(measurement_1,measurement_1.conj().T)
-                    measurement_2 = np.outer(measurement_2,measurement_2.conj().T)
-                    
-                orthogonal_check = measurement_1@measurement_2
-                if (orthogonal_check == np.zeros_like(measurement_1)).all() and key1 not in orthogonal_bases:
+                    measurement_1 = np.outer(measurement_1, measurement_1.conj().T)
+                    measurement_2 = np.outer(measurement_2, measurement_2.conj().T)
+
+                orthogonal_check = measurement_1 @ measurement_2
+                if (
+                    orthogonal_check == np.zeros_like(measurement_1)
+                ).all() and key1 not in orthogonal_bases:
                     orthogonal_bases[key1] = key2
 
-        
         if self.conf["NDetectors"] > 1:
-            if "relative_efficiency" in json_dict and not all(["detectors_used" in datum for datum in json_dict["data"]]):
-                raise ValueError("Need to have 'detectors_used' fields filled out in your data array if using more than 1 detector per qubit and you want to account for detector efficiencies!")
+            if "relative_efficiency" in json_dict and not all(
+                ["detectors_used" in datum for datum in json_dict["data"]]
+            ):
+                raise ValueError(
+                    "Need to have 'detectors_used' fields filled out in your data array if using more than 1 detector per qubit and you want to account for detector efficiencies!"
+                )
 
-            # Find out which measurements occured simultaneously (for normalization) 
+            # Find out which measurements occured simultaneously (for normalization)
             simultaneous_measurements = []
-            for i,datum1 in enumerate(json_dict["data"]):
+            for i, datum1 in enumerate(json_dict["data"]):
                 measurement = []
-                measurement_basis_1 = [[k,orthogonal_bases[k]] for k in datum1["basis"]]
+                measurement_basis_1 = [
+                    [k, orthogonal_bases[k]] for k in datum1["basis"]
+                ]
                 measurement_basis_1 = [set(basis) for basis in measurement_basis_1]
 
-                for j,datum2 in enumerate(json_dict["data"]):
-                    measurement_basis_2 = [[k,orthogonal_bases[k]] for k in datum2["basis"]]
-                    measurement_basis_check = [set(basis) == measurement_basis_1[k] for k,basis in enumerate(measurement_basis_2)]
+                for j, datum2 in enumerate(json_dict["data"]):
+                    measurement_basis_2 = [
+                        [k, orthogonal_bases[k]] for k in datum2["basis"]
+                    ]
+                    measurement_basis_check = [
+                        set(basis) == measurement_basis_1[k]
+                        for k, basis in enumerate(measurement_basis_2)
+                    ]
                     if all(measurement_basis_check):
                         measurement.append(j)
 
@@ -264,11 +295,10 @@ class Tomography():
         self.conf["Crosstalk"] = np.array(json_dict["crosstalk"])
         self.conf["Window"] = np.array(json_dict["coincidence_window"])
 
-    def import_data(self, filename):
-        with open(Path(filename), "rb") as f:
-            json_dict = json.load(f)
-            self._import_data(json_dict)
-            """
+        # Reset tomo_input so it doesn't get used if user previously imported using old file
+        self.tomo_input = None
+
+    """
     importEval(evaltxt)
     Desc: Import a eval file containing the tomography data and the configuration setting, then run tomography.
 
@@ -287,56 +317,74 @@ class Tomography():
         Final value of the internal optimization function. Values greater than the number
         of measurements indicate poor agreement with a quantum state.
     """
+
     def importEval(self, evaltxt):
-        import_eval(evaltxt)
+        warnings.warn(
+            "The old file format (pythoneval.txt, conf.txt, data.txt) will be removed in future versions. This is the last version for which it will be supported." \
+            "Please switch to using the new configuration (.toml) and data (.json) formats as shown in ExampleFiles. You can import the new files with import_conf()."
+        )
+        return self.import_eval(evaltxt)
 
-    def importData(filename):
-        #importEval(filename)
-
-    def importConf(filename):
-        #importEval(filename)
-
-    def import_eval(filename):
-        conf = {}
-        json_dict = {}
-        with open(Path(filename), 'r') as f:
+    def import_eval(self, filename):
+        """Handle old file format in a safe way. importData and importConf both point to here.
+        New file format is handled by import_data and import_conf
+        """
+        tomo_input = None
+        intensities = -1
+        with open(Path(filename), "r") as f:
             for line in f:
                 assignment = line.split("=")
                 assignment[1] = assignment[1].strip()
+                assignment[0] = assignment[0].strip()
+
                 if assignment[0] == "tomo_input":
                     tomo_input = parse_np_array(assignment[1])
-
+                elif assignment[0] == "intensity":
+                    intensities = parse_np_array(assignment[1])
                 else:
-                    variable_name = re.search(r`(\[['"][\w]*['"]\])`, assignment[0])
-                    if variable_name:
-                        variable_name = variable_name.strip().tolower()
+                    pattern = str("""(\[['"][\w]*['"]\])""")
+                    match = re.search(pattern, str(assignment[0]))
+                    if match:
+                        variable_name = match.group(0).strip().strip("'[]").lower()
 
                         if variable_name == "nqubits":
-                            conf["NQubits"] = int(assignment[1])
-                        
-                        elif variable_name == "ndetectors":
-                            conf["NDetectors"] = int(assignment[1])
-                        
-                        elif variable_name == "crosstalk":
-                            conf["Crosstalk"] = parse_np_array(assignment[1]) 
-                        
-                        elif variable_name == "bellstate":
-                            conf["Bellstate"] = bool(assignment[1])
-                        
-                        elif variable_name == "dodriftcorrection":
-                            conf["DoDriftCorrection"] = int(assignment[1])
-                        
-                        elif variable_name == "doaccidentalcorrection":
-                            conf["DoAccidentalCorrection"] = int(assignment[1])
-                        
-                        elif variable_name == "doerrorestimation":
-                            conf["DoErrorEstimation"] = int(assignment[1])
+                            self.conf["NQubits"] = int(assignment[1])
 
-                        elif variable_namen == "efficiency":
-                            conf["Efficiency"] = parse_np_array(assignment[1])
+                        elif variable_name == "ndetectors":
+                            self.conf["NDetectors"]= int(assignment[1])
+
+                        elif variable_name == "crosstalk":
+                            self.conf["Crosstalk"] = parse_np_array(assignment[1])
+
+                        elif variable_name == "bellstate":
+                            if assignment[1] == 'yes':
+                                self.conf["Bellstate"] = 1
+                            else:
+                                self.conf["Bellstate"] = 0 
+
+                        elif variable_name == "dodriftcorrection":
+                            if assignment[1] == 'yes':
+                                self.conf["DoDriftCorrection"] = 1
+                            else:
+                                self.conf["DoDriftCorrection"] = 0 
+
+                        elif variable_name == "doaccidentalcorrection":
+                            if assignment[1] == 'yes':
+                                self.conf["DoAccidentalCorrection"] = 1
+                            else:
+                                self.conf["DoAccidentalCorrection"] = 0
+
+                        elif variable_name == "doerrorestimation":
+                            self.conf["DoErrorEstimation"] = int(assignment[1])
+
+                        elif variable_name == "efficiency":
+                            self.conf["Efficiency"] = parse_np_array(assignment[1])
 
                         elif variable_name == "rhostart":
-                            if assignment[1].strip() == "[]" or assigment[1].strip() == "None":
+                            if (
+                                assignment[1].strip() == "[]"
+                                or assignment[1].strip() == "None"
+                            ):
                                 self.conf["RhoStart"] = None
                             else:
                                 self.conf["RhoStart"] = parse_np_array(assignment[1])
@@ -366,7 +414,17 @@ class Tomography():
                             self.conf["maxfev"] = int(assignment[1])
 
                         else:
-                            raise ValueError(f"{line} is not a valid option for configuration!")
+                            raise ValueError(
+                                f"{line} is not a valid option for configuration!"
+                            )
+
+        if tomo_input is not None:
+            self.last_input = tomo_input
+            self.tomo_input = tomo_input
+            self.intensities = intensities
+            self.filter_data(tomo_input)
+            return self.run_tomography()
+
 
 
 
@@ -418,16 +476,18 @@ class Tomography():
         return self.StateTomography_Matrix(tomo_input, intensities, method=method)
 
     def run_tomography(self):
-        tomo_input = self.buildTomoInput(
-            self.measurements,
-            self.counts,
-            self.conf["Crosstalk"],
-            self.conf["Efficiency"],
-            self.time,
-            self.singles,
-            self.conf["Window"],
-            error=0,
-        )
+        tomo_input = self.tomo_input
+        if tomo_input is None:
+            tomo_input = self.buildTomoInput(
+                self.measurements,
+                self.counts,
+                self.conf["Crosstalk"],
+                self.conf["Efficiency"],
+                self.time,
+                self.singles,
+                self.conf["Window"],
+                error=0,
+            )
         return self.StateTomography_Matrix(
             tomo_input, self.intensities, method=self.conf["Method"]
         )

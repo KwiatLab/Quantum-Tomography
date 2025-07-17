@@ -7,6 +7,7 @@ import numpy as np
 import functools
 from math import comb
 from pathlib import Path
+import ast
 
 """
 Copyright 2020 University of Illinois Board of Trustees.
@@ -63,11 +64,12 @@ class ConfDict(MutableMapping):
                 raise ValueError('Invalid Conf Setting of "' + value+'"')
 
         return value
-
+    
 def parse_np_array(string):
-    array = string[1].split("(")
-    array = array[1].split(")")
-    return np.fromstring(array)
+    array = string.strip().replace("(","").replace(")","").strip("np.array")
+    array = array.strip(";")
+    # Stolen directly from stack overflow https://stackoverflow.com/a/43879517
+    return np.array(ast.literal_eval(re.sub(r'\]\s*\[', r'],[', re.sub(r'(\d+)\s+(\d+)', r'\1,\2', array.replace('\n','')))))
 
 def get_raw_measurement_bases_from_data(tomo_data) -> np.ndarray:
     all_densities = []
