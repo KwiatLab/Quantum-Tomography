@@ -1,6 +1,6 @@
 # Example configuration
 
-use_derivative = false
+use_derivative = 0
 get_bell_settings = false
 do_drift_correction = false
 do_error_estimation = false

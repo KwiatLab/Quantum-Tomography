@@ -6,6 +6,7 @@ import re
 import numpy as np
 import functools
 from math import comb
+from pathlib import Path
 
 """
 Copyright 2020 University of Illinois Board of Trustees.
@@ -63,6 +64,11 @@ class ConfDict(MutableMapping):
 
         return value
 
+def parse_np_array(string):
+    array = string[1].split("(")
+    array = array[1].split(")")
+    return np.fromstring(array)
+
 def get_raw_measurement_bases_from_data(tomo_data) -> np.ndarray:
     all_densities = []
     for datum in tomo_data["data"]:
@@ -75,7 +81,6 @@ def get_raw_measurement_bases_from_data(tomo_data) -> np.ndarray:
         all_densities.append(np.array(densities).flatten())
 
     return np.array(all_densities)
-
 
 def get_all_product_states_from_data(tomo_data) -> np.ndarray:
     all_densities = []

@@ -133,14 +133,12 @@ class Tomography():
         path to configuration file
     """
 
-    # def importConf(self, conftxt):
-    #    conf = self.conf
-    #    exec(compile(open(conftxt, "rb").read(), conftxt, "exec"))
-
-    def importConf(self, filename):
+    def import_conf(self, filename):
         with open(Path(filename), "rb") as f:
             conf = tomllib.load(f)
+            self._import_conf(conf)
 
+    def _import_conf(self, conf):
         if "get_bell_settings" in conf:
             self.conf["Bellstate"] = conf["get_bell_settings"]
 
@@ -195,18 +193,10 @@ class Tomography():
         of measurements indicate poor agreement with a quantum state.
     """
 
-    # def importData(self, datatxt):
-    #    exec(compile(open(datatxt, "rb").read(), datatxt, "exec"))
-    #    return self.StateTomography_Matrix(
-    #        locals().get("tomo_input"),
-    #        locals().get("intensity"),
-    #        method=self.conf["method"],
-    #    )
+    def importData(self, datatxt):
+        import_eval(datatxt)
 
-    def importData(self, filename):
-        with open(Path(filename), "rb") as f:
-            json_dict = json.load(f)
-
+    def _import_data(self, json_dict):
         for state_name in json_dict["measurement_states"].keys():
             cast_to_numpy(json_dict["measurement_states"], state_name)
         
@@ -274,7 +264,11 @@ class Tomography():
         self.conf["Crosstalk"] = np.array(json_dict["crosstalk"])
         self.conf["Window"] = np.array(json_dict["coincidence_window"])
 
-    """
+    def import_data(self, filename):
+        with open(Path(filename), "rb") as f:
+            json_dict = json.load(f)
+            self._import_data(json_dict)
+            """
     importEval(evaltxt)
     Desc: Import a eval file containing the tomography data and the configuration setting, then run tomography.
 
@@ -294,12 +288,87 @@ class Tomography():
         of measurements indicate poor agreement with a quantum state.
     """
     def importEval(self, evaltxt):
-        conf = self.conf
-        exec(compile(open(evaltxt, "rb").read(), evaltxt, 'exec'))
-        if "method" in self.conf.keys():
-            return self.StateTomography_Matrix(locals().get('tomo_input'), locals().get('intensity'),method=self.conf["method"])
-        else:
-            return self.StateTomography_Matrix(locals().get('tomo_input'), locals().get('intensity'))
+        import_eval(evaltxt)
+
+    def importData(filename):
+        #importEval(filename)
+
+    def importConf(filename):
+        #importEval(filename)
+
+    def import_eval(filename):
+        conf = {}
+        json_dict = {}
+        with open(Path(filename), 'r') as f:
+            for line in f:
+                assignment = line.split("=")
+                assignment[1] = assignment[1].strip()
+                if assignment[0] == "tomo_input":
+                    tomo_input = parse_np_array(assignment[1])
+
+                else:
+                    variable_name = re.search(r`(\[['"][\w]*['"]\])`, assignment[0])
+                    if variable_name:
+                        variable_name = variable_name.strip().tolower()
+
+                        if variable_name == "nqubits":
+                            conf["NQubits"] = int(assignment[1])
+                        
+                        elif variable_name == "ndetectors":
+                            conf["NDetectors"] = int(assignment[1])
+                        
+                        elif variable_name == "crosstalk":
+                            conf["Crosstalk"] = parse_np_array(assignment[1]) 
+                        
+                        elif variable_name == "bellstate":
+                            conf["Bellstate"] = bool(assignment[1])
+                        
+                        elif variable_name == "dodriftcorrection":
+                            conf["DoDriftCorrection"] = int(assignment[1])
+                        
+                        elif variable_name == "doaccidentalcorrection":
+                            conf["DoAccidentalCorrection"] = int(assignment[1])
+                        
+                        elif variable_name == "doerrorestimation":
+                            conf["DoErrorEstimation"] = int(assignment[1])
+
+                        elif variable_namen == "efficiency":
+                            conf["Efficiency"] = parse_np_array(assignment[1])
+
+                        elif variable_name == "rhostart":
+                            if assignment[1].strip() == "[]" or assigment[1].strip() == "None":
+                                self.conf["RhoStart"] = None
+                            else:
+                                self.conf["RhoStart"] = parse_np_array(assignment[1])
+
+                        elif variable_name == "usederivative":
+                            self.conf["UseDerivative"] = int(assignment[1])
+
+                        elif variable_name == "method":
+                            self.conf["Method"] = assignment[1]
+
+                        elif variable_name == "window":
+                            self.conf["Window"] = float(assignment[1])
+
+                        elif variable_name == "beta":
+                            self.conf["Beta"] = float(assignment[1])
+
+                        elif variable_name == "ftol":
+                            self.conf["ftol"] = float(assignment[1])
+
+                        elif variable_name == "gtol":
+                            self.conf["gtol"] = float(assignment[1])
+
+                        elif variable_name == "xtol":
+                            self.conf["xtol"] = float(assignment[1])
+
+                        elif variable_name == "maxfev":
+                            self.conf["maxfev"] = int(assignment[1])
+
+                        else:
+                            raise ValueError(f"{line} is not a valid option for configuration!")
+
+
 
     # # # # # # # # # # # # # #
     '''Tomography Functions'''
