@@ -279,7 +279,10 @@ class Tomography():
             idx = get_highest_fold_coincidence_count_index(len(datum["basis"]))
             singles.append(np.array(datum["counts"])[0 : len(datum["basis"])])
             coincidences.append(np.array(datum["counts"])[idx])
-            times.append(float(datum["integration_time"]))
+            if "integration_time" in datum:
+                times.append(float(datum["integration_time"]))
+            else:
+                times.append(1.0)
             if "relative_intensity" in datum:
                 intensities.append(float(datum["relative_intensity"]))
 
@@ -303,8 +306,8 @@ class Tomography():
             else:
                 self.conf["Crosstalk"] = input_crosstalk 
 
-        self.conf["Window"] = np.array(json_dict["coincidence_window"])
-
+        if "coincidence_window" in json_dict:
+            self.conf["Window"] = np.array(json_dict["coincidence_window"])
         # Reset tomo_input so it doesn't get used if user previously imported using old file
         self.tomo_input = None
 
