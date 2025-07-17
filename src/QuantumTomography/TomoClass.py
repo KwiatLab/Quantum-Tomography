@@ -292,7 +292,17 @@ class Tomography():
         self.singles = np.array(singles)
         self.counts = np.array(coincidences)
         self.intensities = intensities
-        self.conf["Crosstalk"] = np.array(json_dict["crosstalk"])
+
+        if "crosstalk" in json_dict:
+            input_crosstalk = np.array(json_dict["crosstalk"])
+            if input_crosstalk.ndim > 2:
+                partial_crosstalk = input_crosstalk[0]
+                for i in range(1,input_crosstalk.shape[0]):
+                    partial_crosstalk = np.kron(partial_crosstalk, input_crosstalk[i])
+                self.conf["Crosstalk"] = partial_crosstalk
+            else:
+                self.conf["Crosstalk"] = input_crosstalk 
+
         self.conf["Window"] = np.array(json_dict["coincidence_window"])
 
         # Reset tomo_input so it doesn't get used if user previously imported using old file
@@ -1102,14 +1112,14 @@ class Tomography():
                                                          meas_basis_pures[:, k])
             for k in range(self.getNumCoinc()):
                 for l in range(2 ** nbits):
-                    measurements_pures[j * n_coinc + k, :] = meas_basis_pures[:, k].conj().transpose()
+                    measurements_pures[j * n_coinc + k, :] = meas_basis_pures[:, k].conj().transpose() 
                     measurements_densities[j, k, :, :] = measurements_densities[j, k, :, :] + meas_basis_densities[l,:,:] \
                                                                                                 * crosstalk[k, l]
         # Flatten the arrays
         measurements_densities = measurements_densities.reshape((np.prod(measurements_densities.shape[:2]),
                                                                     measurements_densities.shape[2],
                                                                     measurements_densities.shape[3]))
-
+        
         # Normalize measurements
         for j in range(measurements_pures.shape[0]):
             norm = np.dot(measurements_pures[j].conj(),measurements_pures[j])
