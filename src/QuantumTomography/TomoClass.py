@@ -1203,7 +1203,7 @@ class Tomography():
         ##############
         # efficiency #
         ##############
-        if self.conf["NDetectors"] > 1 and efficiency.shape != (
+        if not isinstance(efficiency, int) and self.conf["NDetectors"] > 1 and efficiency.shape != (
             self.conf["NDetectors"] ** self.conf["NQubits"],
             self.conf["NDetectors"] ** self.conf["NQubits"],
         ):
@@ -1216,7 +1216,7 @@ class Tomography():
         ##########
         # window #
         ##########
-        if self.conf["NDetectors"] > 1 and window.shape != (
+        if not isinstance(window, int) and self.conf["NDetectors"] > 1 and window.shape != (
             self.conf["NDetectors"] ** self.conf["NQubits"],
             self.conf["NDetectors"] ** self.conf["NQubits"],
         ):
@@ -1270,13 +1270,13 @@ class Tomography():
         #############
         # crosstalk #
         #############
-        if crosstalk.shape != (
-            self.conf["NQubits"] * self.conf["NMeasurementsPerQubit"],
-            self.conf["NQubits"] * self.conf["NMeasurementsPerQubit"],
+        if not isinstance(crosstalk, int) and crosstalk.shape != (
+            2**self.conf["NQubits"],
+            2**self.conf["NQubits"],
         ):
-            self.conf["Crosstalk"] = crosstalk
-        else:
             raise ValueError("Invalid crosstalk matrix")
+        else:
+            self.conf["Crosstalk"] = crosstalk
 
         #########
         # error #
