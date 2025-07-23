@@ -93,7 +93,7 @@ class Tomography():
     def __init__(self,nQ = 2):
         self.tomo_input = None
         self.conf = ConfDict([('NQubits',nQ), ('NDetectors', 1),
-                              ('Crosstalk', np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])),
+                              ('Crosstalk', -1),
                               ('Bellstate', 0),('DoDriftCorrection', 0), ('DoAccidentalCorrection', 0),
                               ('DoErrorEstimation', 0),('Window', [1]),('Efficiency', [1]),('RhoStart', None),
                               ('Beta', 0),('ftol', 1.49012e-08),('xtol', 1.49012e-08),('gtol', 0.0),('maxfev', 0), ('Method', 'MLE')])
@@ -165,7 +165,7 @@ class Tomography():
             self.conf["Method"] = conf["method"]
 
         if "starting_matrix" in conf:
-            self.conf["RhoStart"] = np.array(conf["starting_matrix"])
+            self.conf["RhoStart"] = np.array(conf["starting_matrix"],dtype=complex)
 
         if "beta" in conf:
             self.conf["beta"] = conf["beta"]
@@ -224,6 +224,8 @@ class Tomography():
         self.conf["NMeasurementsPerQubit"] = json_dict["n_measurements_per_qubit"]
         if "relative_efficiency" in json_dict:
             self.conf["Efficiency"] = np.array(json_dict["relative_efficiency"])
+        else:
+            self.conf["Efficiency"] = -1 
         self.measurements = get_raw_measurement_bases_from_data(json_dict)
 
         # Find which basis states are orthogonal to each other
@@ -304,10 +306,14 @@ class Tomography():
                     partial_crosstalk = np.kron(partial_crosstalk, input_crosstalk[i])
                 self.conf["Crosstalk"] = partial_crosstalk
             else:
-                self.conf["Crosstalk"] = input_crosstalk 
+                self.conf["Crosstalk"] = input_crosstalk
+        else:
+            self.conf["Crosstalk"] = -1
 
         if "coincidence_window" in json_dict:
             self.conf["Window"] = np.array(json_dict["coincidence_window"])
+        else:
+            self.conf["Window"] = [1]
         # Reset tomo_input so it doesn't get used if user previously imported using old file
         self.tomo_input = None
 
@@ -1335,11 +1341,11 @@ class Tomography():
             try:
                 eff = np.array(self.conf['Efficiency'],dtype=float)
                 if isinstance(self.conf['Efficiency'],int):
-                    eff = np.ones(self.getNumCoinc())
-                if len(eff.shape) != 1 or len(eff) != self.getNumCoinc():
+                    eff = np.eye((self.conf["NDetectors"]**self.conf["NQubits"]))
+                if eff.shape != (self.conf["NDetectors"]**self.conf["NQubits"],self.conf["NDetectors"]**self.conf["NQubits"]): 
                     raise
             except:
-                raise ValueError('Invalid Conf settings. Efficiency should have length ' +str(self.getNumCoinc()) + " with the given settings.")
+                raise ValueError('Invalid Conf settings. Efficiency should have shape ' +str((self.conf["NDetectors"]**self.conf["NQubits"],self.conf["NDetectors"]**self.conf["NQubits"])) + " with the given settings.")
         elif self.conf['NDetectors'] == 1:
             eff = np.ones(1)
         self.conf['Efficiency'] = eff
@@ -1371,7 +1377,7 @@ class Tomography():
 
         # Check starting matrix
         starting_matrix = self.conf["RhoStart"]
-        if starting_matrix and np.array(starting_matrix).shape != (
+        if starting_matrix is not None and np.array(starting_matrix).shape != (
             2 ** self.conf["NQubits"],
             2 ** self.conf["NQubits"],
         ):

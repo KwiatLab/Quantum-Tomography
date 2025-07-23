@@ -79,7 +79,6 @@ def get_raw_measurement_bases_from_data(tomo_data) -> np.ndarray:
             np.array(tomo_data["measurement_states"][name], dtype=np.complex128)
             for name in datum["basis"]
         ]
-        # Kronecker product all of them together
         all_densities.append(np.array(densities).flatten())
 
     return np.array(all_densities)
