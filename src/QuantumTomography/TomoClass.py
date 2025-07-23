@@ -361,7 +361,7 @@ class Tomography():
                 elif assignment[0] == "intensity":
                     intensities = parse_np_array(assignment[1])
                 else:
-                    pattern = str("""(\[['"][\w]*['"]\])""")
+                    pattern = str(r"""(\[['"][\w]*['"]\])""")
                     match = re.search(pattern, str(assignment[0]))
                     if match:
                         variable_name = match.group(0).strip().strip("'[]").lower()
@@ -505,7 +505,7 @@ class Tomography():
                 self.time,
                 self.singles,
                 self.conf["Window"],
-                error=0,
+                error=self.conf["DoErrorEstimation"],
             )
         return self.StateTomography_Matrix(
             tomo_input, self.intensities, method=self.conf["Method"]

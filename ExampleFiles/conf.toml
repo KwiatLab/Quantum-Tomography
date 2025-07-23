@@ -1,9 +1,8 @@
 # Example configuration
 
-use_derivative = 0
 get_bell_settings = false
 do_drift_correction = false
-do_error_estimation = false
+do_error_estimation = 5 
 do_accidental_correction = false
 method = "MLE"
 
