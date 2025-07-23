@@ -133,8 +133,8 @@ This file states the data of the measurement and any metadata relating to the me
     - Default: `1`
 - `measurement_states`
     - Values: `Dict[str, List]`
-    - Desc: Dictionary mapping names to measurement basis states. The states can be in density matrix format or in state vector format. Complex numbers are to be written as strings in quotes in python format (ex: `"0.5 + 0.5j"`)
-    - Default:`{"H": [1,0],"V": [0,1],"D": [0.5,0.5],"A": [0.5,-0.5],"R": [0.5,"0.5j"],"L": [0.5,"-0.5j"]}`
+    - Desc: Dictionary mapping names to measurement basis states. The states are in state vector format. Complex numbers are to be written as strings in quotes in python format (ex: `"0.5 + 0.5j"`). The input states do not need to be norm-1 as they will be normalized in the back end.
+    - Default:`{"H": [1,0],"V": [0,1],"D": [1,1],"A": [1,-1],"R": [1,"1j"],"L": [1,"-1j"]}`
 - `coincidence_window`
     - Values: Square 2d array of size `(n_detectors_per_qubit**n_qubits, n_detectors_per_qubit**n_qubits)`
     - Desc: Describes the coincidence window between each pair of detectors.
