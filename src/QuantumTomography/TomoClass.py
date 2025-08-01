@@ -1635,10 +1635,11 @@ class Tomography():
         singles = self.getSingles()
         counts = self.getCoincidences()
 
-        # Re-sample counts and singles
-        test_counts = np.random.poisson(counts)
-        test_singles = np.random.poisson(singles)
+
         for j in range(n):
+            # Re-sample counts and singles
+            test_counts = np.random.poisson(counts)
+            test_singles = np.random.poisson(singles)
             if len(test_counts.shape) == 1:
                 test_counts = np.array([test_counts]).T
             test_data = np.concatenate((np.array([time]).T, test_singles, test_counts, meas), axis = 1)
