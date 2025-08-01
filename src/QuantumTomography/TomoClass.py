@@ -82,7 +82,7 @@ class Tomography():
                               ('Crosstalk', np.array([[1, 0, 0, 0], [0, 1, 0, 0], [0, 0, 1, 0], [0, 0, 0, 1]])),
                               ('Bellstate', 0),('DoDriftCorrection', 0), ('DoAccidentalCorrection', 0),
                               ('DoErrorEstimation', 0),('Window', [1]),('Efficiency', [1]),('RhoStart', []),
-                              ('Beta', 0),('ftol', 1.49012e-08),('xtol', 1.49012e-08),('gtol', 0.0),('maxfev', 0)])
+                              ('Beta', 0),('ftol', 1.49012e-08),('xtol', 1.49012e-08),('gtol', 0.0),('maxfev', 0), ('method', 'MLE')])
         self.err_functions = ['concurrence', 'tangle', 'entropy', 'linear_entropy', 'negativity', 'purity']
         self.mont_carlo_states = list()
     """
@@ -1324,10 +1324,11 @@ class Tomography():
         singles = self.getSingles()
         counts = self.getCoincidences()
 
-        # Re-sample counts and singles
-        test_counts = np.random.poisson(counts)
-        test_singles = np.random.poisson(singles)
+        
         for j in range(n):
+            # Re-sample counts and singles
+            test_counts = np.random.poisson(counts)
+            test_singles = np.random.poisson(singles)
             if len(test_counts.shape) == 1:
                 test_counts = np.array([test_counts]).T
             test_data = np.concatenate((np.array([time]).T, test_singles, test_counts, meas), axis = 1)

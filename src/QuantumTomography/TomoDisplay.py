@@ -82,16 +82,16 @@ def makeRhoImages(p, plt_given, customColor = True):
     # Real Graph
     fig = plt_given.figure()
     ax1 = fig.add_subplot(111, projection = '3d')
-    dz = p.flatten().astype(float)
+    dz = p.flatten().real.astype(float)
     img = ax1.bar3d(xpos, ypos, zpos, dx, dy, dz, color = colorMap((dz + 1) / 2), edgecolor = "black", alpha = .8)
 
 
 
-    ax1.axes.set_xticklabels(xTicks)
-    ax1.axes.set_yticklabels(yTicks)
     ax1.axes.set_xticks(range(1, 2**numQubits+1))
     ax1.axes.set_yticks(range(1, 2**numQubits+1))
     ax1.axes.set_zticks(np.arange(-1, 1.1, .2))
+    ax1.axes.set_xticklabels(xTicks)
+    ax1.axes.set_yticklabels(yTicks)
     ax1.axes.set_zlim3d(-1, 1)
     plt_given.title("Rho Real")
     fig.subplots_adjust(bottom = 0.2)
@@ -106,11 +106,11 @@ def makeRhoImages(p, plt_given, customColor = True):
     dz = p.flatten().imag.astype(float)
     ax1.bar3d(xpos, ypos, zpos, dx, dy, dz, color = colorMap((dz + 1) / 2), edgecolor = "black", alpha = .8)
 
-    ax1.axes.set_xticklabels(xTicks)
-    ax1.axes.set_yticklabels(yTicks)
     ax1.axes.set_xticks(range(1, 2 ** numQubits + 1))
     ax1.axes.set_yticks(range(1, 2 ** numQubits + 1))
     ax1.axes.set_zticks(np.arange(-1, 1.1, .2))
+    ax1.axes.set_xticklabels(xTicks)
+    ax1.axes.set_yticklabels(yTicks)
     ax1.axes.set_zlim3d(-1, 1)
     plt_given.title("Rho Imaginary")
 

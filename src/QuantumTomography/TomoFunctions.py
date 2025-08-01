@@ -66,6 +66,23 @@ def log_likelyhood(intensity, givenState, coincidences, measurements, accidental
     val = (Averages - coincidences) ** 2 / (2 * Averages)
     return sum(val)
 
+""" Positive semi-definite safe cholesky.
+Since the Cholesky decomposition requires positive definite matrices, we can add a small epsilon
+to the diagonal of a positive semi-definite matrix to force it to be positive definite.
+"""
+
+
+def psd_cholesky(rhog, eps=1e-10):
+    eps_I = np.eye(rhog.shape[0]) * eps
+    return np.linalg.cholesky(eps_I + rhog)
+
+def make_positive(rhog_in):
+    d, v = np.linalg.eig(rhog_in)
+    rhog = np.zeros(rhog_in.shape)
+    for j in range(len(d)):
+        rhog = rhog + np.abs(d[j])*np.outer(v[:, j], v[:, j].conj().transpose())
+    rhog = (rhog + rhog.conj().transpose())/2.0
+    return rhog
 
 """
 density2tm(rhog)
@@ -82,6 +99,10 @@ tm : ndarray
     Lower t matrix defining the input matrix.
 """
 def density2tm(rhog):
+    if not np.all(np.linalg.eigvals(rhog) > 0):
+        new_rhog = make_positive(rhog)
+        return psd_cholesky(new_rhog)
+
     return np.linalg.cholesky(rhog)
 
 """
