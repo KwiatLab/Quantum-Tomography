@@ -90,7 +90,6 @@ def makeRhoImages(p, plt_given, customColor = True):
     ax1.axes.set_zticks(np.arange(-1, 1.1, .2))
     ax1.axes.set_xticklabels(xTicks)
     ax1.axes.set_yticklabels(yTicks)
-
     ax1.axes.set_zlim3d(-1, 1)
     plt_given.title("Rho Real")
     fig.subplots_adjust(bottom = 0.2)
@@ -110,7 +109,6 @@ def makeRhoImages(p, plt_given, customColor = True):
     ax1.axes.set_zticks(np.arange(-1, 1.1, .2))
     ax1.axes.set_xticklabels(xTicks)
     ax1.axes.set_yticklabels(yTicks)
-
     ax1.axes.set_zlim3d(-1, 1)
     plt_given.title("Rho Imaginary")
 

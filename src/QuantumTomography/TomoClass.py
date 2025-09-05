@@ -1635,7 +1635,6 @@ class Tomography():
         singles = self.getSingles()
         counts = self.getCoincidences()
 
-
         for j in range(n):
             # Re-sample counts and singles
             test_counts = np.random.poisson(counts)
