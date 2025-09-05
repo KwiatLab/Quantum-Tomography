@@ -17,7 +17,7 @@ def readme():
 
 setup(
     name = "Quantum-Tomography",
-    version = "1.0.8.0",
+    version = "1.1.0.0",
     description = "A python library to help perform tomography on a quantum state.",
     long_description = readme(),
     long_description_content_type = "text/markdown",
