@@ -7,6 +7,8 @@ from .Utilities import (
     ConfDict,
     cast_to_numpy,
     get_raw_measurement_bases_from_data,
+    get_all_product_states_from_data,
+    get_all_measurements_from_data,
     get_highest_fold_coincidence_count_index,
     parse_np_array
 )
@@ -221,11 +223,13 @@ class Tomography():
 
         self.conf["NQubits"] = json_dict["n_qubits"]
         self.conf["NDetectors"] = json_dict["n_detectors_per_qubit"]
+        print("Imported ndet", self.conf["NDetectors"])
         self.conf["NMeasurementsPerQubit"] = json_dict["n_measurements_per_qubit"]
         if "relative_efficiency" in json_dict:
             self.conf["Efficiency"] = np.array(json_dict["relative_efficiency"])
         else:
-            self.conf["Efficiency"] = -1 
+            self.conf["Efficiency"] = -1
+        
         self.measurements = get_raw_measurement_bases_from_data(json_dict)
 
         # Find which basis states are orthogonal to each other
@@ -242,7 +246,15 @@ class Tomography():
                 ).all() and key1 not in orthogonal_bases:
                     orthogonal_bases[key1] = key2
 
+        singles = []
+        coincidences = []
+        times = []
+        intensities = []
+
         if self.conf["NDetectors"] > 1:
+            measurements = []
+            all_meas_projectors = get_all_measurements_from_data(json_dict)
+            print(all_meas_projectors)
             if "relative_efficiency" in json_dict and not all(
                 ["detectors_used" in datum for datum in json_dict["data"]]
             ):
@@ -271,22 +283,41 @@ class Tomography():
                         measurement.append(j)
 
                 if measurement not in simultaneous_measurements:
-                    simultaneous_measurements.append(measurement)
+                    simultaneous_measurements.append(measurement) 
+                
 
-        singles = []
-        coincidences = []
-        times = []
-        intensities = []
-        for datum in json_dict["data"]:
-            idx = get_highest_fold_coincidence_count_index(len(datum["basis"]))
-            singles.append(np.array(datum["counts"])[0 : len(datum["basis"])])
-            coincidences.append(np.array(datum["counts"])[idx])
-            if "integration_time" in datum:
-                times.append(float(datum["integration_time"]))
-            else:
-                times.append(1.0)
-            if "relative_intensity" in datum:
-                intensities.append(float(datum["relative_intensity"]))
+            for measurement in simultaneous_measurements:
+                print(measurement)
+                basis_names = [json_dict["data"][k]["basis"] for k in measurement]
+                print(basis_names)
+                measurements.append([all_meas_projectors[k] for k in measurement])
+                data = [json_dict["data"][k] for k in measurement]
+                coincidence_idx = get_highest_fold_coincidence_count_index(len(data[0]["basis"]))
+                singles_counts = np.zeros(self.conf["NDetectors"]*self.conf["NQubits"])
+                for datum in data:
+                    for count_idx, detector in enumerate(datum["detectors_used"]):
+                        singles_counts[detector] = datum["counts"][count_idx]
+                    coincidences.append(datum["counts"][coincidence_idx])
+                singles.append(singles_counts)
+                if "integration_time" in datum:
+                    times.append(float(datum["integration_time"]))
+                else:
+                    times.append(1.0)
+                if "relative_intensity" in datum:
+                    intensities.append(float(datum["relative_intensity"]))
+            # print(measurements)
+            self.measurements = np.array(measurements)
+        else:
+            for datum in json_dict["data"]:
+                idx = get_highest_fold_coincidence_count_index(len(datum["basis"]))
+                singles.append(np.array(datum["counts"])[0 : len(datum["basis"])])
+                coincidences.append(np.array(datum["counts"])[idx])
+                if "integration_time" in datum:
+                    times.append(float(datum["integration_time"]))
+                else:
+                    times.append(1.0)
+                if "relative_intensity" in datum:
+                    intensities.append(float(datum["relative_intensity"]))
 
         if not len(intensities):
             intensities = -1
@@ -298,6 +329,9 @@ class Tomography():
         self.counts = np.array(coincidences)
         self.intensities = intensities
 
+        print("Singles shape", self.singles.shape)
+        print("counts shape", self.counts.shape)
+        print("measurements shape", self.measurements.shape)
         if "crosstalk" in json_dict:
             input_crosstalk = np.array(json_dict["crosstalk"])
             if input_crosstalk.ndim > 2:
@@ -313,7 +347,7 @@ class Tomography():
         if "coincidence_window" in json_dict:
             self.conf["Window"] = np.array(json_dict["coincidence_window"])
         else:
-            self.conf["Window"] = [1]
+            self.conf["Window"] = np.zeros((self.conf["NDetectors"]**self.conf["NQubits"], self.conf["NDetectors"]**self.conf["NQubits"]))
         # Reset tomo_input so it doesn't get used if user previously imported using old file
         self.tomo_input = None
 
@@ -491,6 +525,7 @@ class Tomography():
     """
     def StateTomography(self, measurements, counts, crosstalk=-1, efficiency=0, time=-1, singles=-1, window=0, error=0,
                         intensities=-1, method="MLE"):
+        print(counts.shape)
         tomo_input = self.buildTomoInput(measurements, counts, crosstalk, efficiency, time, singles, window, error)
         return self.StateTomography_Matrix(tomo_input, intensities, method=method)
 
@@ -536,7 +571,10 @@ class Tomography():
     """
     def StateTomography_Matrix(self, tomo_input, intensities = -1,method="MLE",_saveState=True):
         # define a uniform intensity if not stated
+        print("intensities", intensities)
+        print(isinstance(intensities, int))
         if isinstance(intensities, NoneType) or isinstance(intensities, int):
+            print("here")
             self.intensities = np.ones(tomo_input.shape[0])
         elif(len(intensities.shape) == 1 and intensities.shape[0] == tomo_input.shape[0]):
             self.intensities = intensities
@@ -1075,9 +1113,16 @@ class Tomography():
         coinc = self.getCoincidences()
         n_coinc = self.getNumCoinc()
         window = self.conf['Window']
+        if len(window.shape) > 1:
+            window = [window[0,1], window[0,3], window[2,1], window[2,3]]
+
         eff = self.conf['Efficiency']
         crosstalk = self.conf['Crosstalk']
+        # if len(eff.shape) > 1:
+        #     eff = [eff[0,1], eff[0,3], eff[2,1], eff[2,3]]
         overall_norms = np.kron(self.intensities, eff)
+        print("window", window)
+        # print(eff)
 
 
         # Accidental Correction
@@ -1195,16 +1240,6 @@ class Tomography():
         # Check if counts has right dimensions
         if (counts.shape[0] != measurements.shape[0]):
             raise ValueError("Number of Counts does not match the number of measurements")
-        # Determine if 2det/qubit from counts matrix
-        try:
-            if(counts.shape[1] == 1):
-                self.conf['NDetectors'] = 1
-            elif(counts.shape[1] == self.conf['NQubits']*2):
-                self.conf['NDetectors'] = 2
-            else:
-                raise ValueError("The second axis of counts does not have the right dimension. Should be 1 or 2*NQubits for 2det")
-        except:
-            self.conf['NDetectors'] = 1
 
         ##############
         # efficiency #
@@ -1222,6 +1257,7 @@ class Tomography():
         ##########
         # window #
         ##########
+        print("window",window)
         if not isinstance(window, int) and self.conf["NDetectors"] > 1 and window.shape != (
             self.conf["NDetectors"] ** self.conf["NQubits"],
             self.conf["NDetectors"] ** self.conf["NQubits"],
@@ -1258,6 +1294,9 @@ class Tomography():
                     if singles.shape != (measurements.shape[0], self.conf['NQubits']):
                         raise ValueError("Invalid singles matrix")
                 elif self.conf['NDetectors'] == 2:
+                    print("meas shape", measurements.shape)
+                    print("singles shape",singles.shape)
+                    print("getnumsingles", self.getNumSingles())
                     if singles.shape != (measurements.shape[0], 2 * self.conf['NQubits']):
                         raise ValueError("Invalid Singles matrix")
             # Check if window has right length
@@ -1335,6 +1374,7 @@ class Tomography():
             except:
                 raise ValueError('Invalid Conf settings. Window should have length ' +str(self.getNumCoinc()) + " with the given settings.")
         # Efficicieny and Ndetectors
+        print("ndet check", self.conf["NDetectors"])
         if not self.conf['NDetectors'] in [1,2]:
             raise ValueError('Invalid Conf settings. NDetectors can be either 1 or 2, corresponding to the number of detectors per qubit.')
         elif self.conf['NDetectors'] == 2:
