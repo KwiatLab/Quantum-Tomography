@@ -13,6 +13,7 @@ Links
 
 
 ## Usage
+
 ### Terminal
 For those who do not want to write python code to perform tomography 
 on their data, you can use the following command in the package directory:
@@ -40,6 +41,181 @@ There are several other arguments that are optional like save option. Here is th
 For those running tomography on multiple quantum states it may be easier to use the python 
 package directly for a more hands free process.
 ## Usage
+##### Step 1. Initialize Tomography Object
+```
+import QuantumTomography as qKLib
+
+t = qKLib.Tomography()
+```
+##### Step 2. Set up Configurations and data
+This can be done in multiple ways. The first and the easiest is to pass the full path
+to importConf Function. Examples and syntax for a conf file is provided at the bottom of
+this readme.
+```
+t.import_conf('Path/To/conf.toml')
+t.import_data('Path/To/data.json')
+```
+Specific Config settings can also be set directly
+```
+t['DoAccidentalCorrection'] = 1
+```
+A list values for config is provided at the bottom of this readme and
+also in the TomoClass.py file.
+
+##### Step 3. Run Tomography on The data
+This can also be done in multiple ways. The first is using the importData Function. Examples
+and syntax for a data file is provided at the bottom of this readme and also in the TomoClass.py file..
+```
+[rho, intens, fval] = t.run_tomography()
+```
+##### Step 4. Optional Methods
+We provide many functions to help describe the state. Properties of the state can be calculated with methods found in
+the TomoFunctions files. Some examples of these are proveded
+```
+fid = qKLib.fidelity(rho,expectedState)
+entangle = qKLib.entanglement(rho)
+entropy = qKLib.entropy(rho)
+```
+
+## Input File Options
+You can import data and configuration files using `Tomography.import_data()` and `Tomography.import_conf()`
+### Conf File
+This file states the configuration of the tomography. The syntax of the file is [TOML](https://toml.io/en/). Complex numbers are written as strings in python format: `0.5 + 0.5j`. These are the following values you can set in a conf file.
+
+- `do_error_estimation`
+    - Values : int >= 0
+    - Desc : Number of states used to calculate the errors on the properties of the state
+    - Default : 0
+- `do_drift_correction`
+    - Values : `true` or `false`
+    - Desc : Whether of not you want to perform drift correction on the state
+    - Default : `false`
+- `do_accidental_correction`
+    - Values : `true` or `false` 
+    - Desc : Whether of not you want to perform accidental corrections on the state.
+    - Default : `false`
+- `starting_matrix`
+    - Values : 2d array
+    - Desc : An estimate of your state to start the maximum likelihood estimation with. This may improve your tomography results.
+    - Default : None (will do a linear inversion prior to MLE)
+- `method`
+    - Values : `"MLE"` or `"HMLE"`
+    - Desc : Which type of estimation to use. Currently the options are maximum likelihood and hedged maximum likelihood.
+    - Default: `"MLE"`
+- `beta`
+    - Values : 0 to 0.5, depending on purity of state and total number of measurements.  
+   - Desc : The hedging value. Does nothing if hedged maximum likelihood is not used.
+   - Default : 0
+- `minimizer_kwargs`
+    - Values : `Dict[str, Any]`
+    - Desc : A dictionary of arguments to pass to the minimizer. For example, `ftol`,`xtol`,`gtol`,`maxfev`.
+    - Default : None
+
+##### Example:
+#### **`conf.toml`**
+```
+do_drift_correction = false
+do_error_estimation = false
+do_accidental_correction = false
+method = "MLE"
+starting_matrix = [[0, 0], [0, 1]]
+```
+### Data File
+This file states the data of the measurement and any metadata relating to the measurement. The format is in JSON.
+
+- `n_qubits`
+    - Values: `int`
+    - Desc: Number of qubits in the tomography data
+    - Default: `1`
+- `n_detectors_per_qubit`
+    - Values: `1` or `2`
+    - Desc: How many detectors are used per qubit.
+    - Default: `1`
+- `measurement_states`
+    - Values: `Dict[str, List]`
+    - Desc: Dictionary mapping names to measurement basis states. The states are in state vector format. Complex numbers are to be written as strings in quotes in python format (ex: `"0.5 + 0.5j"`). The input states do not need to be norm-1 as they will be normalized in the back end.
+    - Default:`{"H": [1,0],"V": [0,1],"D": [1,1],"A": [1,-1],"R": [1,"1j"],"L": [1,"-1j"]}`
+- `coincidence_window`
+    - Values: Square 2d array of size `(n_detectors_per_qubit**n_qubits, n_detectors_per_qubit**n_qubits)`
+    - Desc: Describes the coincidence window between each pair of detectors.
+    - Default: None
+- `crosstalk`
+    - Values: Square 2d array of size `(2**n_qubits,2**n_qubits)` or list of 2d arrays with dimension `(n_qubits, 2, 2)`
+    - Desc: Matrices describing the overall crosstalk of the measurements `(2**n_qubits, 2**n_qubits)` or a list of 2d arrays describing the crosstalk in each particular PBS used in the measurement of each qubit `(n_qubits, 2,2)`.
+    - Default: None (no crosstalk)
+- `relative_efficiency`
+    - Values: Square 2d array of size `(n_detectors_per_qubit**n_qubits, n_detectors_per_qubit**n_qubits)`
+    - Desc: Describes the relative efficiencies of your detector pairs. Because of this, the matrix will be symmetric and the diagonal ignored. Note that this is only used when `n_detectors_per_qubit > 1` for the purpose of coincidence inefficiency correction.
+    - Default: None (no inefficiency)
+- `data`
+    - Values: `List[Dict[str,Any]]`
+    - Desc: List of dictionaries that describe each individual measurement. See the description of each measurement below. 
+        -  `basis (List[str])`: List of strings describing the measurements on each qubit that correspond to the keys in `measurement_states`
+            - Example (1 qubit): `"basis" : ["H"]`
+            - Example (2 qubits): `"basis" : ["H", "V"]`
+        -  `counts (List[int])`: List of counts for this measurement given in the format [singles, coincidences]. Note that the singles are optional for the 2 qubit case if you don't want to do accidental correction.
+            - Example (1 qubit, 1 detector): `"counts": [50]`
+            - Example (2 qubits, 1 detector): `"counts": [100, 200, 20]` where the first two entries are singles counts for each qubit, and the third is the coincidence counts between the pair of detectors.
+            - Example (2 qubits, 2 detectors): `"counts": [100, 200, 20]` where the first two entries are singles counts for each qubit, and the third is the coincidence counts between the pair of detectors.
+        - `integration_time (float, optional)`: Integration time of the detectors used in this measurement. Note this is only used for accidental correction (`do_accidental_correction = true`).
+        - `relative_intensity (float, optional)`: Relative intensity of this measurement. This scales the counts relative to the other measurements. Note this is only used to correct for intensity drift (`do_drift_correction = true`). Also note it will not be used when `n_detectors_per_qubit > 1`.
+        - `detectors_used (List[int], optional)`: A list of indices describing what detectors are used for this specific measurement. This is used for accidental correction (`do_accidental_correction = true`), in correlation to the `coincidence_window` field. It is also used for calculation of relative detector pair inefficiency in correlation with relative_efficiency. Note: this is not used when there is only 1 detector per measurement.
+
+##### Example:
+#### **`1_qubit_example.json`**
+```
+{
+  "n_qubits": 1,
+  "n_detectors_per_qubit": 1,
+  "coincidence_window": [0],
+  "n_measurements_per_qubit": 6,
+  "measurement_states": {
+    "H": [1,0],
+    "V": [0,1],
+    "D": [0.5,0.5],
+    "A": [0.5,-0.5],
+    "R": [0.5,"0.5j"],
+    "L": [0.5,"-0.5j"]
+  },
+  "data": [
+    {
+      "basis": ["H"],
+      "integration_time": 1,
+      "counts": [50]
+    },
+    {
+      "basis": ["V"],
+      "integration_time": 1,
+      "counts": [50]
+    },
+    {
+      "basis": ["D"],
+      "integration_time": 1,
+      "counts": [50]
+    },
+    {
+      "basis": ["A"],
+      "integration_time": 1,
+      "counts": [50]
+    },
+    {
+      "basis": ["R"],
+      "integration_time": 1,
+      "counts": [100]
+    },
+    {
+      "basis": ["L"],
+      "integration_time": 1,
+      "counts": [0]
+    }
+  ]
+}
+```
+---
+## **OLD FILE Syntax (will not be supported in the future)**
+We allow for input using the old format. The function names for this are the same `importData()`, `importConf()` and `importEval()`.
+
+### Usage
 ##### Step 1. Initialize Tomography Object
 ```
 import QuantumTomography as qKLib
@@ -78,16 +254,6 @@ Steps 2 and 3 can be done in one single step by passing in a eval file.
 For running multiple states with the same settings it is recommended to run the tomographying using
 the python eval method since the the configurations is being unnecessarily being reset every time.
 Examples and syntax for a eval file is provided at the bottom of this readme.
-##### Step 4. Optional Methods
-We provide many functions to help describe the state. Properties of the state can be calculated with methods found in
-the TomoFunctions files. Some examples of these are proveded
-```
-fid = qKLib.fidelity(rho,expectedState)
-entangle = qKLib.entanglement(rho)
-entropy = qKLib.entropy(rho)
-```
----
-## Syntax
 ### Conf File
 This file states the configurations of the tomography. The syntax of the txt file is python. You write the
 conf settings just like you would set a python dictionary. These are the following values you can set in a conf file.

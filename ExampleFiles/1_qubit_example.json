@@ -1,0 +1,46 @@
+{
+  "n_qubits": 1,
+  "n_detectors_per_qubit": 1,
+  "coincidence_window": [0],
+  "n_measurements_per_qubit": 6,
+  "measurement_states": {
+    "H": [1,0],
+    "V": [0,1],
+    "D": [1,1],
+    "A": [1,-1],
+    "R": [1,"1j"],
+    "L": [1,"-1j"]
+  },
+  "data": [
+    {
+      "basis": ["H"],
+      "integration_time": 1,
+      "counts": [50]
+    },
+    {
+      "basis": ["V"],
+      "integration_time": 1,
+      "counts": [50]
+    },
+    {
+      "basis": ["D"],
+      "integration_time": 1,
+      "counts": [50]
+    },
+    {
+      "basis": ["A"],
+      "integration_time": 1,
+      "counts": [50]
+    },
+    {
+      "basis": ["R"],
+      "integration_time": 1,
+      "counts": [100]
+    },
+    {
+      "basis": ["L"],
+      "integration_time": 1,
+      "counts": [0]
+    }
+  ]
+  }
