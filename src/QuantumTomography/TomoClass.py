@@ -229,7 +229,7 @@ class Tomography():
         detector_coincidence_window = None
         if "coincidence_window" in json_dict:
             detector_coincidence_window = np.array(json_dict["coincidence_window"])
-        self.measurements = get_raw_measurement_bases_from_data(json_dict)
+        
         # Find which basis states are orthogonal to each other
         orthogonal_bases = {}
         for key1, measurement_1 in json_dict["measurement_states"].items():
@@ -244,7 +244,6 @@ class Tomography():
         coincidences = []
         times = []
         intensities = []
-        overall_norms = []
         if self.conf["NDetectors"] > 1:
             measurements = []
             all_meas_projectors = get_all_measurements_from_data(json_dict)
@@ -269,6 +268,7 @@ class Tomography():
                         measurement.append(j)
                 if measurement not in simultaneous_measurements:
                     simultaneous_measurements.append(measurement)
+
             # Construct the measurement basis list, singles and coincidences
             # based on the simultaneous measurements
             for measurement in simultaneous_measurements:
@@ -301,7 +301,7 @@ class Tomography():
                     measurement_norm = 1
                 # TODO: This will only get the data based on the last simultaneous measurement
                 # Is there a case where we can't use only one of the simultaneous measurements
-                # to get the efficiency?
+                # to get the efficiency and window?
                 efficiencies = []
                 window = []
                 # Get the singles counts for each detector involved in this measurement
@@ -327,11 +327,13 @@ class Tomography():
                     times.append(1.0)
                 singles.append(singles_counts)
                 coincidences.append(coincidence_counts)
-                overall_norms.append(measurement_norm * (np.array(efficiencies)))
-            self.overall_norms = overall_norms
+            
             measurements = np.array(measurements)
-            measurements = measurements[:, 0, :]
-            self.measurements = measurements
+            # This measurements array will include elements like (HH, HV, VH, VV)
+            # (DH, DV, AH, AV), etc. We only want to keep the first of these, i.e, (HH), (DH), etc.
+            # since this is what the current code uses. Essentially, it only wants to know the 
+            # measurement basis and not the full list of projectors
+            self.measurements = measurements[:, 0, :]
             window = np.array(window)
         else:
             efficiencies = np.array([1])
@@ -346,6 +348,7 @@ class Tomography():
                     times.append(1.0)
                 if "relative_intensity" in datum:
                     intensities.append(float(datum["relative_intensity"]))
+            self.measurements = get_raw_measurement_bases_from_data(json_dict)
         if not len(intensities):
             intensities = -1
         elif len(intensities) > 0 and len(intensities) != len(singles):
@@ -1041,7 +1044,7 @@ class Tomography():
     #                 except:
     #                     pass
     #             # Increase iteration number
-    #             iterationCounter =self iterationCounter + 1
+    #             iterationCounter = iterationCounter + 1
     #         # Increase sample number
     #         i = i + 1
     #     self.stabilityHistory = stabilityHistory
