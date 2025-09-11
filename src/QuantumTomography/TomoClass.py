@@ -17,8 +17,14 @@ from scipy.optimize import leastsq
 import warnings
 from pathlib import Path
 import json
-import tomllib
-from types import NoneType
+
+from platform import python_version
+try:
+    import tomllib
+except ModuleNotFoundError:
+    warnings.warn("Could not import tomllib because you are using Python version {}. If you want to use the new config file format, please upgrade to Python >= 3.11".format(python_version()))
+    toml_available = False
+
 import re
 
 """
@@ -145,6 +151,8 @@ class Tomography():
         self.import_eval(filename)
 
     def import_conf(self, filename):
+        if not toml_available:
+            raise Exception("Can't use import_conf() function since you're using Python version {}. If you want to use the new file format, please upgrade to Python >= 3.11".format(python_version()))
         """Import configuration file with new file format (toml)."""
         with open(Path(filename), "rb") as f:
             conf = tomllib.load(f)
@@ -244,6 +252,7 @@ class Tomography():
         coincidences = []
         times = []
         intensities = []
+
         if self.conf["NDetectors"] > 1:
             measurements = []
             all_meas_projectors = get_all_measurements_from_data(json_dict)
@@ -594,7 +603,7 @@ class Tomography():
     """
     def StateTomography_Matrix(self, tomo_input, intensities = -1,method="MLE",_saveState=True):
         # define a uniform intensity if not stated
-        if isinstance(intensities, NoneType) or isinstance(intensities, int):
+        if intensities is None or isinstance(intensities, int):
             self.intensities = np.ones(tomo_input.shape[0])
         elif(len(intensities.shape) == 1 and intensities.shape[0] == tomo_input.shape[0]):
             self.intensities = intensities
