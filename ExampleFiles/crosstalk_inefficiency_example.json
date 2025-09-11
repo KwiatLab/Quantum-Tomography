@@ -2,7 +2,7 @@
   "n_qubits": 2,
   "n_detectors_per_qubit": 2,
   "n_measurements_per_qubit": 6,
-  "relative_efficiency": [[1,0,0.9,0],[0,1,0,0.8],[0.9,0,1,0],[0,0.8,0,1]],
+  "relative_efficiency": [[1,1,1,0.9],[1,1,0.7,0.8],[1,0.7,1,0.8],[0.9,0.8,0.8,1]],
   "crosstalk": [[[0.9,0],[0.1,0.8]], [[0.9,0],[0.1,0.8]]],
   "measurement_states": {
     "H": [1,0],
