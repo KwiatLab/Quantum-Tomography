@@ -17,7 +17,7 @@ def readme():
 
 setup(
     name = "Quantum-Tomography",
-    version = "1.1.0.0",
+    version = "1.1.1.0",
     description = "A python library to help perform tomography on a quantum state.",
     long_description = readme(),
     long_description_content_type = "text/markdown",
@@ -27,11 +27,7 @@ setup(
     license = "MIT",
     classifiers = [
         "License :: OSI Approved :: MIT License",
-        "Programming Language :: Python :: 2.7",
-        "Programming Language :: Python :: 3.5",
-        "Programming Language :: Python :: 3.6",
-        "Programming Language :: Python :: 3.7",
-        "Programming Language :: Python :: 3.8",
+        "Programming Language :: Python :: 3.11",
     ],
     package_dir = {'': 'src'},
     packages = ["QuantumTomography"],
