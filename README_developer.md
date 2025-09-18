@@ -12,26 +12,29 @@ For more details see our LICENSE file.
 
 
 ## Setting up your environment
-This python application is tested on many python version. It is recommended to develop on 
-the [most recent version of python](https://www.python.org/downloads/). Tests are setup to run on previous versions.
+
+This project uses [uv](https://docs.astral.sh/uv/) for dependency and project management. To install `uv` you can follow the [install instructions](https://docs.astral.sh/uv/getting-started/installation/#standalone-installer) for your OS. This package is compatible with python versions `>=3.11`, with the default version used set to `3.11`.
 
 1. **Clone** the repo to your local computer
 
+2. **Create a virtual environment** by navigating to the project root and running
 
-2. **Create a virtual environment** by typing the following in the command prompt. Make sure you are at the top most level of the repo.
+        uv sync
 
-         py -m venv src\venv
-3. **Activate virtual environment**
+    This will create a virtualenv in the default location `.venv`.
 
-        src\venv\Scripts\activate.bat
+3. **Activate the virtual environment (optional)** by running 
 
-4. Install the **requirements**.
+        # Windows PowerShell
+        .venv\Scripts\activate
 
-         pip install -r requirements.txt
-         
-5. **Switch to the development branch** before making any changes
-         
-        git checkout development
+        # Linux and macOS
+        source .venv/bin/activate
+
+    You can also run single commands without activating the virtual environment by using `uv` such as
+
+        uv run python Example.py
+
 
 If you are using pycharm(a great development environment for python), you can add the virtual environment by going to File->Settings->Project->python interpreter. 
    Click the drop down for interpreter and click show all. Click the + button, and add a new existing interpreter using the path:

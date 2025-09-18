@@ -1,0 +1,116 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+
+[project]
+name = "QuantumTomography"
+version = "1.1.1"
+description = "A complete library for quantum state/process tomography data analysis"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [
+  { name = "Benjamin Nussbaum", email = "bn9@illinois.edu" },
+  { name = "Timur Javid", email = "tjavid2@illinois.edu" },
+]
+maintainers = [
+  { name = "Benjamin Nussbaum", email = "bn9@illinois.edu" },
+  { name = "Timur Javid", email = "tjavid2@illinois.edu" },
+]
+dependencies = [
+  "numpy>=2.1.3",
+  "scipy>=1.14.1",
+  "matplotlib",
+  "pytest"
+  ]
+
+keywords = [
+  "quantum tomography",
+  "state tomography",
+  "process tomography",
+  "quantum information",
+]
+classifiers = [
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3.11",
+]
+
+[project.urls]
+Homepage = "https://quantumtomo.web.illinois.edu/"
+Documentation = "https://quantumtomo.web.illinois.edu/Doc"
+Repository = "https://github.com/KwiatLab/quantum-tomography"
+"Video Tutorial" = "https://www.youtube.com/watch?v=I-214P0LOfQ&list=PLJLHMKtk5Pqy9w9aCuyowUF1p7pl2JCI9&index=3"
+
+[project.scripts]
+qtomo = "qtomo.cli:main"
+
+[dependency-groups]
+dev = [
+  "mypy>=1.13.0",
+  "pytest-cov>=6.0.0",
+  "ruff>=0.8.2"
+  ]
+
+[tool.mypy]
+files = ["src", "tests"]
+strict = true
+pretty = true
+
+enable_error_code = ["ignore-without-code"]
+
+ignore_missing_imports = true
+
+[[tool.mypy.overrides]]
+module = "tests.*"
+ignore_errors = true
+
+
+[tool.ruff]
+line-length = 120
+
+[tool.ruff.lint]
+# See https://docs.astral.sh/ruff/rules/ for details.
+select = ["ALL"]
+ignore = [
+  "ANN", # Let mypy handle type annotations
+  "D1",  # Don't warn about missing docstrings (but lint the ones that exist)
+  "FIX", # The linter doesnt need to remind us about TODOs
+  "TD",  # Simple TODO syntax is fine
+]
+
+# Ignore rules which are redundant when using the formatter.
+# See https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules for details.
+extend-ignore = [
+  "W191",
+  "E111",
+  "E114",
+  "E117",
+  "D206",
+  "D300",
+  "Q",
+  "COM812",
+  "COM819",
+  "ISC001",
+  "ISC002",
+  "E501",
+]
+
+[tool.ruff.lint.extend-per-file-ignores]
+"tests/*" = [
+  "S101", # Asserts are welcome in tests.
+]
+# Run pytest lint rules only in test files.
+"!tests/*" = ["PT"]
+# Allow "unused" imports when exposing objects from submodules.
+"**/__init__.py" = ["F401"]
+
+[tool.ruff.lint.isort]
+force-single-line = true
+
+[tool.ruff.lint.pydocstyle]
+convention = "numpy" # One of: "google" | "numpy" | "pep257"
+
+
+[tool.uv.pip]
+generate-hashes = true
