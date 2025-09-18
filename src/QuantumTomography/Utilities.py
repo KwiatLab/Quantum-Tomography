@@ -84,18 +84,35 @@ def get_raw_measurement_bases_from_data(tomo_data) -> np.ndarray:
     return np.array(all_densities)
 
 def get_all_product_states_from_data(tomo_data) -> np.ndarray:
-    all_densities = []
+    all_projections = get_all_measurements_from_data(tomo_data)
+    all_product_states = []
+    for projection_list in all_projections:
+        # Kronecker product all of them together
+        all_product_states.append(functools.reduce(lambda x, y: np.kron(x, y), projection_list))
+
+    return np.array(all_product_states)
+
+def get_all_measurements_from_data(tomo_data) -> np.ndarray:
+    """
+    Get all of the measurement projectors for each qubit in a flat list.
+
+    The first two (complex) numbers is the ket representing the projection for the first qubit,
+    and the last two numbers is the ket representing the projection for the second qubit.
+
+    Ex: [1,0,1,0] represents projecting qubit 1 to H and qubit 2 to H
+        [1,1,1,-1] represents projecting qubit 1 to D and qubit 2 to A
+    """
+
+    all_projections = []
     for datum in tomo_data["data"]:
         # Get all of the densities used in this Measurement
-        densities = [
+        projections = [
             np.array(tomo_data["measurement_states"][name], dtype=np.complex128)
             for name in datum["basis"]
         ]
-        # Kronecker product all of them together
-        all_densities.append(functools.reduce(lambda x, y: np.kron(x, y), densities))
-
-    return np.array(all_densities)
-
+        all_projections.append(np.array(projections).flatten())
+    return np.array(all_projections)
+        
 
 def get_highest_fold_coincidence_count_index(n_fold):
     idx = 0

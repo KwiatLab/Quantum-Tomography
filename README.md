@@ -88,7 +88,7 @@ This file states the configuration of the tomography. The syntax of the file is 
     - Default : 0
 - `do_drift_correction`
     - Values : `true` or `false`
-    - Desc : Whether of not you want to perform drift correction on the state
+    - Desc : Whether or not you want to perform drift correction on the state.
     - Default : `false`
 - `do_accidental_correction`
     - Values : `true` or `false` 
@@ -137,7 +137,7 @@ This file states the data of the measurement and any metadata relating to the me
     - Default:`{"H": [1,0],"V": [0,1],"D": [1,1],"A": [1,-1],"R": [1,"1j"],"L": [1,"-1j"]}`
 - `coincidence_window`
     - Values: Square 2d array of size `(n_detectors_per_qubit**n_qubits, n_detectors_per_qubit**n_qubits)`
-    - Desc: Describes the coincidence window between each pair of detectors.
+    - Desc: Describes the coincidence window between each pair of detectors. Note that the values in this array will be used according to the `detectors_used` field in entries in `data`.
     - Default: None
 - `crosstalk`
     - Values: Square 2d array of size `(2**n_qubits,2**n_qubits)` or list of 2d arrays with dimension `(n_qubits, 2, 2)`
@@ -145,7 +145,7 @@ This file states the data of the measurement and any metadata relating to the me
     - Default: None (no crosstalk)
 - `relative_efficiency`
     - Values: Square 2d array of size `(n_detectors_per_qubit**n_qubits, n_detectors_per_qubit**n_qubits)`
-    - Desc: Describes the relative efficiencies of your detector pairs. Because of this, the matrix will be symmetric and the diagonal ignored. Note that this is only used when `n_detectors_per_qubit > 1` for the purpose of coincidence inefficiency correction.
+    - Desc: Describes the relative efficiencies of your detector pairs. Because of this, the matrix will be symmetric and the diagonal ignored. Note that this is only used when `n_detectors_per_qubit > 1` for the purpose of coincidence inefficiency correction. Note that the values in this array will be used according to the `detectors_used` field in entries in `data`.
     - Default: None (no inefficiency)
 - `data`
     - Values: `List[Dict[str,Any]]`
@@ -158,7 +158,7 @@ This file states the data of the measurement and any metadata relating to the me
             - Example (2 qubits, 1 detector): `"counts": [100, 200, 20]` where the first two entries are singles counts for each qubit, and the third is the coincidence counts between the pair of detectors.
             - Example (2 qubits, 2 detectors): `"counts": [100, 200, 20]` where the first two entries are singles counts for each qubit, and the third is the coincidence counts between the pair of detectors.
         - `integration_time (float, optional)`: Integration time of the detectors used in this measurement. Note this is only used for accidental correction (`do_accidental_correction = true`).
-        - `relative_intensity (float, optional)`: Relative intensity of this measurement. This scales the counts relative to the other measurements. Note this is only used to correct for intensity drift (`do_drift_correction = true`). Also note it will not be used when `n_detectors_per_qubit > 1`.
+        - `relative_intensity (float, optional)`: Relative intensity of this measurement. This scales the counts relative to the other measurements. Note this is only used to correct for intensity drift (`do_drift_correction = true`).
         - `detectors_used (List[int], optional)`: A list of indices describing what detectors are used for this specific measurement. This is used for accidental correction (`do_accidental_correction = true`), in correlation to the `coincidence_window` field. It is also used for calculation of relative detector pair inefficiency in correlation with relative_efficiency. Note: this is not used when there is only 1 detector per measurement.
 
 ##### Example:
