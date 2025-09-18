@@ -18,13 +18,7 @@ import warnings
 from pathlib import Path
 import json
 
-from platform import python_version
-try:
-    import tomllib
-except ModuleNotFoundError:
-    warnings.warn("Could not import tomllib because you are using Python version {}. If you want to use the new config file format, please upgrade to Python >= 3.11".format(python_version()))
-    toml_available = False
-
+import tomllib
 import re
 
 """
@@ -151,8 +145,6 @@ class Tomography():
         self.import_eval(filename)
 
     def import_conf(self, filename):
-        if not toml_available:
-            raise Exception("Can't use import_conf() function since you're using Python version {}. If you want to use the new file format, please upgrade to Python >= 3.11".format(python_version()))
         """Import configuration file with new file format (toml)."""
         with open(Path(filename), "rb") as f:
             conf = tomllib.load(f)
@@ -1268,6 +1260,17 @@ class Tomography():
         # Check if counts has right dimensions
         if (counts.shape[0] != measurements.shape[0]):
             raise ValueError("Number of Counts does not match the number of measurements")
+
+        # Determine if 2det/qubit from counts matrix
+        try:
+            if(counts.shape[1] == 1):
+                self.conf['NDetectors'] = 1
+            elif(counts.shape[1] == self.conf['NQubits']*2):
+                self.conf['NDetectors'] = 2
+            else:
+                raise ValueError("The second axis of counts does not have the right dimension. Should be 1 or 2*NQubits for 2det")
+        except:
+            self.conf['NDetectors'] = 1
 
         ##############
         # efficiency #
