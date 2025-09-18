@@ -43,7 +43,7 @@ Repository = "https://github.com/KwiatLab/quantum-tomography"
 "Video Tutorial" = "https://www.youtube.com/watch?v=I-214P0LOfQ&list=PLJLHMKtk5Pqy9w9aCuyowUF1p7pl2JCI9&index=3"
 
 [project.scripts]
-qtomo = "qtomo.cli:main"
+Quantum-Tomography = "QuantumTomography.cli:main"
 
 [dependency-groups]
 dev = [
