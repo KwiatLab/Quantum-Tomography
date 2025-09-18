@@ -18,13 +18,7 @@ import warnings
 from pathlib import Path
 import json
 
-from platform import python_version
-try:
-    import tomllib
-except ModuleNotFoundError:
-    warnings.warn("Could not import tomllib because you are using Python version {}. If you want to use the new config file format, please upgrade to Python >= 3.11".format(python_version()))
-    toml_available = False
-
+import tomllib
 import re
 
 """
@@ -151,9 +145,6 @@ class Tomography():
         self.import_eval(filename)
 
     def import_conf(self, filename):
-        if not toml_available:
-            raise Exception("Can't use import_conf() function since you're using Python version {}. If you want to use the new file format, please upgrade to Python >= 3.11".format(python_version()))
-        """Import configuration file with new file format (toml)."""
         with open(Path(filename), "rb") as f:
             conf = tomllib.load(f)
             self._import_conf(conf)
