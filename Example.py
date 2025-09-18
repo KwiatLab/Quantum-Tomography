@@ -12,10 +12,6 @@ Licensed under the terms of an MIT license
 """CHECK OUT THE REFERENCE PAGE ON OUR WEBSITE :
 https://quantumtomo.web.illinois.edu/Doc/"""
 
-
-# Note that this example code below uses the new file format, which will not work on Python < 3.11.
-# If you are using Python < 3.11, the old example code is at the bottom of this file.
-
 # Step 1. Initialize Tomography Object
 t = qKLib.Tomography()
 
@@ -32,7 +28,8 @@ t.import_data("ExampleFiles/1_qubit_example.json")
 # See https://quantumtomo.web.illinois.edu/Doc/ for a full reference guide of all the functions.
 qKLib.printLastOutput(t)
 
-expected_state = np.array([[1.0, 0.0], [0.0, 0.0]])
+expected_state = np.array([1,1.j])
+expected_state = np.outer(expected_state, expected_state.conj())
 print("Fidelity: " + str(qKLib.fidelity(rho, expected_state)))
 qKLib.makeRhoImages(rho, plt, True)
 plt.show()
