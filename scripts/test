@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -eux
+
+coverage run -m pytest
+coverage report
+coverage html --title "${@-coverage}"

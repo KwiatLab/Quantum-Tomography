@@ -1,0 +1,6 @@
+#!/usr/bin/env bash
+set -eux
+
+mypy src
+ruff format src --check
+ruff check src
