@@ -1,11 +1,14 @@
 # Developer guide
 
+> [!TIP]
+> Always work from the root directory of the repository.
+
 ## Setup
 
 Always use the latest version of Python when developing this project.
 
 This project uses [uv](https://docs.astral.sh/uv/) for dependency and project management.
-To install uv, you can follow the [install instructions](https://docs.astral.sh/uv/getting-started/installation/#standalone-installer) for your OS.
+To install uv, follow the [install instructions](https://docs.astral.sh/uv/getting-started/installation/#standalone-installer).
 
 A few of the most useful uv commands are shown below.
 See the [uv project guide](https://docs.astral.sh/uv/guides/projects) for more information about working on projects with uv.
@@ -15,7 +18,7 @@ See the [uv project guide](https://docs.astral.sh/uv/guides/projects) for more i
 - `uv sync` -- Update the project's environment
 - `uv run` -- Run a command or script
 
-> [!IMPORTANT]
+> [!TIP]
 > Instead of `pip install <package>`, use `uv add <package>`.
 
 1.  **Clone** this repo and run `uv sync --dev` to install the project and development dependencies.
@@ -34,7 +37,15 @@ See the [script documentation](https://docs.astral.sh/uv/guides/scripts/) for mo
 
 ### Code quality
 
-Check/enforce code quality with `uv run scripts/{lint,format,test}`.
+Use [Ruff](https://docs.astral.sh/ruff/), [mypy](https://www.mypy-lang.org/), and [pytest](https://docs.pytest.org/en/stable/)to respectively lint/format, typecheck, and test your code.
+These tools are already specified as development dependencies in this template's `pyproject.toml`, and are automatically installed when you run `uv sync --dev`.
+
+> [!NOTE]
+> Scripts to check/enforce code quality are supplied in `./scripts/`; run them with `uv run scripts/{lint,format,test}`.
+> You can also run these tools or others individually as needed.
+
+There are many options available to customize and configure these tools.
+See `pyproject.toml` for more information.
 
 ## Branching Strategy
 
