@@ -1,0 +1,5 @@
+#!/usr/bin/env bash
+set -eux
+
+ruff format src
+ruff check src --fix
