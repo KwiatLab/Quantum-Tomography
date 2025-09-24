@@ -81,7 +81,10 @@ entropy = qKLib.entropy(rho)
 You can import data and configuration files using `Tomography.import_data()` and `Tomography.import_conf()`
 ### Conf File
 This file states the configuration of the tomography. The syntax of the file is [TOML](https://toml.io/en/). Complex numbers are written as strings in python format: `0.5 + 0.5j`. These are the following values you can set in a conf file.
-
+- `get_bell_settings`
+    - Values: `true` or `false`
+    - Desc: Give the optimal measurement settings for a CHSH bell inequality for the estimated density matrix. These settings are found through a numerical search over all possible measurement settings.
+    - Default: `false` 
 - `do_error_estimation`
     - Values : int >= 0
     - Desc : Number of states used to calculate the errors on the properties of the state
