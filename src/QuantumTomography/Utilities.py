@@ -14,6 +14,26 @@ Copyright 2020 University of Illinois Board of Trustees.
 Licensed under the terms of an MIT license
 """
 
+# Mappings 
+NEW_FORMAT_CONFIG_KEY_MAPPING = {
+    "get_bell_settings": "bellstate",
+    "do_error_estimation": "doerrorestimation",
+    "do_drift_correction": "dodriftcorrection",
+    "do_accidental_correction":"doaccidentalcorrection",
+    "method": "method",
+    "starting_matrix": "rhostart",
+    "beta": "beta",
+    "minimizer_kwargs": ["ftol", "gtol", "xtol", "maxfev"],
+}
+
+NEW_FORMAT_DATA_KEY_MAPPING = {
+    "n_qubits": "nqubits",
+    "n_detectors_per_qubit": "ndetectors",
+    "n_measurements_per_qubit": "nmeasurementsperqubit",
+    "relative_efficiency": "efficiency",
+    "crosstalk": "crosstalk",
+    # "measurement_states": 
+}
 
 """CHECK OUT THE REFERENCE PAGE ON OUR WEBSITE :
 https://quantumtomo.web.illinois.edu/Doc/"""

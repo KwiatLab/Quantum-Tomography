@@ -5,6 +5,8 @@ from .TomoDisplay import floatToString
 from .TomoClassHelpers import *
 from .Utilities import (
     ConfDict,
+    NEW_FORMAT_CONFIG_KEY_MAPPING,
+    NEW_FORMAT_DATA_KEY_MAPPING,
     cast_to_numpy,
     get_raw_measurement_bases_from_data,
     get_all_product_states_from_data,
@@ -19,6 +21,7 @@ from pathlib import Path
 import json
 
 import tomllib
+import toml
 import re
 
 """
@@ -220,6 +223,10 @@ class Tomography():
     def _import_data(self, json_dict):
         for state_name in json_dict["measurement_states"].keys():
             cast_to_numpy(json_dict["measurement_states"], state_name)
+
+        self.conf["measurement_states"] = json_dict["measurement_states"]
+        self.conf["data"] = json_dict["data"]
+
         self.conf["NQubits"] = json_dict["n_qubits"]
         self.conf["NDetectors"] = json_dict["n_detectors_per_qubit"]
         self.conf["NMeasurementsPerQubit"] = json_dict["n_measurements_per_qubit"]
@@ -1800,16 +1807,16 @@ class Tomography():
         # Conf settings
         for k in self.conf.keys():
             if k == "method":
-                TORREPLACE += "conf['" + str(k) + "'] = '" + str(self.conf[k]) + "'\n"
+                TORREPLACE += f'conf["{str(k)}"] = "{str(self.conf[k])}"\n'
             elif (isinstance(self.conf[k], np.ndarray)):
                 A = self.conf[k]
-                TORREPLACE += "conf['" + str(k) + "'] = np.array([\n"
+                TORREPLACE += "conf['" + str(k) + "'] = np.array(["
                 for i in range(A.shape[0]):
                     if len(A.shape) == 2:
                         TORREPLACE += "["
                         for j in range(A.shape[1]):
                             TORREPLACE += str(A[i, j]) + ","
-                        TORREPLACE = TORREPLACE[:-1] + "],\n"
+                        TORREPLACE = TORREPLACE[:-1] + "],"
                     else:
                         TORREPLACE += str(A[i]) + ","
                 if len(A.shape) == 2:
@@ -1817,19 +1824,18 @@ class Tomography():
                 else:
                     TORREPLACE = TORREPLACE[:-1] + "])\n"
             else:
-                TORREPLACE += "conf['" + str(k) + "'] = " + str(self.conf[k]) + "\n"
+                TORREPLACE += f"conf['{str(k)}'] = {str(self.conf[k])}\n"
 
         # Tomoinput
         A = self.last_input
-        TORREPLACE += "tomo_input = np.array([\n"
+        TORREPLACE += "tomo_input = np.array(["
         for i in range(A.shape[0]):
             TORREPLACE += "["
             for j in range(A.shape[1]):
                 TORREPLACE += str(A[i, j]) + ","
-            TORREPLACE = TORREPLACE[:-1] + "],\n"
+            TORREPLACE = TORREPLACE[:-1] + "],"
 
-        TORREPLACE = TORREPLACE[:-2] + "])\n"
-
+        TORREPLACE = TORREPLACE[:-1] + "])\n"
         # intensity
         A = self.intensities
         TORREPLACE += "intensity = np.array(["
@@ -1842,9 +1848,60 @@ class Tomography():
             f.write(TORREPLACE)
 
     """
-    exportToConf(filePath)
-    Desc: Exports the conf data to the specified file path. You can rerun tomography on this file using importConf() and importData() command.
+    export_to_conf_toml(filePath)
+    Desc: Exports the configuration that was used by the tomography.
+        This exports it in the new format (toml).
 
+    Parameters
+    ----------
+    filePath : str (optional)
+        The file name you want the data saved to.
+
+    See Also
+     ------ 
+        exportToConf_old_format;import_conf;
+    """
+    def export_to_conf_toml(self, filePath="pythonConf.toml"):
+        new_format_dict = {}
+
+        # Check to see if values exist, otherwise the custom ConfDict
+        # will complain about None types being passed in
+        for key, value in NEW_FORMAT_CONFIG_KEY_MAPPING.items():
+            if isinstance(value, list):
+                for val in value:
+                    new_format_dict[val] = self.conf[val]
+                # sub_dict = dict((sub_key, self.conf[sub_key]) for sub_key in value)
+                # new_format_dict[key] = sub_dict
+            elif value is not None:
+                # print(value)
+                new_format_dict[key] = self.conf[value]
+            else:
+                new_format_dict[key] = None
+
+        # print contents to file
+        with open(filePath, 'w') as f:
+            toml.dump(new_format_dict,f)
+
+
+    ## In progress data json construction
+    # def export_to_data_json(self, filePath="pythonData.json"):
+    #     data_dict = {}
+    #     for key, value in NEW_FORMAT_DATA_KEY_MAPPING:
+    #         data_dict[key] = self.conf[value]
+
+    #     [coincidences, measurements_densities, measurements_pures, accidentals,overall_norms] = self.filter_data(self.tomo_input)
+    #     measurement_states = {}
+    #     for i, measurement in enumerate(measurements_pures):
+    #         measurement_states[str(i)] = measurement.tolist()
+        
+    #     data_dict = {}
+
+    #     with open(filePath, 'w') as f:
+
+    """
+    exportToConf_old_format(filePath)
+    Desc: Exports the conf data to the specified file path. You can rerun tomography on this file using importConf() and importData() command.
+        Note: This is being deprecated. You should use the new file format (toml) for configurations.
     Parameters
     ----------
     filePath : str (optional)
@@ -1885,7 +1942,7 @@ class Tomography():
     """
      exportToData(filePath)
      Desc: Exports the tomo_input matrix  data to the specified file path. You can rerun tomography on this file using importConf() and importData() command.
-
+        Note: This is being deprecated. You should use the new file format (json) for data.
      Parameters
      ----------
      filePath : str (optional)
@@ -1914,10 +1971,6 @@ class Tomography():
         for i in range(A.shape[0]):
             TORREPLACE += str(A[i]) + ","
         TORREPLACE = TORREPLACE[:-1] + "])"
-
-        # print contents to file
-        with open(filePath, 'w') as f:
-            f.write(TORREPLACE)
 
         # print contents to file
         with open(filePath, 'w') as f:
