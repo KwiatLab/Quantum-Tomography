@@ -51,8 +51,8 @@ t.exportToEval("ExampleFiles/eval_exported.txt")
 t.export_to_conf_toml("ExampleFiles/conf_toml_exported.toml")
 
 t2 = qKLib.Tomography()
-t2.importConf("conf_exported.txt")
-t2.importData("data_exported.txt")
+t2.importConf("ExampleFiles/conf_exported.txt")
+t2.importData("ExampleFiles/data_exported.txt")
 [rho, intens, fval] = t2.run_tomography()
 
 qKLib.printLastOutput(t2)

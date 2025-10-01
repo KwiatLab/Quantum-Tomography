@@ -14,6 +14,16 @@ Copyright 2020 University of Illinois Board of Trustees.
 Licensed under the terms of an MIT license
 """
 
+OLD_FORMAT_CONFIG_KEYS = ["nqubits",
+                          "ndetectors", 
+                          "crosstalk", 
+                          "bellstate", 
+                          "doerrorestimation", 
+                          "dodriftcorrection", 
+                          "window", 
+                          "efficiency",
+                          "method"]
+
 # Mappings 
 NEW_FORMAT_CONFIG_KEY_MAPPING = {
     "get_bell_settings": "bellstate",

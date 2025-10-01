@@ -7,6 +7,7 @@ from .Utilities import (
     ConfDict,
     NEW_FORMAT_CONFIG_KEY_MAPPING,
     NEW_FORMAT_DATA_KEY_MAPPING,
+    OLD_FORMAT_CONFIG_KEYS,
     cast_to_numpy,
     get_raw_measurement_bases_from_data,
     get_all_product_states_from_data,
@@ -1899,7 +1900,7 @@ class Tomography():
     #     with open(filePath, 'w') as f:
 
     """
-    exportToConf_old_format(filePath)
+    exportToConf(filePath)
     Desc: Exports the conf data to the specified file path. You can rerun tomography on this file using importConf() and importData() command.
         Note: This is being deprecated. You should use the new file format (toml) for configurations.
     Parameters
@@ -1914,7 +1915,7 @@ class Tomography():
     def exportToConf(self, filePath="pythonConf.txt"):
         TORREPLACE = ""
         # Conf settings
-        for k in self.conf.keys():
+        for k in OLD_FORMAT_CONFIG_KEYS:
             if k == "method":
                 TORREPLACE += f'conf["{str(k)}"] = "{str(self.conf[k])}"\n'
             elif (isinstance(self.conf[k], np.ndarray)):
