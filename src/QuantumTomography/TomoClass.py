@@ -351,7 +351,7 @@ class Tomography():
                     intensities.append(float(datum["relative_intensity"]))
             self.measurements = get_raw_measurement_bases_from_data(json_dict)
         if not len(intensities):
-            intensities = -1
+            intensities = np.ones(len(singles))
         elif len(intensities) > 0 and len(intensities) != len(singles):
             raise ValueError("Missing intensities for some measurements!")
         self.time = np.array(times)
@@ -371,8 +371,20 @@ class Tomography():
                 self.conf["Crosstalk"] = input_crosstalk
         else:
             self.conf["Crosstalk"] = -1
-        # Reset tomo_input so it doesn't get used if user previously imported using old file
-        self.tomo_input = None
+
+        # Build tomo input and set it as the last input 
+        # (in case user doesn't run and only wants to convert config formats)
+        self.tomo_input = self.buildTomoInput(
+                self.measurements,
+                self.counts,
+                self.conf["Crosstalk"],
+                self.conf["Efficiency"],
+                self.time,
+                self.singles,
+                self.conf["Window"],
+                error=self.conf["DoErrorEstimation"],
+            )
+        self.last_input = np.array(self.tomo_input)
 
 
     """
@@ -422,7 +434,7 @@ class Tomography():
                     pattern = str(r"""(\[['"][\w]*['"]\])""")
                     match = re.search(pattern, str(assignment[0]))
                     if match:
-                        variable_name = match.group(0).strip().strip("'[]").lower()
+                        variable_name = match.group(0).strip().strip("[]").strip("'").strip('"').lower()
 
                         if variable_name == "nqubits":
                             self.conf["NQubits"] = int(assignment[1])
@@ -431,7 +443,10 @@ class Tomography():
                             self.conf["NDetectors"]= int(assignment[1])
 
                         elif variable_name == "crosstalk":
-                            self.conf["Crosstalk"] = parse_np_array(assignment[1])
+                            if assignment[1] == "-1":
+                                self.conf["Crosstalk"] = -1
+                            else:
+                                self.conf["Crosstalk"] = parse_np_array(assignment[1])
 
                         elif variable_name == "bellstate":
                             if assignment[1] == 'yes':
@@ -470,7 +485,7 @@ class Tomography():
                             self.conf["UseDerivative"] = int(assignment[1])
 
                         elif variable_name == "method":
-                            self.conf["Method"] = assignment[1]
+                            self.conf["Method"] = assignment[1].strip("'").strip('"')
 
                         elif variable_name == "window":
                             self.conf["Window"] = float(assignment[1])
@@ -489,7 +504,8 @@ class Tomography():
 
                         elif variable_name == "maxfev":
                             self.conf["maxfev"] = int(assignment[1])
-
+                        elif variable_name == "nmeasurementsperqubit":
+                            self.conf["NMeasurementsPerQubit"] = int(assignment[1])
                         else:
                             raise ValueError(
                                 f"{line} is not a valid option for configuration!"
@@ -1843,16 +1859,16 @@ class Tomography():
         # Conf settings
         for k in self.conf.keys():
             if k == "method":
-                TORREPLACE += "conf['" + str(k) + "'] = '" + str(self.conf[k]) + "'\n"
+                TORREPLACE += f'conf["{str(k)}"] = "{str(self.conf[k])}"\n'
             elif (isinstance(self.conf[k], np.ndarray)):
                 A = self.conf[k]
-                TORREPLACE += "conf['" + str(k) + "'] = np.array([\n"
+                TORREPLACE += "conf['" + str(k) + "'] = np.array(["
                 for i in range(A.shape[0]):
                     if len(A.shape) == 2:
                         TORREPLACE += "["
                         for j in range(A.shape[1]):
                             TORREPLACE += str(A[i, j]) + ","
-                        TORREPLACE = TORREPLACE[:-1] + "],\n"
+                        TORREPLACE = TORREPLACE[:-1] + "],"
                     else:
                         TORREPLACE += str(A[i]) + ","
                 if len(A.shape) == 2:
@@ -1860,7 +1876,7 @@ class Tomography():
                 else:
                     TORREPLACE = TORREPLACE[:-1] + "])\n"
             else:
-                TORREPLACE += "conf['" + str(k) + "'] = " + str(self.conf[k]) + "\n"
+                TORREPLACE += f"conf['{str(k)}'] = {str(self.conf[k])}\n"
 
             # print contents to file
             with open(filePath, 'w') as f:
@@ -1884,15 +1900,14 @@ class Tomography():
 
         # Tomoinput
         A = self.last_input
-        TORREPLACE += "tomo_input = np.array([\n"
+        TORREPLACE += "tomo_input = np.array(["
         for i in range(A.shape[0]):
             TORREPLACE += "["
             for j in range(A.shape[1]):
                 TORREPLACE += str(A[i, j]) + ","
-            TORREPLACE = TORREPLACE[:-1] + "],\n"
+            TORREPLACE = TORREPLACE[:-1] + "],"
 
-        TORREPLACE = TORREPLACE[:-2] + "])\n"
-
+        TORREPLACE = TORREPLACE[:-1] + "])\n"
         # intensity
         A = self.intensities
         TORREPLACE += "intensity = np.array(["
