@@ -21,6 +21,7 @@ import warnings
 from pathlib import Path
 import json
 
+from math import modf
 import tomllib
 import toml
 import re
@@ -363,8 +364,9 @@ class Tomography():
         elif len(intensities) > 0 and len(intensities) != len(singles):
             raise ValueError("Missing intensities for some measurements!")
         self.time = np.array(times)
-        self.singles = np.array(singles)
-        self.counts = np.array(coincidences)
+        self.singles = np.array(singles,dtype=int)
+        self.counts = np.array(coincidences, dtype=int)
+        print(self.counts)
         self.intensities = intensities
         self.conf["Efficiency"] = np.array(efficiencies)
         self.conf["Window"] = window
@@ -393,6 +395,7 @@ class Tomography():
                 error=self.conf["DoErrorEstimation"],
             )
         self.last_input = np.array(self.tomo_input)
+        _ = self.filter_data(self.tomo_input)
 
 
     """
@@ -1441,10 +1444,13 @@ class Tomography():
         try:
             correctSize = int(np.floor(2**self.getNumQubits()+.01))
             c = self.conf['crosstalk']
+            print("crosstalk", c)
             if isinstance(c,int):
                 c = np.eye(correctSize)
             else:
                 c = np.array(c)
+            print(c)
+
             # make sure it has the right shape
             if len(c.shape) != 2 or c.shape[0] != c.shape[1]:
                 raise ValueError('Invalid Conf settings. Crosstalk should be an array with shape (' +
@@ -1995,9 +2001,10 @@ class Tomography():
     def exportToConf_web(self, filePath="Config_web.txt"):
         # Conf settings
         TORREPLACE = "conf.NQubits="+str(self.conf['NQubits'])+";\n" \
-                     "conf.NDetectors="+str(self.conf['NQubits'])+";\n" \
+                     "conf.NDetectors="+str(self.conf['NDetectors'])+";\n" \
                      "conf.Crosstalk=["
         A = self.conf["crosstalk"]
+        print(A)
         for i in range(len(A)):
             TORREPLACE += "["
             for j in range(len(A[i])):
@@ -2014,16 +2021,20 @@ class Tomography():
         if not (isinstance(A,np.ndarray) or isinstance(A,list)):
             A = [A]
         TORREPLACE += "conf.Window=["
+        print(TORREPLACE)
         for i in range(len(A)):
             TORREPLACE += str(A[i]).replace(" ", "") + ","
-        TORREPLACE += TORREPLACE[:-1] + "];\n"
+        TORREPLACE = TORREPLACE[:-1] + "];\n"
+        print(TORREPLACE)
         A = self.conf["Efficiency"]
         if not (isinstance(A,np.ndarray) or isinstance(A,list)):
             A = [A]
         TORREPLACE += "conf.Efficiency=["
         for i in range(len(A)):
             TORREPLACE += str(A[i]).replace(" ", "") + ","
-        TORREPLACE += TORREPLACE[:-1] + "];\n"
+        TORREPLACE = TORREPLACE[:-1] + "];\n"
+
+        # print(TORREPLACE)
         # print contents to file
         with open(filePath, 'w') as f:
             f.write(TORREPLACE)
@@ -2043,6 +2054,38 @@ class Tomography():
      ------ 
         exportToConf_web
     '''
+
+    def exportToData_web(self, filePath="pythonData.txt"):
+        TORREPLACE = ""
+
+        # Tomoinput
+        A = self.last_input
+        TORREPLACE += "tomo_input=["
+        for i in range(A.shape[0]):
+            TORREPLACE += "["
+            for j in range(A.shape[1]):
+                element = A[i,j]
+                # print(type(element))
+                if isinstance(element, complex) and element.imag == 0:
+                    element=element.real
+                    if modf(element)[0] == 0:
+                        element = int(element)
+                    
+                TORREPLACE += str(element) + ","
+            TORREPLACE = TORREPLACE[:-1] + "],"
+
+        TORREPLACE = TORREPLACE[:-1] + "];\n"
+        # intensity
+        A = self.intensities
+        TORREPLACE += "intensity=["
+        for i in range(A.shape[0]):
+            TORREPLACE += str(A[i]) + ","
+        TORREPLACE = TORREPLACE[:-1] + "];"
+
+        # print contents to file
+        with open(filePath, 'w') as f:
+            f.write(TORREPLACE)
+
     # def exportToData_web(self, filePath="pythonData.txt"):
     #     TORREPLACE = ""
     #

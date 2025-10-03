@@ -109,6 +109,8 @@ def get_raw_measurement_bases_from_data(tomo_data) -> np.ndarray:
             np.array(tomo_data["measurement_states"][name], dtype=np.complex128)
             for name in datum["basis"]
         ]
+        for density in densities:
+            density /= np.linalg.norm(density)
         all_densities.append(np.array(densities).flatten())
 
     return np.array(all_densities)
@@ -140,7 +142,11 @@ def get_all_measurements_from_data(tomo_data) -> np.ndarray:
             np.array(tomo_data["measurement_states"][name], dtype=np.complex128)
             for name in datum["basis"]
         ]
+        for projection in projections:
+            projections /= np.linalg.norm(projection)
+
         all_projections.append(np.array(projections).flatten())
+    print("Projections", all_projections)
     return np.array(all_projections)
         
 
