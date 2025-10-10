@@ -498,7 +498,7 @@ class Tomography():
                             self.conf["Method"] = assignment[1].strip("'").strip('"')
 
                         elif variable_name == "window":
-                            self.conf["Window"] = float(assignment[1])
+                            self.conf["Window"] = np.array(assignment[1])
 
                         elif variable_name == "beta":
                             self.conf["Beta"] = float(assignment[1])
@@ -1809,7 +1809,7 @@ class Tomography():
     def exportToEval(self, filePath="pythonEval.txt"):
         TORREPLACE = ""
         # Conf settings
-        for k in self.conf.keys():
+        for k in OLD_FORMAT_CONFIG_KEYS:
             if k == "method":
                 TORREPLACE += f'conf["{str(k)}"] = "{str(self.conf[k])}"\n'
             elif (isinstance(self.conf[k], np.ndarray)):
