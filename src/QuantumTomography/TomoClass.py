@@ -346,8 +346,8 @@ class Tomography():
             self.measurements = measurements[:, 0, :]
             window = np.array(window)
         else:
-            efficiencies = np.array([1])
-            window = 0
+            efficiencies = np.ones(self.conf["NQubits"])
+            window = detector_coincidence_window
             for datum in json_dict["data"]:
                 idx = get_highest_fold_coincidence_count_index(len(datum["basis"]))
                 singles.append(np.array(datum["counts"])[0 : len(datum["basis"])])
@@ -366,7 +366,6 @@ class Tomography():
         self.time = np.array(times)
         self.singles = np.array(singles,dtype=int)
         self.counts = np.array(coincidences, dtype=int)
-        print(self.counts)
         self.intensities = intensities
         self.conf["Efficiency"] = np.array(efficiencies)
         self.conf["Window"] = window
@@ -1303,7 +1302,7 @@ class Tomography():
         # efficiency #
         ##############
         if not isinstance(efficiency, int) and self.conf["NDetectors"] > 1 and efficiency.shape != (
-            self.conf["NDetectors"] ** self.conf["NQubits"], 
+            self.conf["NDetectors"] * self.conf["NQubits"], 
         ):
             raise ValueError(
                 "Invalid efficiency array. Needs to be an array of size (n_detectors**n_qubits,)"
@@ -1438,18 +1437,16 @@ class Tomography():
             except:
                 raise ValueError('Invalid Conf settings. Efficiency should have length ' +str(self.getNumCoinc()) + " with the given settings.")
         elif self.conf['NDetectors'] == 1:
-            eff = np.ones(1)
+            eff = np.ones(self.conf["NQubits"])
             self.conf['Efficiency'] = eff
         # Crosstalk
         try:
             correctSize = int(np.floor(2**self.getNumQubits()+.01))
             c = self.conf['crosstalk']
-            print("crosstalk", c)
             if isinstance(c,int):
                 c = np.eye(correctSize)
             else:
                 c = np.array(c)
-            print(c)
 
             # make sure it has the right shape
             if len(c.shape) != 2 or c.shape[0] != c.shape[1]:
@@ -1827,7 +1824,7 @@ class Tomography():
                     else:
                         TORREPLACE += str(A[i]) + ","
                 if len(A.shape) == 2:
-                    TORREPLACE = TORREPLACE[:-2] + "])\n"
+                    TORREPLACE = TORREPLACE[:-1] + "])\n"
                 else:
                     TORREPLACE = TORREPLACE[:-1] + "])\n"
             else:
@@ -2004,7 +2001,6 @@ class Tomography():
                      "conf.NDetectors="+str(self.conf['NDetectors'])+";\n" \
                      "conf.Crosstalk=["
         A = self.conf["crosstalk"]
-        print(A)
         for i in range(len(A)):
             TORREPLACE += "["
             for j in range(len(A[i])):
@@ -2021,11 +2017,9 @@ class Tomography():
         if not (isinstance(A,np.ndarray) or isinstance(A,list)):
             A = [A]
         TORREPLACE += "conf.Window=["
-        print(TORREPLACE)
         for i in range(len(A)):
             TORREPLACE += str(A[i]).replace(" ", "") + ","
         TORREPLACE = TORREPLACE[:-1] + "];\n"
-        print(TORREPLACE)
         A = self.conf["Efficiency"]
         if not (isinstance(A,np.ndarray) or isinstance(A,list)):
             A = [A]
@@ -2065,7 +2059,6 @@ class Tomography():
             TORREPLACE += "["
             for j in range(A.shape[1]):
                 element = A[i,j]
-                # print(type(element))
                 if isinstance(element, complex) and element.imag == 0:
                     element=element.real
                     if modf(element)[0] == 0:
