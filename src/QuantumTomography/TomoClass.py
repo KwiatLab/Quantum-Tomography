@@ -346,7 +346,7 @@ class Tomography():
             self.measurements = measurements[:, 0, :]
             window = np.array(window)
         else:
-            efficiencies = np.ones(self.conf["NQubits"])
+            efficiencies = np.ones(self.conf["NDetectors"]**self.conf["NQubits"])
             window = detector_coincidence_window
             for datum in json_dict["data"]:
                 idx = get_highest_fold_coincidence_count_index(len(datum["basis"]))
@@ -1165,7 +1165,7 @@ class Tomography():
         eff = self.conf['Efficiency']
         crosstalk = self.conf['Crosstalk']
         if isinstance(eff, int):
-            eff = np.ones(self.getNumCoinc())
+            eff = np.ones(self.conf["NDetectors"]**self.conf["NQubits"])
             self.conf["Efficiency"] = eff
 
         overall_norms = np.kron(self.intensities, eff)
@@ -1302,7 +1302,7 @@ class Tomography():
         # efficiency #
         ##############
         if not isinstance(efficiency, int) and self.conf["NDetectors"] > 1 and efficiency.shape != (
-            self.conf["NDetectors"] * self.conf["NQubits"], 
+            self.conf["NDetectors"] ** self.conf["NQubits"], 
         ):
             raise ValueError(
                 "Invalid efficiency array. Needs to be an array of size (n_detectors**n_qubits,)"
@@ -1431,13 +1431,13 @@ class Tomography():
             try:
                 eff = np.array(self.conf['Efficiency'],dtype=float)
                 if isinstance(self.conf['Efficiency'],int):
-                    eff = np.ones(self.getNumCoinc())
+                    eff = np.ones(self.conf["NDetectors"]**self.conf["NQubits"])
                 if len(eff.shape) != 1 or len(eff) != self.getNumCoinc():
                     raise
             except:
                 raise ValueError('Invalid Conf settings. Efficiency should have length ' +str(self.getNumCoinc()) + " with the given settings.")
         elif self.conf['NDetectors'] == 1:
-            eff = np.ones(self.conf["NQubits"])
+            eff = np.ones(self.conf["NDetectors"]**self.conf["NQubits"])
             self.conf['Efficiency'] = eff
         # Crosstalk
         try:
