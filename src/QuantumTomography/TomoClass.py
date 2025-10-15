@@ -105,7 +105,7 @@ class Tomography:
             [
                 ("NQubits", nQ),
                 ("NDetectors", 1),
-                ("Crosstalk", -1),
+                ("Crosstalk", np.eye(2**nQ)),
                 ("Bellstate", 0),
                 ("DoDriftCorrection", 0),
                 ("DoAccidentalCorrection", 0),
@@ -398,7 +398,7 @@ class Tomography:
             else:
                 self.conf["Crosstalk"] = input_crosstalk
         else:
-            self.conf["Crosstalk"] = -1
+            self.conf["Crosstalk"] = np.eye(2**self.conf["NQubits"])
 
         # Build tomo input and set it as the last input
         # (in case user doesn't run and only wants to convert config formats)
@@ -472,7 +472,7 @@ class Tomography:
 
                         elif variable_name == "crosstalk":
                             if assignment[1] == "-1":
-                                self.conf["Crosstalk"] = -1
+                                self.conf["Crosstalk"] = np.eye(2**self.conf["NQubits"])
                             else:
                                 self.conf["Crosstalk"] = parse_np_array(assignment[1])
 
@@ -2111,6 +2111,7 @@ class Tomography:
             "conf.DoErrorEstimation=" + str(self.conf["DoErrorEstimation"]) + ";\n"
             "conf.Crosstalk=["
         )
+        print(self.conf["crosstalk"])
         A = self.conf["crosstalk"]
         for i in range(len(A)):
             TORREPLACE += "["
