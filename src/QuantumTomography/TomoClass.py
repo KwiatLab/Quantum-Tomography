@@ -2039,7 +2039,7 @@ class Tomography:
                     else:
                         TORREPLACE += str(A[i]) + ","
                 if len(A.shape) == 2:
-                    TORREPLACE = TORREPLACE[:-2] + "])\n"
+                    TORREPLACE = TORREPLACE[:-1] + "])\n"
                 else:
                     TORREPLACE = TORREPLACE[:-1] + "])\n"
             else:
@@ -2108,6 +2108,7 @@ class Tomography:
         TORREPLACE = (
             "conf.NQubits=" + str(self.conf["NQubits"]) + ";\n"
             "conf.NDetectors=" + str(self.conf["NDetectors"]) + ";\n"
+            "conf.DoErrorEstimation=" + str(self.conf["DoErrorEstimation"]) + ";\n"
             "conf.Crosstalk=["
         )
         A = self.conf["crosstalk"]
