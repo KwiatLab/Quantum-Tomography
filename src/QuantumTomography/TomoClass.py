@@ -99,7 +99,7 @@ class Tomography:
     Desc: This initializes a default tomography object
     """
 
-    def __init__(self, nQ=2):
+    def __init__(self, nQ=1):
         self.tomo_input = None
         self.conf = ConfDict(
             [
