@@ -23,7 +23,7 @@ import json
 
 from math import modf
 import tomllib
-import toml
+import tomli_w
 import re
 
 """
@@ -1874,17 +1874,13 @@ class Tomography():
             if isinstance(value, list):
                 for val in value:
                     new_format_dict[val] = self.conf[val]
-                # sub_dict = dict((sub_key, self.conf[sub_key]) for sub_key in value)
-                # new_format_dict[key] = sub_dict
             elif value is not None:
-                # print(value)
-                new_format_dict[key] = self.conf[value]
-            else:
-                new_format_dict[key] = None
+                if self.conf[value] is not None:
+                    new_format_dict[key] = self.conf[value]
 
         # print contents to file
-        with open(filePath, 'w') as f:
-            toml.dump(new_format_dict,f)
+        with open(filePath, 'wb') as f:
+            tomli_w.dump(new_format_dict,f)
 
 
     ## In progress data json construction
