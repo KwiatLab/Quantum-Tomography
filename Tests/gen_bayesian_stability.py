@@ -4,14 +4,13 @@ import QuantumTomography as qLib
 import matplotlib.pyplot as plt
 import numpy as np
 import warnings
+
 warnings.filterwarnings("ignore", category=RuntimeWarning)
 
 """
 Copyright 2020 University of Illinois Board of Trustees.
 Licensed under the terms of an MIT license
 """
-
-
 
 
 """CHECK OUT THE REFERENCE PAGE ON OUR WEBSITE :
@@ -22,9 +21,8 @@ By default it returns true. Most likely if you are running tests you'll want to 
  results and use the SaveRun class, an example of using that class is in the save_RandomStates"""
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     numRuns = 25
-
 
     maxIter = 0
     numPriorArray = np.zeros(numRuns, dtype=int)
@@ -32,7 +30,7 @@ if __name__ == '__main__':
     numTimeArray = np.zeros(numRuns, dtype=int)
     numTotalArray = np.zeros(numRuns, dtype=int)
 
-    Tomographys = runTests(1,numRuns, method="BME")
+    Tomographys = runTests(1, numRuns, method="BME")
     stabilities = np.zeros((numRuns, len(Tomographys[0][0].stabilityHistory)), dtype=np.double)
     for i in range(numRuns):
         [Tomo_Object, Fidelity_with_Original, Original_Purity, Total_Time] = Tomographys[i]
@@ -42,14 +40,19 @@ if __name__ == '__main__':
             numPosteArray[i] = Tomo_Object.last_fval - Tomo_Object.priorsToConverge
             numTotalArray[i] = Tomo_Object.last_fval
             stabilities[i] = Tomo_Object.stabilityHistory
-            numIterPriors = np.int(np.floor((Tomo_Object.priorsToConverge+1)/1000))
+            numIterPriors = np.int(np.floor((Tomo_Object.priorsToConverge + 1) / 1000))
             numIterTotal = np.int(np.floor((Tomo_Object.last_fval + 1) / 1000))
-            maxIter = max(maxIter,numIterTotal)
+            maxIter = max(maxIter, numIterTotal)
 
-            plt.plot(np.arange(1,1+numIterPriors),
-                     np.log10(stabilities[i,1:(numIterPriors+1)]), ',-m', alpha=.25)
-            plt.plot(np.arange(numIterPriors,numIterPriors+len(stabilities[i,numIterPriors:numIterTotal])),
-                     np.log10(stabilities[i,numIterPriors:numIterTotal]), ',-g', alpha=.25)
+            plt.plot(
+                np.arange(1, 1 + numIterPriors), np.log10(stabilities[i, 1 : (numIterPriors + 1)]), ",-m", alpha=0.25
+            )
+            plt.plot(
+                np.arange(numIterPriors, numIterPriors + len(stabilities[i, numIterPriors:numIterTotal])),
+                np.log10(stabilities[i, numIterPriors:numIterTotal]),
+                ",-g",
+                alpha=0.25,
+            )
             print("Fidelity : " + str(Fidelity_with_Original))
 
         except:
@@ -61,10 +64,10 @@ if __name__ == '__main__':
     print("Avg num from Total : " + str(np.average(numTotalArray)) + ", sd : " + str(np.std(numTotalArray)))
     print("Avg Time : " + str(np.average(numTimeArray)) + ", sd : " + str(np.std(numTimeArray)))
 
-    print("# Tomographies: "+str(numRuns))
+    print("# Tomographies: " + str(numRuns))
 
     plt.xlabel("Samples (1000)")
     plt.ylabel("Stability log10(y)")
     plt.title("Stability Convergence")
-    plt.xlim(1,maxIter)
+    plt.xlim(1, maxIter)
     plt.show()
