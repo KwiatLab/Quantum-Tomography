@@ -463,7 +463,6 @@ class Tomography:
                     match = re.search(pattern, str(assignment[0]))
                     if match:
                         variable_name = match.group(0).strip().strip("[]").strip("'").strip('"').lower()
-
                         if variable_name == "nqubits":
                             self.conf["NQubits"] = int(assignment[1])
 
@@ -513,7 +512,10 @@ class Tomography:
                             self.conf["Method"] = assignment[1].strip("'").strip('"')
 
                         elif variable_name == "window":
-                            self.conf["Window"] = np.array(assignment[1])
+                            if assignment[1].isdigit():
+                                self.conf["Window"] = np.array([int(assignment[1])])
+                            else:
+                                self.conf["Window"] = np.array(assignment[1])
 
                         elif variable_name == "beta":
                             self.conf["Beta"] = float(assignment[1])
@@ -1919,6 +1921,10 @@ class Tomography:
         TORREPLACE = ""
         # Conf settings
         for k in OLD_FORMAT_CONFIG_KEYS:
+            print(k)
+            print(isinstance(self.conf[k],np.ndarray))
+            print(type(self.conf[k]))
+            print(self.conf[k])
             if k == "method":
                 TORREPLACE += f'conf["{str(k)}"] = "{str(self.conf[k])}"\n'
             elif isinstance(self.conf[k], np.ndarray):
