@@ -35,6 +35,35 @@ qKLib.makeRhoImages(rho, plt, True)
 plt.show()
 
 
+# Data import/export example
+t = qKLib.Tomography()
+
+# Set up Configurations
+t.import_conf("ExampleFiles/conf.toml")
+t.import_data("ExampleFiles/1_qubit_example.json")
+
+# You can export the configurations from the new format (toml/json) to the old format (.txt)
+t.exportToData("ExampleFiles/data_exported.txt")
+t.exportToConf("ExampleFiles/conf_exported.txt")
+t.exportToEval("ExampleFiles/eval_exported.txt")
+
+# You can also export the configuration to the new format for later use
+t.export_to_conf_toml("ExampleFiles/conf_toml_exported.toml")
+
+t2 = qKLib.Tomography()
+t2.importConf("ExampleFiles/conf_exported.txt")
+t2.importData("ExampleFiles/data_exported.txt")
+[rho, intens, fval] = t2.run_tomography()
+
+qKLib.printLastOutput(t2)
+
+expected_state = np.array([1,1.j])
+expected_state = np.outer(expected_state, expected_state.conj())
+print("Fidelity: " + str(qKLib.fidelity(rho, expected_state)))
+qKLib.makeRhoImages(rho, plt, True)
+plt.show()
+
+
 # 2 qubit example
 
 t.import_conf("ExampleFiles/conf.toml")

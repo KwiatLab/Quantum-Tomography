@@ -18,16 +18,25 @@ https://quantumtomo.web.illinois.edu/Doc/"""
 
 
 # Run tomographies
-[[Tomo_Object_1, Fidelity_with_Original, Original_Purity, Total_Time]] = runTests(1,1)
-[[Tomo_Object_2, Fidelity_with_Original, Original_Purity, Total_Time]] = runTests(2,1)
-[[Tomo_Object_3, Fidelity_with_Original, Original_Purity, Total_Time]] = runTests(2,1,test2Det=True,testAccCorr=True,testCrossTalk=True,testDrift=True,testBell=True,errBounds=3,method="linear")
+[[Tomo_Object_1, Fidelity_with_Original, Original_Purity, Total_Time]] = runTests(1, 1)
+[[Tomo_Object_2, Fidelity_with_Original, Original_Purity, Total_Time]] = runTests(2, 1)
+[[Tomo_Object_3, Fidelity_with_Original, Original_Purity, Total_Time]] = runTests(
+    2,
+    1,
+    test2Det=True,
+    testAccCorr=True,
+    testCrossTalk=True,
+    testDrift=True,
+    testBell=True,
+    errBounds=3,
+    method="linear",
+)
 
 
 class Test_Import_Export(unittest.TestCase):
-
     def test_eval(self):
         filename = "Test_States/rand_eval.txt"
-        for Tomo_Object in [Tomo_Object_1,Tomo_Object_2,Tomo_Object_3]:
+        for Tomo_Object in [Tomo_Object_1, Tomo_Object_2, Tomo_Object_3]:
             # Export
             Tomo_Object.exportToEval(filename)
 
@@ -38,11 +47,11 @@ class Test_Import_Export(unittest.TestCase):
             # Make sure conf settings are the same
             for k in Tomo_Object_copy.conf.keys():
                 if not (isinstance(Tomo_Object_copy.conf[k], np.ndarray)):
-                    self.assertEqual(Tomo_Object.conf[k],Tomo_Object_copy.conf[k])
+                    self.assertEqual(Tomo_Object.conf[k], Tomo_Object_copy.conf[k])
 
             # make sure inputs are the same
-            tests.assert_array_equal(Tomo_Object.last_input,Tomo_Object_copy.last_input)
-            tests.assert_array_equal(Tomo_Object.intensities,Tomo_Object_copy.intensities)
+            tests.assert_array_equal(Tomo_Object.last_input, Tomo_Object_copy.last_input)
+            tests.assert_array_equal(Tomo_Object.intensities, Tomo_Object_copy.intensities)
 
             # Run tomographies and make sure estimates are the same
             tests.assert_array_equal(Tomo_Object.last_rho, Tomo_Object_copy.last_rho)
@@ -52,7 +61,7 @@ class Test_Import_Export(unittest.TestCase):
     def test_conf_and_data(self):
         filename_c = "Test_States/rand_conf.txt"
         filename_d = "Test_States/rand_data.txt"
-        for Tomo_Object in [Tomo_Object_1,Tomo_Object_2,Tomo_Object_3]:
+        for Tomo_Object in [Tomo_Object_1, Tomo_Object_2, Tomo_Object_3]:
             # Export
             Tomo_Object.exportToConf(filename_c)
             Tomo_Object.exportToData(filename_d)
@@ -65,11 +74,11 @@ class Test_Import_Export(unittest.TestCase):
             # Make sure conf settings are the same
             for k in Tomo_Object_copy.conf.keys():
                 if not (isinstance(Tomo_Object_copy.conf[k], np.ndarray)):
-                    self.assertEqual(Tomo_Object.conf[k],Tomo_Object_copy.conf[k])
+                    self.assertEqual(Tomo_Object.conf[k], Tomo_Object_copy.conf[k])
 
             # make sure inputs are the same
-            tests.assert_array_equal(Tomo_Object.last_input,Tomo_Object_copy.last_input)
-            tests.assert_array_equal(Tomo_Object.intensities,Tomo_Object_copy.intensities)
+            tests.assert_array_equal(Tomo_Object.last_input, Tomo_Object_copy.last_input)
+            tests.assert_array_equal(Tomo_Object.intensities, Tomo_Object_copy.intensities)
 
             # Run tomographies and make sure estimates are the same
             tests.assert_array_equal(Tomo_Object.last_rho, Tomo_Object_copy.last_rho)
@@ -115,5 +124,5 @@ class Test_Import_Export(unittest.TestCase):
         [rho_approx, intensity, fval] = q.importEval(r"../ExampleFiles/pythoneval_video.txt")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

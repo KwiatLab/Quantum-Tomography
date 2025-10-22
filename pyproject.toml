@@ -5,7 +5,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "QuantumTomography"
-version = "1.1.1"
+version = "1.2.0"
 description = "A comprehensive quantum tomography library."
 readme = "README.md"
 requires-python = ">=3.11"
@@ -34,7 +34,12 @@ classifiers = [
   "Programming Language :: Python :: 3.14",
   "Topic :: Scientific/Engineering :: Physics",
 ]
-dependencies = ["numpy>=2.1.3", "scipy>=1.14.1", "matplotlib"]
+dependencies = [
+    "numpy>=2.1.3",
+    "scipy>=1.14.1",
+    "matplotlib",
+    "tomli-w>=1.2.0",
+]
 
 [project.urls]
 Homepage = "https://quantumtomo.web.illinois.edu/"
