@@ -31,7 +31,7 @@ jobs:
     - name: Set up Python
       run: uv python install
     - name: Install the project
-      run: uv sync --locked --all-extras --dev
+      run: uv sync
     - name: Test with pytest
       run: |
         export PYTHONPATH=src
