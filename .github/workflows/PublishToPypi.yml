@@ -37,11 +37,13 @@ jobs:
         export PYTHONPATH=src
         uv run pytest Tests/test_github_publish.py
     - name: Build
+      run: uv build
+    - name: Publish
+      run: uv publish
     #  env:
     #    TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
     #    TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-      run: python setup.py sdist bdist_wheel
-    - name: Publish package distributions to PyPI
-      uses: pypa/gh-action-pypi-publish@release/v1
+    #- name: Publish package distributions to PyPI
+    #  uses: pypa/gh-action-pypi-publish@release/v1
     #    twine upload dist/*
 
