@@ -1,7 +1,6 @@
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
-
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
 
 [project]
 name = "Quantum-Tomography"
@@ -112,7 +111,6 @@ force-single-line = true
 [tool.ruff.lint.pydocstyle]
 convention = "numpy"
 
-
 [tool.coverage.run]
 source = ["src"]
 dynamic_context = "test_function"
@@ -124,7 +122,6 @@ sort = "-Cover"
 
 [tool.coverage.html]
 show_contexts = true
-
 
 [tool.uv.pip]
 generate-hashes = true
