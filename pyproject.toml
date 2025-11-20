@@ -11,23 +11,23 @@ readme = "README.md"
 requires-python = ">=3.13"
 license = { text = "MIT" }
 authors = [
-    { name = "Benjamin Nussbaum", email = "bn9@illinois.edu" },
-    { name = "Timur Javid", email = "tjavid2@illinois.edu" },
+  { name = "Benjamin Nussbaum", email = "bn9@illinois.edu" },
+  { name = "Timur Javid", email = "tjavid2@illinois.edu" },
 ]
 maintainers = [
-    { name = "Benjamin Nussbaum", email = "bn9@illinois.edu" },
-    { name = "Timur Javid", email = "tjavid2@illinois.edu" },
+  { name = "Benjamin Nussbaum", email = "bn9@illinois.edu" },
+  { name = "Timur Javid", email = "tjavid2@illinois.edu" },
 ]
-dependencies = ["numpy>=2.1.3", "scipy>=1.14.1"]
+dependencies = ["numpy>=2.1.3", "scipy>=1.14.1", "pydantic"]
 keywords = [
-    "quantum tomography",
-    "state tomography",
-    "process tomography",
-    "quantum information",
+  "quantum tomography",
+  "state tomography",
+  "process tomography",
+  "quantum information",
 ]
 classifiers = [
-    "License :: OSI Approved :: MIT License",
-    "Programming Language :: Python :: 3.13",
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3.13",
 ]
 
 [project.urls]
@@ -65,32 +65,32 @@ line-length = 120
 # See https://docs.astral.sh/ruff/rules/ for details.
 select = ["ALL"]
 ignore = [
-    "ANN", # Let mypy handle type annotations
-    "D1",  # Don't warn about missing docstrings (but lint the ones that exist)
-    "FIX", # The linter doesnt need to remind us about TODOs
-    "TD",  # Simple TODO syntax is fine
+  "ANN", # Let mypy handle type annotations
+  "D1",  # Don't warn about missing docstrings (but lint the ones that exist)
+  "FIX", # The linter doesnt need to remind us about TODOs
+  "TD",  # Simple TODO syntax is fine
 ]
 
 # Ignore rules which are redundant when using the formatter.
 # See https://docs.astral.sh/ruff/formatter/#conflicting-lint-rules for details.
 extend-ignore = [
-    "W191",
-    "E111",
-    "E114",
-    "E117",
-    "D206",
-    "D300",
-    "Q",
-    "COM812",
-    "COM819",
-    "ISC001",
-    "ISC002",
-    "E501",
+  "W191",
+  "E111",
+  "E114",
+  "E117",
+  "D206",
+  "D300",
+  "Q",
+  "COM812",
+  "COM819",
+  "ISC001",
+  "ISC002",
+  "E501",
 ]
 
 [tool.ruff.lint.extend-per-file-ignores]
 "tests/*" = [
-    "S101", # Asserts are welcome in tests.
+  "S101", # Asserts are welcome in tests.
 ]
 # Run pytest lint rules only in test files.
 "!tests/*" = ["PT"]
