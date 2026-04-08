@@ -5,7 +5,6 @@ from QuantumTomography.Utilities import OLD_FORMAT_CONFIG_KEYS
 import numpy as np
 import numpy.testing as tests
 from TestRun import runTests
-from pathlib import Path
 
 """
 Copyright 2020 University of Illinois Board of Trustees.
