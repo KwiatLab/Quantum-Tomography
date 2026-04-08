@@ -476,22 +476,13 @@ class Tomography:
                                 self.conf["Crosstalk"] = parse_np_array(assignment[1])
 
                         elif variable_name == "bellstate":
-                            if assignment[1] == "yes":
-                                self.conf["Bellstate"] = 1
-                            else:
-                                self.conf["Bellstate"] = 0
+                            self.conf["Bellstate"] = 1 if assignment[1].lower() in ("yes", "true", "1", "y", "t") else 0
 
                         elif variable_name == "dodriftcorrection":
-                            if assignment[1] == "yes":
-                                self.conf["DoDriftCorrection"] = 1
-                            else:
-                                self.conf["DoDriftCorrection"] = 0
+                            self.conf["DoDriftCorrection"] = 1 if assignment[1].lower() in ("yes", "true", "1", "y", "t") else 0
 
                         elif variable_name == "doaccidentalcorrection":
-                            if assignment[1] == "yes":
-                                self.conf["DoAccidentalCorrection"] = 1
-                            else:
-                                self.conf["DoAccidentalCorrection"] = 0
+                            self.conf["DoAccidentalCorrection"] = 1 if assignment[1].lower() in ("yes", "true", "1", "y", "t") else 0
 
                         elif variable_name == "doerrorestimation":
                             self.conf["DoErrorEstimation"] = int(assignment[1])
