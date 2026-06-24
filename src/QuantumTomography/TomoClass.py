@@ -20,6 +20,7 @@ from scipy.optimize import leastsq
 import warnings
 from pathlib import Path
 import json
+import functools
 
 from math import modf
 import tomllib
@@ -123,6 +124,8 @@ class Tomography:
         )
         self.err_functions = ["concurrence", "tangle", "entropy", "linear_entropy", "negativity", "purity"]
         self.mont_carlo_states = list()
+        self._has_density_matrix_projectors = False
+        self._precomputed_measurement_densities = None
 
     """
     setConfSetting(setting, val)
@@ -242,10 +245,23 @@ class Tomography:
             self._import_data(json_dict)
 
     def _import_data(self, json_dict):
-        for state_name in json_dict["measurement_states"].keys():
-            cast_to_numpy(json_dict["measurement_states"], state_name)
+        has_per_qubit = "measurement_states_per_qubit" in json_dict
+        has_shared = "measurement_states" in json_dict and isinstance(json_dict["measurement_states"], dict)
 
-        self.conf["measurement_states"] = json_dict["measurement_states"]
+        if has_per_qubit:
+            for qubit_states in json_dict["measurement_states_per_qubit"]:
+                for state_name in qubit_states.keys():
+                    cast_to_numpy(qubit_states, state_name)
+            self.conf["measurement_states_per_qubit"] = json_dict["measurement_states_per_qubit"]
+
+        if has_shared:
+            for state_name in json_dict["measurement_states"].keys():
+                cast_to_numpy(json_dict["measurement_states"], state_name)
+            self.conf["measurement_states"] = json_dict["measurement_states"]
+
+        if "measurement_settings" in json_dict:
+            self.conf["measurement_settings"] = json_dict["measurement_settings"]
+
         self.conf["data"] = json_dict["data"]
 
         self.conf["NQubits"] = json_dict["n_qubits"]
@@ -260,14 +276,34 @@ class Tomography:
 
         # Find which basis states are orthogonal to each other
         orthogonal_bases = {}
-        for key1, measurement_1 in json_dict["measurement_states"].items():
-            for key2, measurement_2 in json_dict["measurement_states"].items():
-                if isStateVector(measurement_1):
-                    measurement_1 = np.outer(measurement_1, measurement_1.conj().T)
-                    measurement_2 = np.outer(measurement_2, measurement_2.conj().T)
-                orthogonal_check = measurement_1 @ measurement_2
-                if (orthogonal_check == np.zeros_like(measurement_1)).all() and key1 not in orthogonal_bases:
-                    orthogonal_bases[key1] = key2
+        if has_shared:
+            for key1, measurement_1 in json_dict["measurement_states"].items():
+                for key2, measurement_2 in json_dict["measurement_states"].items():
+                    if isStateVector(measurement_1):
+                        measurement_1 = np.outer(measurement_1, measurement_1.conj().T)
+                        measurement_2 = np.outer(measurement_2, measurement_2.conj().T)
+                    orthogonal_check = measurement_1 @ measurement_2
+                    if (orthogonal_check == np.zeros_like(measurement_1)).all() and key1 not in orthogonal_bases:
+                        orthogonal_bases[key1] = key2
+        elif has_per_qubit:
+            for qubit_states in json_dict["measurement_states_per_qubit"]:
+                for key1, measurement_1 in qubit_states.items():
+                    for key2, measurement_2 in qubit_states.items():
+                        if isStateVector(measurement_1):
+                            measurement_1 = np.outer(measurement_1, measurement_1.conj().T)
+                            measurement_2 = np.outer(measurement_2, measurement_2.conj().T)
+                        orthogonal_check = measurement_1 @ measurement_2
+                        if (orthogonal_check == np.zeros_like(measurement_1)).all() and key1 not in orthogonal_bases:
+                            orthogonal_bases[key1] = key2
+
+        # Detect density matrix (non-ket) projectors
+        self._has_density_matrix_projectors = False
+        if has_per_qubit:
+            for qubit_states in json_dict["measurement_states_per_qubit"]:
+                if any(not isStateVector(proj) for proj in qubit_states.values()):
+                    self._has_density_matrix_projectors = True
+                    break
+
         singles = []
         coincidences = []
         times = []
@@ -284,19 +320,30 @@ class Tomography:
                 )
             # Find out which measurements occured simultaneously (for normalization)
             simultaneous_measurements = []
-            for i, datum1 in enumerate(json_dict["data"]):
-                measurement = []
-                measurement_basis_1 = [[k, orthogonal_bases[k]] for k in datum1["basis"]]
-                measurement_basis_1 = [set(basis) for basis in measurement_basis_1]
-                for j, datum2 in enumerate(json_dict["data"]):
-                    measurement_basis_2 = [[k, orthogonal_bases[k]] for k in datum2["basis"]]
-                    measurement_basis_check = [
-                        set(basis) == measurement_basis_1[k] for k, basis in enumerate(measurement_basis_2)
-                    ]
-                    if all(measurement_basis_check):
-                        measurement.append(j)
-                if measurement not in simultaneous_measurements:
-                    simultaneous_measurements.append(measurement)
+            if "measurement_settings" in json_dict:
+                # Derive from explicit measurement_settings
+                data_basis_index = {tuple(d["basis"]): i for i, d in enumerate(json_dict["data"])}
+                for setting in json_dict["measurement_settings"]:
+                    group = [data_basis_index[tuple(outcome)] for outcome in setting]
+                    simultaneous_measurements.append(group)
+            elif orthogonal_bases:
+                for i, datum1 in enumerate(json_dict["data"]):
+                    measurement = []
+                    measurement_basis_1 = [[k, orthogonal_bases[k]] for k in datum1["basis"]]
+                    measurement_basis_1 = [set(basis) for basis in measurement_basis_1]
+                    for j, datum2 in enumerate(json_dict["data"]):
+                        measurement_basis_2 = [[k, orthogonal_bases[k]] for k in datum2["basis"]]
+                        measurement_basis_check = [
+                            set(basis) == measurement_basis_1[k] for k, basis in enumerate(measurement_basis_2)
+                        ]
+                        if all(measurement_basis_check):
+                            measurement.append(j)
+                    if measurement not in simultaneous_measurements:
+                        simultaneous_measurements.append(measurement)
+            else:
+                raise ValueError(
+                    "For NDetectors > 1, need either orthogonal measurement_states or explicit measurement_settings"
+                )
 
             # Construct the measurement basis list, singles and coincidences
             # based on the simultaneous measurements
@@ -377,14 +424,17 @@ class Tomography:
                     times.append(1.0)
                 if "relative_intensity" in datum:
                     intensities.append(float(datum["relative_intensity"]))
-            self.measurements = get_raw_measurement_bases_from_data(json_dict)
+            if self._has_density_matrix_projectors:
+                self.measurements = np.zeros((len(json_dict["data"]), 2 * self.conf["NQubits"]), dtype=complex)
+            else:
+                self.measurements = get_raw_measurement_bases_from_data(json_dict)
         if not len(intensities):
             intensities = np.ones(len(singles))
         elif len(intensities) > 0 and len(intensities) != len(singles):
             raise ValueError("Missing intensities for some measurements!")
         self.time = np.array(times)
-        self.singles = np.array(singles, dtype=int)
-        self.counts = np.array(coincidences, dtype=int)
+        self.singles = np.array(singles, dtype=float)
+        self.counts = np.array(coincidences, dtype=float)
         self.intensities = intensities
         self.conf["Efficiency"] = np.array(efficiencies)
         self.conf["Window"] = window
@@ -399,6 +449,26 @@ class Tomography:
                 self.conf["Crosstalk"] = input_crosstalk
         else:
             self.conf["Crosstalk"] = np.eye(2**self.conf["NQubits"])
+
+        # Pre-compute density matrix projectors for impure measurement states
+        if self._has_density_matrix_projectors:
+            dim = 2 ** self.conf["NQubits"]
+            self._precomputed_measurement_densities = np.zeros(
+                (len(json_dict["data"]), dim, dim), dtype=complex
+            )
+            for j, datum in enumerate(json_dict["data"]):
+                per_qubit = []
+                for i, name in enumerate(datum["basis"]):
+                    proj = json_dict["measurement_states_per_qubit"][i][name].copy()
+                    if isStateVector(proj):
+                        proj = proj / np.linalg.norm(proj)
+                        proj = np.outer(proj, proj.conj())
+                    else:
+                        proj = proj / np.trace(proj)
+                    per_qubit.append(proj)
+                self._precomputed_measurement_densities[j] = functools.reduce(np.kron, per_qubit)
+        else:
+            self._precomputed_measurement_densities = None
 
         # Build tomo input and set it as the last input
         # (in case user doesn't run and only wants to convert config formats)
@@ -1232,31 +1302,37 @@ class Tomography:
                 acc = acc[:, 0]
 
         # Get measurements
-        measurements_raw = self.getMeasurements()
         measurements_pures = np.zeros([np.prod(coinc.shape), 2**nbits], dtype=complex)
-        # NEW WAY
         measurements_densities = np.zeros((tomo_input.shape[0], self.getNumCoinc(), 2**nbits, 2**nbits), dtype=complex)
-        for j in range(tomo_input.shape[0]):
-            meas_basis_densities = np.zeros([2**nbits, 2**nbits, 2**nbits]) + 0j
-            meas_basis_pures = 1
-            for k in range(nbits):
-                alpha = measurements_raw[j][2 * k]
-                beta = measurements_raw[j][2 * k + 1]
-                psi_transmit = np.array([alpha, beta])
-                psi_reflect = np.array([np.conj(beta), np.conj(-alpha)])
-                meas_pure = np.outer((np.array([1, 0])), psi_transmit) + np.outer((np.array([0, 1])), psi_reflect)
-                # Changed from tensor_product to np.kron
-                meas_basis_pures = np.kron(meas_basis_pures, meas_pure)
-            for k in range(2**nbits):
-                meas_basis_densities[k, :, :] = np.outer(
-                    meas_basis_pures[:, k].conj().transpose(), meas_basis_pures[:, k]
-                )
-            for k in range(self.getNumCoinc()):
-                for l in range(2**nbits):
-                    measurements_pures[j * n_coinc + k, :] = meas_basis_pures[:, k].conj().transpose()
-                    measurements_densities[j, k, :, :] = (
-                        measurements_densities[j, k, :, :] + meas_basis_densities[l, :, :] * crosstalk[k, l]
+
+        if self._precomputed_measurement_densities is not None:
+            # Density matrix projector path: use pre-computed per-entry projectors
+            for j in range(tomo_input.shape[0]):
+                measurements_densities[j, 0, :, :] = self._precomputed_measurement_densities[j]
+        else:
+            # Standard ket-based path: build projectors from alpha/beta per qubit
+            measurements_raw = self.getMeasurements()
+            for j in range(tomo_input.shape[0]):
+                meas_basis_densities = np.zeros([2**nbits, 2**nbits, 2**nbits]) + 0j
+                meas_basis_pures = 1
+                for k in range(nbits):
+                    alpha = measurements_raw[j][2 * k]
+                    beta = measurements_raw[j][2 * k + 1]
+                    psi_transmit = np.array([alpha, beta])
+                    psi_reflect = np.array([np.conj(beta), np.conj(-alpha)])
+                    meas_pure = np.outer((np.array([1, 0])), psi_transmit) + np.outer((np.array([0, 1])), psi_reflect)
+                    # Changed from tensor_product to np.kron
+                    meas_basis_pures = np.kron(meas_basis_pures, meas_pure)
+                for k in range(2**nbits):
+                    meas_basis_densities[k, :, :] = np.outer(
+                        meas_basis_pures[:, k].conj().transpose(), meas_basis_pures[:, k]
                     )
+                for k in range(self.getNumCoinc()):
+                    for l in range(2**nbits):
+                        measurements_pures[j * n_coinc + k, :] = meas_basis_pures[:, k].conj().transpose()
+                        measurements_densities[j, k, :, :] = (
+                            measurements_densities[j, k, :, :] + meas_basis_densities[l, :, :] * crosstalk[k, l]
+                        )
         # Flatten the arrays
         measurements_densities = measurements_densities.reshape(
             (

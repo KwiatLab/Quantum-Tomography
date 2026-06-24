@@ -102,11 +102,17 @@ def parse_np_array(string):
     )
 
 
+def _lookup_projector(tomo_data, qubit_index, name):
+    if "measurement_states_per_qubit" in tomo_data:
+        return np.array(tomo_data["measurement_states_per_qubit"][qubit_index][name], dtype=np.complex128)
+    return np.array(tomo_data["measurement_states"][name], dtype=np.complex128)
+
+
 def get_raw_measurement_bases_from_data(tomo_data) -> np.ndarray:
     all_densities = []
     for datum in tomo_data["data"]:
         # Get all of the densities used in this Measurement
-        densities = [np.array(tomo_data["measurement_states"][name], dtype=np.complex128) for name in datum["basis"]]
+        densities = [_lookup_projector(tomo_data, i, name) for i, name in enumerate(datum["basis"])]
         for density in densities:
             density /= np.linalg.norm(density)
         all_densities.append(np.array(densities).flatten())
@@ -138,12 +144,11 @@ def get_all_measurements_from_data(tomo_data) -> np.ndarray:
     all_projections = []
     for datum in tomo_data["data"]:
         # Get all of the densities used in this Measurement
-        projections = [np.array(tomo_data["measurement_states"][name], dtype=np.complex128) for name in datum["basis"]]
+        projections = [_lookup_projector(tomo_data, i, name) for i, name in enumerate(datum["basis"])]
         for projection in projections:
-            projections /= np.linalg.norm(projection)
+            projection /= np.linalg.norm(projection)
 
         all_projections.append(np.array(projections).flatten())
-    print("Projections", all_projections)
     return np.array(all_projections)
 
 
