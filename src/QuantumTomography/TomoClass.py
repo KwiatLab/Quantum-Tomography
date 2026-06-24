@@ -750,6 +750,7 @@ class Tomography:
 
         coincidences = np.real(coincidences)
         coincidences = coincidences.flatten()
+        accidentals = accidentals.flatten()
 
         final_tvals = leastsq(
             maxlike_fitness,
@@ -812,6 +813,7 @@ class Tomography:
 
         coincidences = np.real(coincidences)
         coincidences = coincidences.flatten()
+        accidentals = accidentals.flatten()
 
         bet = self.conf["Beta"]
         if bet > 0:
