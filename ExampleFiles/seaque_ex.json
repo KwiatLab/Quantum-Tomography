@@ -1,0 +1,57 @@
+{
+  "n_qubits": 2,
+  "n_detectors_per_qubit": 1,
+  "coincidence_window": [0],
+  "n_measurements_per_qubit": 6,
+  "measurement_states": {
+    "H": [1,0],
+    "V": [0,1],
+    "D": [1,1],
+    "A": [1,-1],
+    "R": [1,"1j"],
+    "L": [1,"-1j"]
+  },
+  "data": [
+    { "basis": ["H", "H"], "integration_time": 1, "counts": [0,0,1322] },
+    { "basis": ["H", "V"], "integration_time": 1, "counts": [0,0,46] },
+    { "basis": ["H", "D"], "integration_time": 1, "counts": [0,0,755] },
+    { "basis": ["H", "A"], "integration_time": 1, "counts": [0,0,637] },
+    { "basis": ["H", "R"], "integration_time": 1, "counts": [0,0,571] },
+    { "basis": ["H", "L"], "integration_time": 1, "counts": [0,0,872] },
+
+    { "basis": ["V", "H"], "integration_time": 1, "counts": [0,0,52] },
+    { "basis": ["V", "V"], "integration_time": 1, "counts": [0,0,1308] },
+    { "basis": ["V", "D"], "integration_time": 1, "counts": [0,0,654] },
+    { "basis": ["V", "A"], "integration_time": 1, "counts": [0,0,752] },
+    { "basis": ["V", "R"], "integration_time": 1, "counts": [0,0,799] },
+    { "basis": ["V", "L"], "integration_time": 1, "counts": [0,0,617] },
+
+    { "basis": ["D", "H"], "integration_time": 1, "counts": [0,0,856] },
+    { "basis": ["D", "V"], "integration_time": 1, "counts": [0,0,593] },
+    { "basis": ["D", "D"], "integration_time": 1, "counts": [0,0,36] },
+    { "basis": ["D", "A"], "integration_time": 1, "counts": [0,0,1396] },
+    { "basis": ["D", "R"], "integration_time": 1, "counts": [0,0,887] },
+    { "basis": ["D", "L"], "integration_time": 1, "counts": [0,0,513] },
+
+    { "basis": ["A", "H"], "integration_time": 1, "counts": [0,0,583] },
+    { "basis": ["A", "V"], "integration_time": 1, "counts": [0,0,841] },
+    { "basis": ["A", "D"], "integration_time": 1, "counts": [0,0,1345] },
+    { "basis": ["A", "A"], "integration_time": 1, "counts": [0,0,30] },
+    { "basis": ["A", "R"], "integration_time": 1, "counts": [0,0,558] },
+    { "basis": ["A", "L"], "integration_time": 1, "counts": [0,0,878] },
+
+    { "basis": ["R", "H"], "integration_time": 1, "counts": [0,0,791] },
+    { "basis": ["R", "V"], "integration_time": 1, "counts": [0,0,585] },
+    { "basis": ["R", "D"], "integration_time": 1, "counts": [0,0,898] },
+    { "basis": ["R", "A"], "integration_time": 1, "counts": [0,0,509] },
+    { "basis": ["R", "R"], "integration_time": 1, "counts": [0,0,1360] },
+    { "basis": ["R", "L"], "integration_time": 1, "counts": [0,0,82] },
+
+    { "basis": ["L", "H"], "integration_time": 1, "counts": [0,0,643] },
+    { "basis": ["L", "V"], "integration_time": 1, "counts": [0,0,801] },
+    { "basis": ["L", "D"], "integration_time": 1, "counts": [0,0,521] },
+    { "basis": ["L", "A"], "integration_time": 1, "counts": [0,0,883] },
+    { "basis": ["L", "R"], "integration_time": 1, "counts": [0,0,86] },
+    { "basis": ["L", "L"], "integration_time": 1, "counts": [0,0,1325] }
+  ]
+}

@@ -64,6 +64,29 @@ class Test_Example_Files(unittest.TestCase):
         _assert_valid_density_matrix(rho)
         self.assertGreater(qLib.fidelity(_PHI_PLUS, rho), 0.90)
 
+    def test_seaque(self):
+        # Real experimental data with |Φ-⟩ correlations
+        rho, _, _ = _run(EXAMPLES_DIR / "seaque_ex.json")
+        _assert_valid_density_matrix(rho)
+        self.assertGreater(qLib.fidelity(_PHI_MINUS, rho), 0.90)
+
+    def test_non_orthog_density_matrix_projectors(self):
+        """Two-qubit tomography with impure (density matrix) projectors and per-qubit measurement states."""
+        rho, intensity, fval = _run(EXAMPLES_DIR / "non_orthog_example.json")
+        _assert_valid_density_matrix(rho)
+        # Data was generated from a near-Bell state; check basic sanity
+        self.assertAlmostEqual(intensity, 1.0, places=1)
+        # MLE should fit well (fval ~ 0.04 for 36 measurements)
+        self.assertLess(fval, 1.0)
+        # The state should be close to a 2-qubit entangled state:
+        # large |00⟩⟨00| and |11⟩⟨11| populations, small |01⟩ and |10⟩
+        self.assertGreater(np.abs(rho[0, 0]), 0.4)
+        self.assertGreater(np.abs(rho[3, 3]), 0.4)
+        self.assertLess(np.abs(rho[1, 1]), 0.1)
+        self.assertLess(np.abs(rho[2, 2]), 0.1)
+        # Significant off-diagonal coherence between |00⟩ and |11⟩
+        self.assertGreater(np.abs(rho[0, 3]), 0.3)
+
     def test_conf_toml_with_data(self):
         # Verifies that a TOML conf file can be loaded alongside a data file
         rho, _, _ = _run(EXAMPLES_DIR / "bell_state_example.json", conf_file=EXAMPLES_DIR / "conf.toml")
