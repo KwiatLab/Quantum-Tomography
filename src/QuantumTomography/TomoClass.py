@@ -662,7 +662,12 @@ class Tomography:
                 starting_matrix = make_positive(starting_matrix)
                 starting_matrix = starting_matrix / np.trace(starting_matrix)
             except:
-                raise RuntimeError("Failed to run linear Tomography")
+                if method.upper() == "LINEAR":
+                    raise RuntimeError("Failed to run linear Tomography")
+                # Fall back to maximally mixed state for MLE/HMLE
+                dim = 2 ** self.getNumQubits()
+                starting_matrix = np.eye(dim, dtype=complex) / dim
+                inten_linear = 1.0
 
         # Run tomography and find an estimate for the state
         if method == "MLE":
