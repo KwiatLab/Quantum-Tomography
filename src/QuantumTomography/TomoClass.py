@@ -1926,7 +1926,7 @@ class Tomography:
             if k == "method":
                 TORREPLACE += f'conf["{str(k)}"] = "{str(self.conf[k])}"\n'
             elif isinstance(self.conf[k], np.ndarray):
-                A = self.conf[k]
+                A = np.atleast_1d(self.conf[k])
                 TORREPLACE += "conf['" + str(k) + "'] = np.array(["
                 for i in range(A.shape[0]):
                     if len(A.shape) == 2:
