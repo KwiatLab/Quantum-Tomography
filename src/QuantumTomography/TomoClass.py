@@ -1919,10 +1919,6 @@ class Tomography:
         TORREPLACE = ""
         # Conf settings
         for k in OLD_FORMAT_CONFIG_KEYS:
-            print(k)
-            print(isinstance(self.conf[k],np.ndarray))
-            print(type(self.conf[k]))
-            print(self.conf[k])
             if k == "method":
                 TORREPLACE += f'conf["{str(k)}"] = "{str(self.conf[k])}"\n'
             elif isinstance(self.conf[k], np.ndarray):
