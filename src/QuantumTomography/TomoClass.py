@@ -662,7 +662,12 @@ class Tomography:
                 starting_matrix = make_positive(starting_matrix)
                 starting_matrix = starting_matrix / np.trace(starting_matrix)
             except:
-                raise RuntimeError("Failed to run linear Tomography")
+                if method.upper() == "LINEAR":
+                    raise RuntimeError("Failed to run linear Tomography")
+                # Fall back to maximally mixed state for MLE/HMLE
+                dim = 2 ** self.getNumQubits()
+                starting_matrix = np.eye(dim, dtype=complex) / dim
+                inten_linear = 1.0
 
         # Run tomography and find an estimate for the state
         if method == "MLE":
@@ -1914,14 +1919,10 @@ class Tomography:
         TORREPLACE = ""
         # Conf settings
         for k in OLD_FORMAT_CONFIG_KEYS:
-            print(k)
-            print(isinstance(self.conf[k],np.ndarray))
-            print(type(self.conf[k]))
-            print(self.conf[k])
             if k == "method":
                 TORREPLACE += f'conf["{str(k)}"] = "{str(self.conf[k])}"\n'
             elif isinstance(self.conf[k], np.ndarray):
-                A = self.conf[k]
+                A = np.atleast_1d(self.conf[k])
                 TORREPLACE += "conf['" + str(k) + "'] = np.array(["
                 for i in range(A.shape[0]):
                     if len(A.shape) == 2:

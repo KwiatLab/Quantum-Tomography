@@ -5,6 +5,7 @@ from QuantumTomography.Utilities import OLD_FORMAT_CONFIG_KEYS
 import numpy as np
 import numpy.testing as tests
 from TestRun import runTests
+from pathlib import Path
 
 """
 Copyright 2020 University of Illinois Board of Trustees.
@@ -35,8 +36,84 @@ EXAMPLES_DIR = TESTS_DIR.parent / "ExampleFiles"
     method="linear",
 )
 
+tmp_path = Path("Tests/tmp").mkdir(exist_ok=True)
+
+def get_import_export(conf_file, data_file):
+    t = qLib.Tomography()
+
+    if conf_file[-4:] == "toml":
+        t.import_conf(EXAMPLES_DIR / conf_file)
+    else:
+        t.importConf(EXAMPLES_DIR / conf_file)
+
+    if data_file[-4:] == "json":
+        t.import_data(EXAMPLES_DIR / data_file)
+    else:
+        t.importData(EXAMPLES_DIR / data_file)
+
+
+    imported_conf = t.conf
+    imported_tomoinput = t.tomo_input
+    t.exportToEval(Path("Tests/tmp/" + "test_1_qubit_eval.txt"))
+
+    t.import_eval(Path("Tests/tmp/" +"test_1_qubit_eval.txt"))
+
+    return [(t.conf, imported_conf), (t.tomo_input, imported_tomoinput)]
 
 class Test_Import_Export(unittest.TestCase):
+
+    def test_export_eval(self):
+        t = qLib.Tomography()
+
+        conf_file = "conf.toml"
+        data_file = "1_qubit_example.json"
+
+        [conf, input] = get_import_export(conf_file, data_file)
+
+        self.assertDictEqual(conf[0].store, conf[1].store)
+
+        self.assertTrue((input[0]==input[1]).all())
+
+        conf_file = "conf.toml"
+        data_file = "2n_detector_example.json"
+
+        [conf, input] = get_import_export(conf_file, data_file)
+
+        self.assertDictEqual(conf[0].store, conf[1].store)
+        self.assertTrue((input[0]==input[1]).all())
+        
+        conf_file = "conf.toml"
+        data_file = "bell_state_example.json"
+
+        [conf, input] = get_import_export(conf_file, data_file)
+
+        self.assertDictEqual(conf[0].store, conf[1].store)
+        self.assertTrue((input[0]==input[1]).all())
+
+        conf_file = "conf.toml"
+        data_file = "crosstalk_inefficiency_example.json"
+
+        [conf, input] = get_import_export(conf_file, data_file)
+
+        self.assertDictEqual(conf[0].store, conf[1].store)
+        self.assertTrue((input[0]==input[1]).all())
+
+        conf_file = "bell_psi_conf.txt"
+        data_file ="bell_psi_data.txt"
+
+        [conf, input] = get_import_export(conf_file, data_file)
+
+        self.assertDictEqual(conf[0].store, conf[1].store)
+        self.assertTrue((input[0]==input[1]).all())
+
+        conf_file = "conf.txt"
+        data_file = "data.txt"
+
+        [conf, input] = get_import_export(conf_file, data_file)
+
+        self.assertDictEqual(conf[0].store, conf[1].store)
+        self.assertTrue((input[0]==input[1]).all())
+
     def test_eval(self):
         filename = str(TESTS_DIR / "Test_States" / "rand_eval.txt")
         for Tomo_Object in [Tomo_Object_1, Tomo_Object_2, Tomo_Object_3]:
@@ -105,7 +182,6 @@ class Test_Import_Export(unittest.TestCase):
         q = qLib.Tomography()
         q.import_data(str(EXAMPLES_DIR / "bell_state_example.json"))
         [rho_approx, intensity, fval] = q.run_tomography()
-
 
 if __name__ == "__main__":
     unittest.main()

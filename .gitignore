@@ -11,6 +11,7 @@ dist
 .idea
 __pycache__
 Debugger.py
+/Tests/tmp/*
 /Tests/Results/results_*
 /Tests/test_IGNORE.py
 /Tests/Test_States/rand_*
