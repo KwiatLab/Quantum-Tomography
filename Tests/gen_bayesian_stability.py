@@ -1,4 +1,3 @@
-import unittest
 from TestRun import runTests
 import QuantumTomography as qLib
 import matplotlib.pyplot as plt

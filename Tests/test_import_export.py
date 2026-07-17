@@ -1,11 +1,11 @@
-import unittest
 from pathlib import Path
-import QuantumTomography as qLib
-from QuantumTomography.Utilities import OLD_FORMAT_CONFIG_KEYS
+
 import numpy as np
 import numpy.testing as tests
 from TestRun import runTests
-from pathlib import Path
+
+import QuantumTomography as qLib
+from QuantumTomography.Utilities import OLD_FORMAT_CONFIG_KEYS
 
 """
 Copyright 2020 University of Illinois Board of Trustees.
@@ -60,128 +60,123 @@ def get_import_export(conf_file, data_file):
 
     return [(t.conf, imported_conf), (t.tomo_input, imported_tomoinput)]
 
-class Test_Import_Export(unittest.TestCase):
+def test_export_eval():
+    t = qLib.Tomography()
 
-    def test_export_eval(self):
-        t = qLib.Tomography()
+    conf_file = "conf.toml"
+    data_file = "1_qubit_example.json"
 
-        conf_file = "conf.toml"
-        data_file = "1_qubit_example.json"
+    [conf, input] = get_import_export(conf_file, data_file)
 
-        [conf, input] = get_import_export(conf_file, data_file)
+    assert conf[0].store == conf[1].store
 
-        self.assertDictEqual(conf[0].store, conf[1].store)
+    assert (input[0]==input[1]).all()
 
-        self.assertTrue((input[0]==input[1]).all())
+    conf_file = "conf.toml"
+    data_file = "2n_detector_example.json"
 
-        conf_file = "conf.toml"
-        data_file = "2n_detector_example.json"
+    [conf, input] = get_import_export(conf_file, data_file)
 
-        [conf, input] = get_import_export(conf_file, data_file)
+    assert conf[0].store == conf[1].store
+    assert (input[0]==input[1]).all()
 
-        self.assertDictEqual(conf[0].store, conf[1].store)
-        self.assertTrue((input[0]==input[1]).all())
-        
-        conf_file = "conf.toml"
-        data_file = "bell_state_example.json"
+    conf_file = "conf.toml"
+    data_file = "bell_state_example.json"
 
-        [conf, input] = get_import_export(conf_file, data_file)
+    [conf, input] = get_import_export(conf_file, data_file)
 
-        self.assertDictEqual(conf[0].store, conf[1].store)
-        self.assertTrue((input[0]==input[1]).all())
+    assert conf[0].store == conf[1].store
+    assert (input[0]==input[1]).all()
 
-        conf_file = "conf.toml"
-        data_file = "crosstalk_inefficiency_example.json"
+    conf_file = "conf.toml"
+    data_file = "crosstalk_inefficiency_example.json"
 
-        [conf, input] = get_import_export(conf_file, data_file)
+    [conf, input] = get_import_export(conf_file, data_file)
 
-        self.assertDictEqual(conf[0].store, conf[1].store)
-        self.assertTrue((input[0]==input[1]).all())
+    assert conf[0].store == conf[1].store
+    assert (input[0]==input[1]).all()
 
-        conf_file = "bell_psi_conf.txt"
-        data_file ="bell_psi_data.txt"
+    conf_file = "bell_psi_conf.txt"
+    data_file ="bell_psi_data.txt"
 
-        [conf, input] = get_import_export(conf_file, data_file)
+    [conf, input] = get_import_export(conf_file, data_file)
 
-        self.assertDictEqual(conf[0].store, conf[1].store)
-        self.assertTrue((input[0]==input[1]).all())
+    assert conf[0].store == conf[1].store
+    assert (input[0]==input[1]).all()
 
-        conf_file = "conf.txt"
-        data_file = "data.txt"
+    conf_file = "conf.txt"
+    data_file = "data.txt"
 
-        [conf, input] = get_import_export(conf_file, data_file)
+    [conf, input] = get_import_export(conf_file, data_file)
 
-        self.assertDictEqual(conf[0].store, conf[1].store)
-        self.assertTrue((input[0]==input[1]).all())
+    assert conf[0].store == conf[1].store
+    assert (input[0]==input[1]).all()
 
-    def test_eval(self):
-        filename = str(TESTS_DIR / "Test_States" / "rand_eval.txt")
-        for Tomo_Object in [Tomo_Object_1, Tomo_Object_2, Tomo_Object_3]:
-            # Export
-            Tomo_Object.exportToEval(filename)
+def test_eval():
+    filename = str(TESTS_DIR / "Test_States" / "rand_eval.txt")
+    for Tomo_Object in [Tomo_Object_1, Tomo_Object_2, Tomo_Object_3]:
+        # Export
+        Tomo_Object.exportToEval(filename)
 
-            # Import
-            Tomo_Object_copy = qLib.Tomography()
-            Tomo_Object_copy.importEval(filename)
+        # Import
+        Tomo_Object_copy = qLib.Tomography()
+        Tomo_Object_copy.importEval(filename)
 
-            # Make sure exported conf settings are the same (only compare keys that are roundtripped)
-            for k in OLD_FORMAT_CONFIG_KEYS:
-                if not isinstance(Tomo_Object_copy.conf[k], np.ndarray):
-                    self.assertEqual(Tomo_Object.conf[k], Tomo_Object_copy.conf[k])
+        # Make sure exported conf settings are the same (only compare keys that are roundtripped)
+        for k in OLD_FORMAT_CONFIG_KEYS:
+            if not isinstance(Tomo_Object_copy.conf[k], np.ndarray):
+                assert Tomo_Object.conf[k] == Tomo_Object_copy.conf[k]
 
-            # make sure inputs are the same
-            tests.assert_array_equal(Tomo_Object.last_input, Tomo_Object_copy.last_input)
-            tests.assert_array_equal(Tomo_Object.intensities, Tomo_Object_copy.intensities)
+        # make sure inputs are the same
+        tests.assert_array_equal(Tomo_Object.last_input, Tomo_Object_copy.last_input)
+        tests.assert_array_equal(Tomo_Object.intensities, Tomo_Object_copy.intensities)
 
-            # Run tomographies and make sure estimates are the same
-            tests.assert_array_equal(Tomo_Object.last_rho, Tomo_Object_copy.last_rho)
-            self.assertEqual(Tomo_Object.last_intensity, Tomo_Object_copy.last_intensity)
-            self.assertEqual(Tomo_Object.last_fval, Tomo_Object_copy.last_fval)
+        # Run tomographies and make sure estimates are the same
+        tests.assert_array_equal(Tomo_Object.last_rho, Tomo_Object_copy.last_rho)
+        assert Tomo_Object.last_intensity == Tomo_Object_copy.last_intensity
+        assert Tomo_Object.last_fval == Tomo_Object_copy.last_fval
 
-    def test_conf_and_data(self):
-        filename_c = str(TESTS_DIR / "Test_States" / "rand_conf.txt")
-        filename_d = str(TESTS_DIR / "Test_States" / "rand_data.txt")
-        for Tomo_Object in [Tomo_Object_1, Tomo_Object_2, Tomo_Object_3]:
-            # Export
-            Tomo_Object.exportToConf(filename_c)
-            Tomo_Object.exportToData(filename_d)
+def test_conf_and_data():
+    filename_c = str(TESTS_DIR / "Test_States" / "rand_conf.txt")
+    filename_d = str(TESTS_DIR / "Test_States" / "rand_data.txt")
+    for Tomo_Object in [Tomo_Object_1, Tomo_Object_2, Tomo_Object_3]:
+        # Export
+        Tomo_Object.exportToConf(filename_c)
+        Tomo_Object.exportToData(filename_d)
 
-            # Import
-            Tomo_Object_copy = qLib.Tomography()
-            Tomo_Object_copy.importConf(filename_c)
-            Tomo_Object_copy.importData(filename_d)
+        # Import
+        Tomo_Object_copy = qLib.Tomography()
+        Tomo_Object_copy.importConf(filename_c)
+        Tomo_Object_copy.importData(filename_d)
 
-            # Make sure exported conf settings are the same (only compare keys that are roundtripped)
-            for k in OLD_FORMAT_CONFIG_KEYS:
-                if not isinstance(Tomo_Object_copy.conf[k], np.ndarray):
-                    self.assertEqual(Tomo_Object.conf[k], Tomo_Object_copy.conf[k])
+        # Make sure exported conf settings are the same (only compare keys that are roundtripped)
+        for k in OLD_FORMAT_CONFIG_KEYS:
+            if not isinstance(Tomo_Object_copy.conf[k], np.ndarray):
+                assert Tomo_Object.conf[k] == Tomo_Object_copy.conf[k]
 
-            # make sure inputs are the same
-            tests.assert_array_equal(Tomo_Object.last_input, Tomo_Object_copy.last_input)
-            tests.assert_array_equal(Tomo_Object.intensities, Tomo_Object_copy.intensities)
+        # make sure inputs are the same
+        tests.assert_array_equal(Tomo_Object.last_input, Tomo_Object_copy.last_input)
+        tests.assert_array_equal(Tomo_Object.intensities, Tomo_Object_copy.intensities)
 
-            # Run tomographies and make sure estimates are the same
-            tests.assert_array_equal(Tomo_Object.last_rho, Tomo_Object_copy.last_rho)
-            self.assertEqual(Tomo_Object.last_intensity, Tomo_Object_copy.last_intensity)
-            self.assertEqual(Tomo_Object.last_fval, Tomo_Object_copy.last_fval)
+        # Run tomographies and make sure estimates are the same
+        tests.assert_array_equal(Tomo_Object.last_rho, Tomo_Object_copy.last_rho)
+        assert Tomo_Object.last_intensity == Tomo_Object_copy.last_intensity
+        assert Tomo_Object.last_fval == Tomo_Object_copy.last_fval
 
-    def test_printLastOutput(self):
-        data_files = [
-            EXAMPLES_DIR / "1_qubit_example.json",
-            EXAMPLES_DIR / "bell_state_example.json",
-            EXAMPLES_DIR / "2n_detector_example.json",
-        ]
-        for data_file in data_files:
-            tomo = qLib.Tomography()
-            tomo.import_data(str(data_file))
-            tomo.run_tomography()
-            tomo.printLastOutput()
-            qLib.printLastOutput(tomo)
+def test_printLastOutput():
+    data_files = [
+        EXAMPLES_DIR / "1_qubit_example.json",
+        EXAMPLES_DIR / "bell_state_example.json",
+        EXAMPLES_DIR / "2n_detector_example.json",
+    ]
+    for data_file in data_files:
+        tomo = qLib.Tomography()
+        tomo.import_data(str(data_file))
+        tomo.run_tomography()
+        tomo.printLastOutput()
+        qLib.printLastOutput(tomo)
 
-    def test_video_example(self):
-        q = qLib.Tomography()
-        q.import_data(str(EXAMPLES_DIR / "bell_state_example.json"))
-        [rho_approx, intensity, fval] = q.run_tomography()
-
-if __name__ == "__main__":
-    unittest.main()
+def test_video_example():
+    q = qLib.Tomography()
+    q.import_data(str(EXAMPLES_DIR / "bell_state_example.json"))
+    [rho_approx, intensity, fval] = q.run_tomography()

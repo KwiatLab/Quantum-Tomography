@@ -1,8 +1,8 @@
 from __future__ import print_function
-from gen_Full import runFull
-from test_properties import Test_Properties
-import unittest
 import warnings
+
+import pytest
+from gen_Full import runFull
 
 warnings.filterwarnings("ignore")
 
@@ -22,13 +22,9 @@ run and the results can be see in the actions tab"""
 "Attention! These tests run on the version that your environment uses. see readme for details"
 
 
-class TestFull(unittest.TestCase):
-    #    1 Qubit
-    def test_FULL(self):
-        return True
-        numErrors = runFull(nStates=1, saveStates=False)
-        self.assertEqual(numErrors, 0)
-
-
-if __name__ == "__main__":
-    unittest.main()
+#    1 Qubit
+def test_FULL():
+    # TODO: Write better test
+    pytest.skip("Disabled: runFull is slow and not run as part of the regular suite.")
+    numErrors = runFull(nStates=1, saveStates=False)
+    assert numErrors == 0

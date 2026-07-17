@@ -1,7 +1,8 @@
-import unittest
 from pathlib import Path
+
 import numpy as np
 import numpy.testing as npt
+
 import QuantumTomography as qLib
 
 """
@@ -43,48 +44,50 @@ def _run(data_file, conf_file=None):
     return rho, intensity, fval
 
 
-class Test_Example_Files(unittest.TestCase):
-    def test_1_qubit(self):
-        rho, _, _ = _run(EXAMPLES_DIR / "1_qubit_example.json")
-        _assert_valid_density_matrix(rho)
-        self.assertGreater(qLib.fidelity(_R_STATE, rho), 0.95)
-
-    def test_bell_state(self):
-        rho, _, _ = _run(EXAMPLES_DIR / "bell_state_example.json")
-        _assert_valid_density_matrix(rho)
-        self.assertGreater(qLib.fidelity(_PHI_PLUS, rho), 0.95)
-
-    def test_2_detector(self):
-        rho, _, _ = _run(EXAMPLES_DIR / "2n_detector_example.json")
-        _assert_valid_density_matrix(rho)
-        self.assertGreater(qLib.fidelity(_PHI_PLUS, rho), 0.95)
-
-    def test_crosstalk_and_inefficiency(self):
-        rho, _, _ = _run(EXAMPLES_DIR / "crosstalk_inefficiency_example.json")
-        _assert_valid_density_matrix(rho)
-        self.assertGreater(qLib.fidelity(_PHI_PLUS, rho), 0.90)
-
-    def test_conf_toml_with_data(self):
-        # Verifies that a TOML conf file can be loaded alongside a data file
-        rho, _, _ = _run(EXAMPLES_DIR / "bell_state_example.json", conf_file=EXAMPLES_DIR / "conf.toml")
-        _assert_valid_density_matrix(rho)
-        self.assertGreater(qLib.fidelity(_PHI_PLUS, rho), 0.95)
-
-    def test_python_eval(self):
-        rho, _, _ = _run(EXAMPLES_DIR/ "pythoneval.txt", conf_file=EXAMPLES_DIR/"conf.txt")
-        _assert_valid_density_matrix(rho)
-        self.assertLess(abs(qLib.purity(rho) - 1.0), 0.0001) # Arbitray, but to see if this result changes
-
-    def test_python_video_eval(self):
-        rho, _, _ = _run(EXAMPLES_DIR/ "pythoneval_video.txt", conf_file=EXAMPLES_DIR/"conf.txt")
-        _assert_valid_density_matrix(rho)
-        self.assertLess(abs(qLib.purity(rho) - 0.91), 0.01) # Arbitray, but to see if this result changes
-
-    def test_bell_psi_eval(self):
-        rho, _, _ = _run(EXAMPLES_DIR/ "bell_psi_data.txt", conf_file=EXAMPLES_DIR/"bell_psi_conf.txt")
-        _assert_valid_density_matrix(rho)
-        self.assertLess(abs(qLib.purity(rho) - 0.734), 0.003) # Arbitray, but to see if this result changes
+def test_1_qubit():
+    rho, _, _ = _run(EXAMPLES_DIR / "1_qubit_example.json")
+    _assert_valid_density_matrix(rho)
+    assert qLib.fidelity(_R_STATE, rho) > 0.95
 
 
-if __name__ == "__main__":
-    unittest.main()
+def test_bell_state():
+    rho, _, _ = _run(EXAMPLES_DIR / "bell_state_example.json")
+    _assert_valid_density_matrix(rho)
+    assert qLib.fidelity(_PHI_PLUS, rho) > 0.95
+
+
+def test_2_detector():
+    rho, _, _ = _run(EXAMPLES_DIR / "2n_detector_example.json")
+    _assert_valid_density_matrix(rho)
+    assert qLib.fidelity(_PHI_PLUS, rho) > 0.95
+
+
+def test_crosstalk_and_inefficiency():
+    rho, _, _ = _run(EXAMPLES_DIR / "crosstalk_inefficiency_example.json")
+    _assert_valid_density_matrix(rho)
+    assert qLib.fidelity(_PHI_PLUS, rho) > 0.90
+
+
+def test_conf_toml_with_data():
+    # Verifies that a TOML conf file can be loaded alongside a data file
+    rho, _, _ = _run(EXAMPLES_DIR / "bell_state_example.json", conf_file=EXAMPLES_DIR / "conf.toml")
+    _assert_valid_density_matrix(rho)
+    assert qLib.fidelity(_PHI_PLUS, rho) > 0.95
+
+
+def test_python_eval():
+    rho, _, _ = _run(EXAMPLES_DIR / "pythoneval.txt", conf_file=EXAMPLES_DIR / "conf.txt")
+    _assert_valid_density_matrix(rho)
+    assert abs(qLib.purity(rho) - 1.0) < 0.0001  # Arbitray, but to see if this result changes
+
+
+def test_python_video_eval():
+    rho, _, _ = _run(EXAMPLES_DIR / "pythoneval_video.txt", conf_file=EXAMPLES_DIR / "conf.txt")
+    _assert_valid_density_matrix(rho)
+    assert abs(qLib.purity(rho) - 0.91) < 0.01  # Arbitray, but to see if this result changes
+
+
+def test_bell_psi_eval():
+    rho, _, _ = _run(EXAMPLES_DIR / "bell_psi_data.txt", conf_file=EXAMPLES_DIR / "bell_psi_conf.txt")
+    _assert_valid_density_matrix(rho)
+    assert abs(qLib.purity(rho) - 0.734) < 0.003  # Arbitray, but to see if this result changes
