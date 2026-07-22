@@ -97,11 +97,12 @@ extend-ignore = [
 ]
 
 [tool.ruff.lint.extend-per-file-ignores]
-"Tests/*" = [
-  "S101", # Asserts are welcome in tests.
+"tests/*" = [
+    "INP001", # Pytest obviates __init__.py in tests/ subdirectories.
+    "S101",   # Asserts are welcome in tests.
 ]
 # Run pytest lint rules only in test files.
-"!Tests/*" = ["PT"]
+"!tests/*" = ["PT"]
 # Allow "unused" imports when exposing objects from submodules.
 "**/__init__.py" = ["F401"]
 
