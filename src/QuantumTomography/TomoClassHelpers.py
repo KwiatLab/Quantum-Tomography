@@ -287,7 +287,8 @@ def getBellSettings_helper(rhog, partsize_init, partsize, t):
 def getBellSettings_helper_bounds(rhop, partsize_init, partsize, t):
     belldata = np.array([getBellSettings_helper(rho, partsize_init, partsize, t)[:, 1] for rho in rhop], dtype=float)
     names = ["s", "a", "a'", "b", "b'"]
-    return np.array([names, belldata.mean(axis=0), belldata.std(axis=0, ddof=1)], dtype="O").transpose()
+    # Rows are [name, error, mean]. Kept for backwards compatibility; will become [name, mean, error] in a future version.
+    return np.array([names, belldata.std(axis=0, ddof=1), belldata.mean(axis=0)], dtype="O").transpose()
 
 
 # Calculates the weighted covariance. Used in bayesian tomography

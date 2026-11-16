@@ -122,9 +122,10 @@ def main():
                     '<td  style = "font-size: 20;font-weight: 1000;color: rebeccapurple;padding-bottom:5px;"></td></tr>'
                 )
             for v in vals:
-                bs += "<tr><td>" + v[0] + "</td><td>" + qKLib.floatToString(v[1]) + " &deg;</td>"
+                # Rows are [name, value], or [name, error, value] with error estimation
+                bs += "<tr><td>" + v[0] + "</td><td>" + qKLib.floatToString(v[-1]) + " &deg;</td>"
                 if len(v) > 2:
-                    bs += "<td>+/- " + qKLib.floatToString(v[2]) + "&deg;</td></tr> \n"
+                    bs += "<td>+/- " + qKLib.floatToString(v[1]) + "&deg;</td></tr> \n"
                 else:
                     bs += "<td></td></tr>"
             bs += (

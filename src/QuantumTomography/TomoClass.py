@@ -1821,6 +1821,8 @@ class Tomography:
     """
     getBellSettings(bounds)
     Desc: Returns the optimal measurment settings for the CHSH bell inequality. In Progress, have not checked.
+    Rows are [name, value] without error estimation, and [name, error, value] with it.
+    The error-estimation order will change to [name, value, error] in a future version.
     """
 
     def getBellSettings(self, partsize_init=9, partsize=5, t=3, bounds=-1):

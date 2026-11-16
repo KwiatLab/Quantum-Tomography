@@ -111,7 +111,7 @@ def test_wrong_length_time_raises():
 def test_bell_settings_error_bars():
     t, _ = run_json(BELL)
     kwargs = dict(partsize_init=3, partsize=3, t=1)
-    names, means, errors = t.getBellSettings(bounds=3, **kwargs).T
+    names, errors, means = t.getBellSettings(bounds=3, **kwargs).T
     expected = np.array(
         [qLib.getBellSettings_helper(state[0], **kwargs)[:, 1] for state in t.mont_carlo_states], dtype=float
     )
