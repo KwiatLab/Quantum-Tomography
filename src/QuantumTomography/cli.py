@@ -105,13 +105,13 @@ def main():
 
         FORREPLACE = FORREPLACE + qKLib.matrixToHTML(rho)
 
-        vals = t.getProperties(rho)
+        vals = t.getProperties()
         FORREPLACE = str(FORREPLACE) + qKLib.propertiesToHTML(vals)
 
         # Print out properties of bellSettings
         bs = ""
         if t.conf["Bellstate"] != 0:
-            vals = t.getBellSettings(rho)
+            vals = t.getBellSettings()
             resolution = (np.pi / 2) / (9 * (5**3))
             bs += "<h3>Bell inequality (S_local_realism <= 2)</h3>"
             bs += '<table style = "width:60%;margin-top:10px;font-size: 15px;padding-bottom:5px;float:none;"><tr><td style = "font-size: 20;font-weight: 1000;color: rebeccapurple;">Property</td><td  style = "font-size: 20;font-weight: 1000;color: rebeccapurple;padding-bottom:5px;">Value</td>'

@@ -262,11 +262,7 @@ class Tomography:
         orthogonal_bases = {}
         for key1, measurement_1 in json_dict["measurement_states"].items():
             for key2, measurement_2 in json_dict["measurement_states"].items():
-                if isStateVector(measurement_1):
-                    measurement_1 = np.outer(measurement_1, measurement_1.conj().T)
-                    measurement_2 = np.outer(measurement_2, measurement_2.conj().T)
-                orthogonal_check = measurement_1 @ measurement_2
-                if (orthogonal_check == np.zeros_like(measurement_1)).all() and key1 not in orthogonal_bases:
+                if key1 not in orthogonal_bases and np.isclose(np.vdot(measurement_1, measurement_2), 0):
                     orthogonal_bases[key1] = key2
         singles = []
         coincidences = []
@@ -276,11 +272,9 @@ class Tomography:
         if self.conf["NDetectors"] > 1:
             measurements = []
             all_meas_projectors = get_all_measurements_from_data(json_dict)
-            if "relative_efficiency" in json_dict and not all(
-                ["detectors_used" in datum for datum in json_dict["data"]]
-            ):
+            if not all("detectors_used" in datum for datum in json_dict["data"]):
                 raise ValueError(
-                    "Need to have 'detectors_used' fields filled out in your data array if using more than 1 detector per qubit and you want to account for detector efficiencies!"
+                    "Need to have 'detectors_used' fields filled out in your data array if using more than 1 detector per qubit!"
                 )
             # Find out which measurements occured simultaneously (for normalization)
             simultaneous_measurements = []
@@ -301,7 +295,8 @@ class Tomography:
             # Construct the measurement basis list, singles and coincidences
             # based on the simultaneous measurements
             for measurement in simultaneous_measurements:
-                basis_names = [json_dict["data"][k]["basis"] for k in measurement]
+                # Order by detector so that count k is outcome k (transmit = 0, reflect = 1 per qubit)
+                measurement.sort(key=lambda k: json_dict["data"][k]["detectors_used"])
                 # Get the projectors corresponding to the measurement from simultaneous_measurements
                 measurements.append([all_meas_projectors[k] for k in measurement])
                 # Get all the data corresponding to the measurements that happened
@@ -325,12 +320,8 @@ class Tomography:
                 and VV will all have relative_intensity to be defined as 0.9.)
                 """
                 if "relative_intensity" in measurement_data[0]:
-                    measurement_norm = measurement_data[0]["relative_intensity"]
-                else:
-                    measurement_norm = 1
-                # TODO: This will only get the data based on the last simultaneous measurement
-                # Is there a case where we can't use only one of the simultaneous measurements
-                # to get the efficiency and window?
+                    intensities.append(float(measurement_data[0]["relative_intensity"]))
+                # Every group is in detector order, so these are the same for each group
                 efficiencies = []
                 window = []
                 # Get the singles counts for each detector involved in this measurement
@@ -366,7 +357,7 @@ class Tomography:
             window = np.array(window)
         else:
             efficiencies = np.ones(self.conf["NDetectors"] ** self.conf["NQubits"])
-            window = detector_coincidence_window
+            window = 0 if detector_coincidence_window is None else detector_coincidence_window
             for datum in json_dict["data"]:
                 idx = get_highest_fold_coincidence_count_index(len(datum["basis"]))
                 singles.append(np.array(datum["counts"])[0 : len(datum["basis"])])
@@ -385,7 +376,7 @@ class Tomography:
         self.time = np.array(times)
         self.singles = np.array(singles, dtype=int)
         self.counts = np.array(coincidences, dtype=int)
-        self.intensities = intensities
+        self.intensities = np.array(intensities, dtype=float)
         self.conf["Efficiency"] = np.array(efficiencies)
         self.conf["Window"] = window
         if "crosstalk" in json_dict:
@@ -506,7 +497,7 @@ class Tomography:
                             if assignment[1].isdigit():
                                 self.conf["Window"] = np.array([int(assignment[1])])
                             else:
-                                self.conf["Window"] = np.array(assignment[1])
+                                self.conf["Window"] = parse_np_array(assignment[1])
 
                         elif variable_name == "beta":
                             self.conf["Beta"] = float(assignment[1])
@@ -655,10 +646,8 @@ class Tomography:
         if method.upper() == "LINEAR" or not isinstance(starting_matrix, np.ndarray):
             try:
                 [starting_matrix, inten_linear] = self.tomography_LINEAR(
-                    coincidences, measurements_pures, overall_norms
+                    coincidences, measurements_pures, overall_norms, accidentals
                 )
-                # Currently linear tomography gets the phase wrong. So a temporary fix is to just transpose it.
-                starting_matrix = starting_matrix.transpose()
                 starting_matrix = make_positive(starting_matrix)
                 starting_matrix = starting_matrix / np.trace(starting_matrix)
             except:
@@ -739,13 +728,12 @@ class Tomography:
         elif not (len(overall_norms.shape) == 1 and overall_norms.shape[0] == coincidences.shape[0]):
             raise ValueError("Invalid intensities array")
 
-        init_intensity = np.mean(np.multiply(coincidences, 1 / overall_norms)) * (starting_matrix.shape[0])
+        coincidences = np.real(coincidences).flatten()
+        init_intensity = np.mean(coincidences / overall_norms) * (starting_matrix.shape[0])
         starting_tvals = density2t(starting_matrix)
         starting_tvals = starting_tvals + 0.0001
         starting_tvals = starting_tvals * np.sqrt(init_intensity)
 
-        coincidences = np.real(coincidences)
-        coincidences = coincidences.flatten()
         accidentals = accidentals.flatten()
 
         final_tvals = leastsq(
@@ -802,13 +790,12 @@ class Tomography:
         elif not (len(overall_norms.shape) == 1 and overall_norms.shape[0] == coincidences.shape[0]):
             raise ValueError("Invalid intensities array")
 
-        init_intensity = np.mean(np.multiply(coincidences, 1 / overall_norms)) * (starting_matrix.shape[0])
+        coincidences = np.real(coincidences).flatten()
+        init_intensity = np.mean(coincidences / overall_norms) * (starting_matrix.shape[0])
         starting_tvals = density2t(starting_matrix)
         starting_tvals = starting_tvals + 0.0001
         starting_tvals = starting_tvals * np.sqrt(init_intensity)
 
-        coincidences = np.real(coincidences)
-        coincidences = coincidences.flatten()
         accidentals = accidentals.flatten()
 
         bet = self.conf["Beta"]
@@ -1141,7 +1128,7 @@ class Tomography:
         The predicted overall intensity used to normalize the state.
     """
 
-    def tomography_LINEAR(self, coincidences, measurements, overall_norms=-1):
+    def tomography_LINEAR(self, coincidences, measurements, overall_norms=-1, accidentals=0):
         # If overall_norms not given then assume uniform
         if not isinstance(overall_norms, np.ndarray):
             overall_norms = np.ones(coincidences.shape[0])
@@ -1154,7 +1141,7 @@ class Tomography:
         stokes_measurements = (
             np.array([get_stokes_parameters(m, pauli_basis) for m in measurements]) / 2 ** self.getNumQubits()
         )
-        freq_array = coincidences / overall_norms
+        freq_array = (coincidences - np.ravel(accidentals)) / overall_norms
 
         B_inv = np.linalg.inv(np.matmul(stokes_measurements.T, stokes_measurements))
         stokes_params = np.matmul(stokes_measurements.T, freq_array)
@@ -1213,21 +1200,12 @@ class Tomography:
         # Accidental Correction
         acc = np.zeros_like(coinc)
         if self.conf["DoAccidentalCorrection"] == 1:
-            scalerIndex = np.concatenate((np.ones(nbits - 2), [2, 2]))
-            additiveIndex = np.array([0, 1])
-            for j in range(2, nbits):
-                additiveIndex = np.concatenate(([2 * j], additiveIndex))
             if len(coinc.shape) == 1:
                 acc = acc[:, np.newaxis]
             for j in range(n_coinc):
-                index = bin(j).split("b")[1]
-                index = "0" * (nbits - len(index)) + index
-                index = [int(char) for char in index]
-                index = index * scalerIndex + additiveIndex
-                index = np.array(index, dtype=int)
-                acc[:, j] = np.prod(np.real(sings[:, tuple(index)]), axis=1) * (window[j] * 1e-9 / np.real(times)) ** (
-                    nbits - 1
-                )
+                # Qubit k's singles are in column k (transmit) or nbits + k (reflect)
+                index = np.arange(nbits) + nbits * np.array(list(np.binary_repr(j, nbits)), dtype=int)
+                acc[:, j] = np.prod(sings[:, index], axis=1) * (window[j] * 1e-9 / np.real(times)) ** (nbits - 1)
             if acc.shape != coinc.shape:
                 acc = acc[:, 0]
 
@@ -1248,12 +1226,10 @@ class Tomography:
                 # Changed from tensor_product to np.kron
                 meas_basis_pures = np.kron(meas_basis_pures, meas_pure)
             for k in range(2**nbits):
-                meas_basis_densities[k, :, :] = np.outer(
-                    meas_basis_pures[:, k].conj().transpose(), meas_basis_pures[:, k]
-                )
+                meas_basis_densities[k, :, :] = np.outer(meas_basis_pures[k], meas_basis_pures[k].conj())
             for k in range(self.getNumCoinc()):
                 for l in range(2**nbits):
-                    measurements_pures[j * n_coinc + k, :] = meas_basis_pures[:, k].conj().transpose()
+                    measurements_pures[j * n_coinc + k, :] = meas_basis_pures[k]
                     measurements_densities[j, k, :, :] = (
                         measurements_densities[j, k, :, :] + meas_basis_densities[l, :, :] * crosstalk[k, l]
                     )
@@ -1334,17 +1310,14 @@ class Tomography:
             raise ValueError("Number of Counts does not match the number of measurements")
 
         # Determine if 2det/qubit from counts matrix
-        try:
-            if counts.shape[1] == 1:
-                self.conf["NDetectors"] = 1
-            elif counts.shape[1] == self.conf["NQubits"] * 2:
-                self.conf["NDetectors"] = 2
-            else:
-                raise ValueError(
-                    "The second axis of counts does not have the right dimension. Should be 1 or 2*NQubits for 2det"
-                )
-        except:
+        if counts.ndim == 1 or counts.shape[1] == 1:
             self.conf["NDetectors"] = 1
+        elif counts.shape[1] == 2 ** self.conf["NQubits"]:
+            self.conf["NDetectors"] = 2
+        else:
+            raise ValueError(
+                "The second axis of counts does not have the right dimension. Should be 1 or 2**NQubits for 2det"
+            )
 
         ##############
         # efficiency #
@@ -1378,7 +1351,7 @@ class Tomography:
             if isinstance(time, int):
                 time = np.ones(measurements.shape[0])
             elif not (len(time.shape) == 1 and time.shape[0] == measurements.shape[0]):
-                ValueError("Invalid time array")
+                raise ValueError("Invalid time array")
             # Check if singles has right dimensions
             if isinstance(singles, int):
                 if self.conf["NDetectors"] == 1:
@@ -1864,7 +1837,7 @@ class Tomography:
         states = np.array(self.mont_carlo_states, dtype="O")[: bounds + 1, :]
 
         if bounds > 0:
-            return getBellSettings_helper_bounds(states[:, 0], rho, partsize_init, partsize, t, bounds)
+            return getBellSettings_helper_bounds(states[:, 0], partsize_init, partsize, t)
         else:
             return getBellSettings_helper(rho, partsize_init, partsize, t)
 

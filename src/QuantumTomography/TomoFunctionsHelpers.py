@@ -15,25 +15,6 @@ https://quantumtomo.web.illinois.edu/Doc/"""
 # These are various helper functions used in other main functions in the TomoFunction file
 
 
-# Helper function for partial Transpose in TomoFunctions
-def partial_transpose_helper(m, d):
-    if m.shape[0] == d:
-        val = m.transpose()
-    else:
-        na = int(d)
-        nb = int(len(m) / d)
-        y = np.zeros([nb, nb, na, na]) + 0j
-        val = np.zeros([len(m), len(m)]) + 0j
-        for j in range(nb):
-            for k in range(nb):
-                y[j, k] = m[j * nb : j * nb + na, k * nb : k * nb + na]
-        for j in range(nb):
-            for k in range(nb):
-                val[j * nb : j * nb + na, k * nb : k * nb + na] = y[k, j]
-
-    return val
-
-
 """
     random_ginibre(D)
     Desc: Returns a random matrix from the Ginibre ensemble of size DxD. 

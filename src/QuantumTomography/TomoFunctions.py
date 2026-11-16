@@ -512,8 +512,6 @@ err_functions;getProperties
 
 
 def linear_entropy(rhog):
-    if isStateVector(rhog):
-        rhog = toDensity(rhog)
     return 1 - purity(rhog)
 
 
@@ -546,7 +544,7 @@ def negativity(rhog):
         rhog = toDensity(rhog)
     if rhog.shape[0] == 4:
         rho1 = partial_transpose(rhog)
-        val = -2 * np.min(np.min(np.real(np.linalg.eig(rho1)[0])), 0)
+        val = max(-2 * np.min(np.real(np.linalg.eig(rho1)[0])), 0)
 
         return val
     else:
@@ -579,6 +577,8 @@ err_functions;getProperties
 
 
 def purity(rhog):
+    if isStateVector(rhog):
+        rhog = toDensity(rhog)
     return np.real(np.trace(np.dot(rhog, rhog)))
 
 
@@ -603,53 +603,10 @@ def partial_transpose(rhog, n=0, d=np.nan):
         rhog = np.dot(rhog, rhog.conj().transpose())
 
     if d is np.nan:
-        n_qubit = int(np.log2(rhog.shape[0]))
-        if not n_qubit % 1:
-            d = 2 * np.ones(n_qubit)
-        else:
-            print("dimension of rho is incorrect.")
-
-    na = 0
-    nb = 0
-    nc = 0
-    if n < 0:
-        na = 1.0
-        nb = 1.0
-        nc = np.prod(d)
-    elif n == 0:
-        na = 1.0
-        nb = d[n]
-        nc = np.prod(d[np.arange(n + 1, len(d))])
-    elif (n > 0) & (n < len(d)):
-        na = np.prod(d[range(n - 1)])
-        nb = d[n]
-        nc = np.prod(d[np.arange(n + 1, len(d))])
-    elif n == len(d):
-        na = np.prod(d[0 : n - 1])
-        nb = d[n]
-        nc = 1.0
-    elif n > len(d):
-        na = np.prod(d)
-        nb = 1.0
-        nc = 1.0
-
-    if na == 1:
-        rv = partial_transpose_helper(rhog, nb)
-    # I did't check from here
-    else:
-        sub_sizes = nb * nc
-        y = np.zeros([sub_sizes, sub_sizes, na, na]) + 0j
-        for j in range(sub_sizes):
-            for k in range(sub_sizes):
-                y[j, k] = rhog[j * sub_sizes : j * sub_sizes + na, k * sub_sizes : k * sub_sizes + na]
-
-        rv = np.zeros([len(rhog), len(rhog)]) + 0j
-
-        for j in range(na):
-            for k in range(na):
-                rv[j * nb : j * nb + na, k * nb : k * nb + na] = partial_transpose_helper(y[j, k], nb)
-
-    return rv
+        d = [2] * int(np.log2(rhog.shape[0]))
+    d = np.array(d, dtype=int)
+    # Swap the row and column index of subsystem n
+    return rhog.reshape(*d, *d).swapaxes(n, len(d) + n).reshape(rhog.shape)
 
 
 """
@@ -924,7 +881,7 @@ psi : ndarray with shape = (2^nQubits, 2^nQubits)
 def removeGlobalPhase(pure_state):
     # Normalize
     norm = np.dot(pure_state.conj(), pure_state)
-    pure_state = pure_state / norm
+    pure_state = pure_state / np.sqrt(norm)
     # get phase of first number
     [magn, phase] = complexToPhaser(pure_state[0])
     complexPhaser = phaserToComplex(np.array([1, phase]))

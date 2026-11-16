@@ -9,6 +9,7 @@ from .TomoDisplayHelpers import *
 from .TomoFunctions import removeGlobalPhase
 from matplotlib.colors import LinearSegmentedColormap
 import warnings
+import itertools
 
 """
 Copyright 2020 University of Illinois Board of Trustees.
@@ -72,14 +73,7 @@ def makeRhoImages(p, plt_given, customColor=True):
         colorMap = plt.cm.jet
     norm = mpl.colors.Normalize(vmin=-1, vmax=1)
 
-    tickBase = ["H", "V"]
-    tick = [""]
-    for x in range(numQubits):
-        newTick = np.zeros(len(tick) * 2, dtype="O")
-        for i in range(len(tick)):
-            for j in range(len(tickBase)):
-                newTick[len(tick) * i + j] = tick[i] + tickBase[j]
-        tick = newTick
+    tick = ["".join(t) for t in itertools.product("HV", repeat=numQubits)]
     xTicks = ["|" + x + ">" for x in tick]
     yTicks = ["|" + x + ">" for x in tick]
 
@@ -165,14 +159,7 @@ def saveRhoImages(p, pathToDirectory):
 
     norm = mpl.colors.Normalize(vmin=-1, vmax=1)
 
-    tickBase = ["H", "V"]
-    tick = [""]
-    for x in range(numQubits):
-        newTick = np.zeros(len(tick) * 2, dtype="O")
-        for i in range(len(tick)):
-            for j in range(len(tickBase)):
-                newTick[len(tick) * i + j] = tick[i] + tickBase[j]
-        tick = newTick
+    tick = ["".join(t) for t in itertools.product("HV", repeat=numQubits)]
     xTicks = ["|" + x + ">" for x in tick]
     yTicks = ["|" + x + ">" for x in tick]
 
