@@ -189,3 +189,17 @@ def test_partial_transpose_of_each_subsystem(n):
     expected = [part.T if k == n else part for k, part in enumerate(parts)]
     kron3 = lambda a, b, c: np.kron(np.kron(a, b), c)
     npt.assert_allclose(qLib.partial_transpose(kron3(*parts), n), kron3(*expected))
+
+
+@pytest.mark.parametrize("n_qubits", [1, 2, 3])
+def test_density2t_round_trip_of_pure_states(n_qubits):
+    for _ in range(50):
+        rho = qLib.toDensity(qLib.random_pure_state(n_qubits))
+        npt.assert_allclose(qLib.t_to_density(qLib.density2t(rho)), rho, atol=1e-8)
+
+
+def test_make_positive_with_repeated_eigenvalues():
+    basis = np.linalg.qr(np.random.randn(4, 4) + 1j * np.random.randn(4, 4))[0]
+    eigenvalues = np.array([0.26, 0.25, 0.25, -0.01])
+    rho = (basis * eigenvalues) @ basis.conj().T
+    npt.assert_allclose(qLib.make_positive(rho), (basis * abs(eigenvalues)) @ basis.conj().T, atol=1e-12)

@@ -79,34 +79,9 @@ def psd_cholesky(rhog, eps=1e-10):
 
 
 def make_positive(rhog_in):
-    d, v = np.linalg.eig(rhog_in)
-    rhog = np.zeros(rhog_in.shape)
-    for j in range(len(d)):
-        rhog = rhog + np.abs(d[j]) * np.outer(v[:, j], v[:, j].conj().transpose())
-    rhog = (rhog + rhog.conj().transpose()) / 2.0
-    return rhog
-
-
-def make_positive(rhog_in):
-    d, v = np.linalg.eig(rhog_in)
-    rhog = np.zeros(rhog_in.shape)
-    for j in range(len(d)):
-        rhog = rhog + np.abs(d[j]) * np.outer(v[:, j], v[:, j].conj().transpose())
-    rhog = (rhog + rhog.conj().transpose()) / 2.0
-    return rhog
-
-
-""" Positive semi-definite safe cholesky.
-
-Since the Cholesky decomposition requires positive definite matrices, we can add a small epsilon
-to the diagonal of a positive semi-definite matrix to force it to be positive definite.
-
-"""
-
-
-def psd_cholesky(rhog, eps=1e-10):
-    eps_I = np.eye(rhog.shape[0]) * eps
-    return np.linalg.cholesky(eps_I + rhog)
+    # eigh, unlike eig, returns orthonormal eigenvectors even when eigenvalues repeat.
+    d, v = np.linalg.eigh((rhog_in + rhog_in.conj().transpose()) / 2.0)
+    return (v * np.abs(d)) @ v.conj().transpose()
 
 
 """
@@ -126,11 +101,10 @@ tm : ndarray
 
 
 def density2tm(rhog):
-    if not np.all(np.linalg.eigvals(rhog) > 0):
-        new_rhog = make_positive(rhog)
-        return psd_cholesky(new_rhog)
-
-    return np.linalg.cholesky(rhog)
+    # The zero eigenvalues of a pure state can round to either sign, so compare against a tolerance.
+    if np.linalg.eigvalsh(rhog).min() > 1e-12:
+        return np.linalg.cholesky(rhog)
+    return psd_cholesky(make_positive(rhog))
 
 
 """
