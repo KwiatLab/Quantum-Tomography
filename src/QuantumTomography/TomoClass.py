@@ -1822,6 +1822,7 @@ class Tomography:
     getBellSettings(bounds)
     Desc: Returns the optimal measurment settings for the CHSH bell inequality. In Progress, have not checked.
     Rows are [name, value] without error estimation, and [name, error, value] with it.
+    The rows are s (the CHSH value) and the angles a, a', b, b' in radians.
     The error-estimation order will change to [name, value, error] in a future version.
     """
 

@@ -122,10 +122,15 @@ def main():
                     '<td  style = "font-size: 20;font-weight: 1000;color: rebeccapurple;padding-bottom:5px;"></td></tr>'
                 )
             for v in vals:
-                # Rows are [name, value], or [name, error, value] with error estimation
-                bs += "<tr><td>" + v[0] + "</td><td>" + qKLib.floatToString(v[-1]) + " &deg;</td>"
+                # Rows are [name, value], or [name, error, value] with error estimation.
+                # s is unitless; the angles are returned in radians and shown in degrees.
+                is_angle = v[0] != "s"
+                unit = "&deg;" if is_angle else ""
+                to_unit = np.degrees if is_angle else float
+                value = qKLib.floatToString(to_unit(v[-1])) + (" " + unit if unit else "")
+                bs += f"<tr><td>{v[0]}</td><td>{value}</td>"
                 if len(v) > 2:
-                    bs += "<td>+/- " + qKLib.floatToString(v[1]) + "&deg;</td></tr> \n"
+                    bs += "<td>+/- " + qKLib.floatToString(to_unit(v[1])) + unit + "</td></tr> \n"
                 else:
                     bs += "<td></td></tr>"
             bs += (
@@ -136,6 +141,7 @@ def main():
             bs += "</td></tr></table>"
         bs = bs.replace("+/- nan&deg;", "Error")
         bs = bs.replace("nan &deg;", "Error")
+        bs = bs.replace("<td>+/- nan</td>", "<td>Error</td>").replace("<td>nan</td>", "<td>Error</td>")
 
         # Print out time at the bottom of page
         FORREPLACE = str(FORREPLACE) + "<br><br>\n" + bs
