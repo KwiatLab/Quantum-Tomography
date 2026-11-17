@@ -42,6 +42,19 @@ class Test_Properties(unittest.TestCase):
         self.assertEqual(any(negs < 0.95), False)  # Negativity of random bell states should be 1
         tests.assert_array_almost_equal(tangles, cons**2)  # tangle = concurrence**2
 
+    # Test fully entangled fraction
+    def test_fully_entangled_fraction(self):
+        # Setup
+        bell_states = [qLib.toDensity(qLib.random_bell_state(2)) for x in range(100)]
+        fefs = np.array([qLib.fully_entangled_fraction(x) for x in bell_states])
+        phi_plus = qLib.toDensity(np.array([1, 0, 0, 1]) / np.sqrt(2))
+        werner = 0.6 * phi_plus + 0.4 * np.eye(4) / 4
+        # Tests
+        tests.assert_array_almost_equal(fefs, np.ones(100))  # FEF of maximally entangled states is 1
+        self.assertAlmostEqual(qLib.fully_entangled_fraction(np.array([1, 0, 0, 0])), 0.5)  # Product state
+        self.assertAlmostEqual(qLib.fully_entangled_fraction(np.eye(4) / 4), 0.25)  # Maximally mixed
+        self.assertAlmostEqual(qLib.fully_entangled_fraction(werner), 0.7)  # Werner: (1 + 3p) / 4
+
     # Test entropy
     def test_entropy(self):
         for qDim in [1, 2, 3, 4]:

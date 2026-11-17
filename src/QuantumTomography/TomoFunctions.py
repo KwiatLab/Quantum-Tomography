@@ -554,6 +554,46 @@ def negativity(rhog):
 
 
 """
+fully_entangled_fraction(rhog)
+Desc: Calculates the fully entangled fraction (also called the singlet fraction) of the input state:
+      the maximum fidelity with any maximally entangled state. Bennett et al., PRA 54, 3824 (1996).
+
+Parameters
+----------
+rhog : ndarray
+    Density Matrix of the desired state.
+
+Returns
+-------
+val : float
+    The calculated fully entangled fraction ranging from 0 to 1.
+    A value greater than 1/2 implies the state is entangled.
+
+Other Properties
+ --------------
+entropy;linear_entropy;negativity;concurrence;purity;tangle
+
+See Also
+ ------
+err_functions;getProperties
+"""
+
+
+def fully_entangled_fraction(rhog):
+    if isStateVector(rhog):
+        rhog = toDensity(rhog)
+    if rhog.shape[0] == 4:
+        # In the magic basis every maximally entangled state is a real vector (up to a global phase),
+        # so the maximum fidelity is the largest eigenvalue of the real part of rho in that basis.
+        magic = np.array([[1, 1j, 0, 0], [0, 0, 1j, 1], [0, 0, 1j, -1], [1, -1j, 0, 0]]) / np.sqrt(2)
+        rho_magic = magic.conj().T @ rhog @ magic
+        val = np.max(np.linalg.eigvalsh(np.real(rho_magic)))
+        return val
+    else:
+        return "NA"
+
+
+"""
 purity(rhog)
 Desc: Calculates the purity of the input state.
 
