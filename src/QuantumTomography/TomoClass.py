@@ -121,7 +121,15 @@ class Tomography:
                 ("Method", "MLE"),
             ]
         )
-        self.err_functions = ["concurrence", "tangle", "entropy", "linear_entropy", "negativity", "purity"]
+        self.err_functions = [
+            "concurrence",
+            "tangle",
+            "entropy",
+            "linear_entropy",
+            "negativity",
+            "purity",
+            "fully_entangled_fraction",
+        ]
         self.mont_carlo_states = list()
 
     """
