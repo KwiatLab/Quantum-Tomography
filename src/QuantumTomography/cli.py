@@ -105,13 +105,13 @@ def main():
 
         FORREPLACE = FORREPLACE + qKLib.matrixToHTML(rho)
 
-        vals = t.getProperties(rho)
+        vals = t.getProperties()
         FORREPLACE = str(FORREPLACE) + qKLib.propertiesToHTML(vals)
 
         # Print out properties of bellSettings
         bs = ""
         if t.conf["Bellstate"] != 0:
-            vals = t.getBellSettings(rho)
+            vals = t.getBellSettings()
             resolution = (np.pi / 2) / (9 * (5**3))
             bs += "<h3>Bell inequality (S_local_realism <= 2)</h3>"
             bs += '<table style = "width:60%;margin-top:10px;font-size: 15px;padding-bottom:5px;float:none;"><tr><td style = "font-size: 20;font-weight: 1000;color: rebeccapurple;">Property</td><td  style = "font-size: 20;font-weight: 1000;color: rebeccapurple;padding-bottom:5px;">Value</td>'
@@ -122,9 +122,15 @@ def main():
                     '<td  style = "font-size: 20;font-weight: 1000;color: rebeccapurple;padding-bottom:5px;"></td></tr>'
                 )
             for v in vals:
-                bs += "<tr><td>" + v[0] + "</td><td>" + qKLib.floatToString(v[1]) + " &deg;</td>"
+                # Rows are [name, value], or [name, error, value] with error estimation.
+                # s is unitless; the angles are returned in radians and shown in degrees.
+                is_angle = v[0] != "s"
+                unit = "&deg;" if is_angle else ""
+                to_unit = np.degrees if is_angle else float
+                value = qKLib.floatToString(to_unit(v[-1])) + (" " + unit if unit else "")
+                bs += f"<tr><td>{v[0]}</td><td>{value}</td>"
                 if len(v) > 2:
-                    bs += "<td>+/- " + qKLib.floatToString(v[2]) + "&deg;</td></tr> \n"
+                    bs += "<td>+/- " + qKLib.floatToString(to_unit(v[1])) + unit + "</td></tr> \n"
                 else:
                     bs += "<td></td></tr>"
             bs += (
@@ -135,6 +141,7 @@ def main():
             bs += "</td></tr></table>"
         bs = bs.replace("+/- nan&deg;", "Error")
         bs = bs.replace("nan &deg;", "Error")
+        bs = bs.replace("<td>+/- nan</td>", "<td>Error</td>").replace("<td>nan</td>", "<td>Error</td>")
 
         # Print out time at the bottom of page
         FORREPLACE = str(FORREPLACE) + "<br><br>\n" + bs

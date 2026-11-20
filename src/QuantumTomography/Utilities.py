@@ -21,6 +21,7 @@ OLD_FORMAT_CONFIG_KEYS = [
     "bellstate",
     "doerrorestimation",
     "dodriftcorrection",
+    "doaccidentalcorrection",
     "window",
     "efficiency",
     "method",
@@ -81,7 +82,7 @@ class ConfDict(MutableMapping):
         if isinstance(value, str):
             if value.lower() == "yes" or value.lower() == "true" or value.lower() == "t" or value.lower() == "y":
                 value = 1
-            elif value.lower() == "no" or value.lower() == "false" or value.lower() == "f" or value.lower() == "f":
+            elif value.lower() == "no" or value.lower() == "false" or value.lower() == "f" or value.lower() == "n":
                 value = 0
             elif (
                 value.upper() == "LINEAR" or value.upper() == "MLE" or value.upper() == "HMLE" or value.upper() == "BME"
@@ -140,10 +141,9 @@ def get_all_measurements_from_data(tomo_data) -> np.ndarray:
         # Get all of the densities used in this Measurement
         projections = [np.array(tomo_data["measurement_states"][name], dtype=np.complex128) for name in datum["basis"]]
         for projection in projections:
-            projections /= np.linalg.norm(projection)
+            projection /= np.linalg.norm(projection)
 
         all_projections.append(np.array(projections).flatten())
-    print("Projections", all_projections)
     return np.array(all_projections)
 
 

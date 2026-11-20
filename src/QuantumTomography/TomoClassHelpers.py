@@ -89,7 +89,7 @@ def maxlike_fitness_hedged(t, coincidences, accidentals, measurements, bet, over
     for j in range(len(prediction)):
         prediction[j] = overall_norms[j] * np.real(np.trace(np.dot(measurements[j, :, :], rhog))) + accidentals[j]
         prediction[j] = np.max([prediction[j], 0.01])
-    hedge = np.repeat(np.real((bet * np.log(np.linalg.det(rhog))) / len(prediction)), len(prediction))
+    hedge = np.repeat(np.real((bet * np.log(np.linalg.det(rhog / np.trace(rhog)))) / len(prediction)), len(prediction))
     val = np.sqrt(np.real((((prediction - coincidences) ** 2) / (2 * prediction)) - hedge) + 1000)
     return np.real(val)
 
@@ -284,20 +284,11 @@ def getBellSettings_helper(rhog, partsize_init, partsize, t):
 
 # Helper function that returns the optimal CHSH bell measurement settings with bounds of the given rhos.
 # It is recommended to use getBellSettings in the TomoClass
-def getBellSettings_helper_bounds(rhop, rho, partsize_init, partsize, t, n):
-    belldata = np.zeros([n + 1, 5])
-
-    for j in range(n):
-        belldata[j] = getBellSettings_helper(rhop[j], partsize_init, partsize, t)[:, 1]
-    [bellNames, belldata[-1]] = getBellSettings_helper(rho, partsize_init, partsize, t).transpose()
-    bmeans = np.zeros(5)
-    berrors = np.zeros(5)
-
-    for m in range(5):
-        berrors[m] = np.std(belldata[:, m], ddof=n - 1)
-        bmeans[m] = np.mean(belldata[:, m])
-
-    return np.array([bellNames, berrors, bmeans], dtype="O").transpose()
+def getBellSettings_helper_bounds(rhop, partsize_init, partsize, t):
+    belldata = np.array([getBellSettings_helper(rho, partsize_init, partsize, t)[:, 1] for rho in rhop], dtype=float)
+    names = ["s", "a", "a'", "b", "b'"]
+    # Rows are [name, error, mean]. Kept for backwards compatibility; will become [name, mean, error] in a future version.
+    return np.array([names, belldata.std(axis=0, ddof=1), belldata.mean(axis=0)], dtype="O").transpose()
 
 
 # Calculates the weighted covariance. Used in bayesian tomography
